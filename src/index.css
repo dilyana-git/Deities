@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Animated link flows ─────────────────────────────────────────────────── */
+@keyframes dash-flow {
+  to { stroke-dashoffset: -24; }
+}
+
+.link-transformed {
+  stroke-dasharray: 10 5;
+  animation: dash-flow 0.8s linear infinite;
+}
+
+.link-cursed {
+  stroke-dasharray: 8 4;
+  animation: dash-flow 0.6s linear infinite;
+}
+
+/* ── Selected node gold pulse ────────────────────────────────────────────── */
+@keyframes gold-pulse {
+  0%, 100% { stroke-opacity: 0.2; stroke-width: 1.5px; }
+  50%       { stroke-opacity: 0.7; stroke-width: 3px;   }
+}
+
+.node-selected-ring {
+  animation: gold-pulse 2s ease-in-out infinite;
+}
+
+/* ── Prevent text selection during drag ─────────────────────────────────── */
+svg {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Detail panel scrollbar ─────────────────────────────────────────────── */
+.detail-scroll::-webkit-scrollbar       { width: 4px; }
+.detail-scroll::-webkit-scrollbar-track { background: #0d111c; }
+.detail-scroll::-webkit-scrollbar-thumb { background: #1e2a3a; border-radius: 2px; }
+.detail-scroll                          { scrollbar-width: thin; scrollbar-color: #1e2a3a #0d111c; }
+
+/* ── Desktop: side-by-side layout ───────────────────────────────────────── */
+@media (min-width: 768px) {
+  .md-row {
+    flex-direction: row !important;
+  }
+
+  .detail-panel-container {
+    width: 35%;
+    height: 100%;
+  }
+}
+
+/* ── Mobile: stacked layout ─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .detail-panel-container {
+    height: 45vh;
+    width: 100%;
+    border-top: 1px solid #1e2a3a;
+  }
+}
+
+/* ── Body reset ─────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #05080f;
+  overflow: hidden;
+}
