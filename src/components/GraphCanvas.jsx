@@ -10,6 +10,22 @@ import NodeTooltip from './NodeTooltip'
 // Arrowhead marker IDs keyed by link type
 const ARROW_TYPES = ['parent_of', 'birthed', 'transformed_into', 'cursed_into', 'created_by']
 
+// Shorter display names for long monster names at low zoom
+const SHORT_NAMES = {
+  hydra:           'Hydra',
+  caucasian_eagle: 'Eagle',
+  colchian_dragon: 'Dragon',
+  nemean_lion:     'Nemean Lion',
+  moirai:          'Moirai',
+  graeae:          'Graeae',
+  muses:           'Muses',
+  humanity:        'Humanity',
+}
+function getDisplayName(node, zoom) {
+  if (zoom >= 1.4) return node.name
+  return SHORT_NAMES[node.id] ?? node.name
+}
+
 export default function GraphCanvas({
   selectedNodeId, onNodeSelect,
   filterCategory, searchTerm, filterArchetype,
@@ -103,6 +119,77 @@ export default function GraphCanvas({
   const neighborIds = useMemo(() =>
     selectedNodeId ? getNeighborIds(selectedNodeId, allLinks) : null,
   [selectedNodeId])
+
+  // ── Label direction — push label away from neighbor centroid ──────────────
+  const labelOffsets = useMemo(() => {
+    const offsets = {}
+    allNodes.forEach(node => {
+      const pos = positions[node.id]
+      if (!pos) return
+      const r = getNodeRadius(node)
+      let sx = 0, sy = 0, count = 0
+      for (const link of allLinks) {
+        const src = typeof link.source === 'object' ? link.source.id : link.source
+        const tgt = typeof link.target === 'object' ? link.target.id : link.target
+        const otherId = src === node.id ? tgt : tgt === node.id ? src : null
+        if (!otherId) continue
+        const other = positions[otherId]
+        if (!other) continue
+        sx += other.x - pos.x
+        sy += other.y - pos.y
+        count++
+      }
+      if (!count) {
+        offsets[node.id] = { dx: 0, dy: r + 14, anchor: 'middle' }
+      } else {
+        const angle = Math.atan2(-sy / count, -sx / count)
+        const dist  = r + 14
+        const dx    = Math.cos(angle) * dist
+        const dy    = Math.sin(angle) * dist
+        offsets[node.id] = {
+          dx,
+          dy,
+          anchor: dx > 6 ? 'start' : dx < -6 ? 'end' : 'middle',
+        }
+      }
+    })
+    return offsets
+  }, [positions])
+
+  // ── Label visibility — proximity culling + zoom gating ────────────────────
+  const labelVisible = useMemo(() => {
+    const k = transform.k
+    const visible = new Set()
+
+    // Always show selected node and its immediate neighbors
+    if (selectedNodeId) {
+      visible.add(selectedNodeId)
+      if (neighborIds) neighborIds.forEach(id => visible.add(id))
+    }
+
+    if (k < 0.45) return visible          // nothing else at very low zoom
+    if (k < 0.72) return visible          // only selected+neighbors at medium-low zoom
+
+    // At higher zoom: show labels for nodes not crowded by neighbors
+    // threshold in graph-space: shrinks as you zoom in → more labels appear on zoom
+    const thresh2 = (62 / k) ** 2
+    const nodeList = allNodes
+      .filter(n => visibleNodeIds.has(n.id) && positions[n.id])
+      .map(n => ({ id: n.id, pos: positions[n.id] }))
+
+    nodeList.forEach(({ id, pos }) => {
+      if (visible.has(id)) return
+      for (const other of nodeList) {
+        if (other.id === id) continue
+        const dx = other.pos.x - pos.x
+        const dy = other.pos.y - pos.y
+        if (dx * dx + dy * dy < thresh2) return  // too close — skip
+      }
+      visible.add(id)
+    })
+
+    return visible
+  }, [positions, transform.k, selectedNodeId, neighborIds, visibleNodeIds])
 
   // ── Drag handlers ────────────────────────────────────────────────────────
   const handleNodePointerDown = useCallback((e, nodeId) => {
@@ -319,18 +406,25 @@ export default function GraphCanvas({
                   }}
                 />
 
-                {/* Label */}
-                <text
-                  y={r + 13}
-                  textAnchor="middle"
-                  fontSize="12"
-                  fontFamily="Cinzel, serif"
-                  fill="rgba(255,255,255,0.88)"
-                  filter="url(#label-shadow)"
-                  style={{ pointerEvents: 'none' }}
-                >
-                  {node.name}
-                </text>
+                {/* Label — only when not crowded */}
+                {labelVisible.has(node.id) && (() => {
+                  const off = labelOffsets[node.id] ?? { dx: 0, dy: r + 14, anchor: 'middle' }
+                  return (
+                    <text
+                      x={off.dx}
+                      y={off.dy}
+                      textAnchor={off.anchor}
+                      dominantBaseline="central"
+                      fontSize={isSelected ? '13' : '11.5'}
+                      fontFamily="Cinzel, serif"
+                      fill={isSelected ? '#c9a84c' : 'rgba(255,255,255,0.82)'}
+                      filter="url(#label-shadow)"
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      {getDisplayName(node, transform.k)}
+                    </text>
+                  )
+                })()}
               </g>
             )
           })}
