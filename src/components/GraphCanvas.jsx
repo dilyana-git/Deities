@@ -5,7 +5,13 @@ import { categoryConfig } from '../data/categoryConfig'
 import { linkTypeConfig } from '../data/linkTypeConfig'
 import { useGraphSimulation } from '../hooks/useGraphSimulation'
 import { getNodeRadius, getNeighborIds } from '../utils/graphHelpers'
+import { getPortraitUrl } from '../hooks/usePortraitLoader'
 import NodeTooltip from './NodeTooltip'
+
+// One clipPath per unique node radius — shared across all nodes of the same size.
+// clipPathUnits defaults to userSpaceOnUse, so cx/cy are relative to the
+// referencing element's local coordinate system (i.e., each translated node <g>).
+const CLIP_RADII = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24, 26]
 
 // Arrowhead marker IDs keyed by link type
 const ARROW_TYPES = ['parent_of', 'birthed', 'transformed_into', 'cursed_into', 'created_by']
@@ -30,6 +36,7 @@ export default function GraphCanvas({
   selectedNodeId, onNodeSelect,
   filterCategory, searchTerm, filterArchetype,
   focusMode,
+  portraitMode, portraitLoaded, onOpenLightbox,
 }) {
   const containerRef = useRef(null)
   const svgRef       = useRef(null)
@@ -269,6 +276,13 @@ export default function GraphCanvas({
             <feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#000000" floodOpacity="0.9"/>
           </filter>
 
+          {/* Portrait clip paths — one per unique node radius */}
+          {CLIP_RADII.map(r => (
+            <clipPath key={r} id={`clip-r${r}`}>
+              <circle cx="0" cy="0" r={r} />
+            </clipPath>
+          ))}
+
           {/* Arrowhead markers */}
           {ARROW_TYPES.map(type => {
             const cfg = linkTypeConfig[type]
@@ -381,7 +395,7 @@ export default function GraphCanvas({
                 })}
                 onPointerLeave={() => setTooltip({ node: null, x: 0, y: 0 })}
               >
-                {/* Selected ring — gold pulse */}
+                {/* Selected ring — gold pulse (always outside portrait/circle) */}
                 {isSelected && (
                   <circle
                     r={r + 8}
@@ -393,18 +407,44 @@ export default function GraphCanvas({
                   />
                 )}
 
-                {/* Main circle */}
-                <circle
-                  r={r}
-                  fill={cat.fill ?? '#111'}
-                  stroke={isSelected ? '#c9a84c' : cat.stroke ?? '#666'}
-                  strokeWidth={isSelected ? 2.5 : isHovered ? 2 : 1.5}
-                  style={{
-                    transform: isHovered && !isSelected ? 'scale(1.25)' : 'scale(1)',
-                    transformOrigin: '0 0',
-                    transition: 'transform 0.15s, stroke-width 0.15s',
-                  }}
-                />
+                {portraitMode && portraitLoaded?.has(node.id) ? (
+                  /* ── Portrait mode: clipped image + category ring ─────── */
+                  <>
+                    <image
+                      href={getPortraitUrl(node)}
+                      x={-r} y={-r} width={r * 2} height={r * 2}
+                      clipPath={`url(#clip-r${r})`}
+                      preserveAspectRatio="xMidYMid slice"
+                      style={{ cursor: 'pointer' }}
+                      onClick={e => {
+                        e.stopPropagation()
+                        onNodeSelect(node.id)
+                        onOpenLightbox(node.id)
+                      }}
+                    />
+                    {/* Category-colored ring preserved over portrait */}
+                    <circle
+                      r={r}
+                      fill="none"
+                      stroke={isSelected ? '#c9a84c' : cat.stroke ?? '#666'}
+                      strokeWidth={isSelected ? 2.5 : isHovered ? 2 : 1.5}
+                      style={{ pointerEvents: 'none' }}
+                    />
+                  </>
+                ) : (
+                  /* ── Normal mode: solid colored circle ────────────────── */
+                  <circle
+                    r={r}
+                    fill={cat.fill ?? '#111'}
+                    stroke={isSelected ? '#c9a84c' : cat.stroke ?? '#666'}
+                    strokeWidth={isSelected ? 2.5 : isHovered ? 2 : 1.5}
+                    style={{
+                      transform: isHovered && !isSelected ? 'scale(1.25)' : 'scale(1)',
+                      transformOrigin: '0 0',
+                      transition: 'transform 0.15s, stroke-width 0.15s',
+                    }}
+                  />
+                )}
 
                 {/* Label — only when not crowded */}
                 {labelVisible.has(node.id) && (() => {

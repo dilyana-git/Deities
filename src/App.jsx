@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import FilterBar   from './components/FilterBar'
-import GraphCanvas from './components/GraphCanvas'
-import DetailPanel from './components/DetailPanel'
-import LegendBar   from './components/LegendBar'
+import FilterBar         from './components/FilterBar'
+import GraphCanvas       from './components/GraphCanvas'
+import DetailPanel       from './components/DetailPanel'
+import LegendBar         from './components/LegendBar'
+import Lightbox          from './components/Lightbox'
+import { usePortraitLoader } from './hooks/usePortraitLoader'
 
 export default function App() {
   const [selectedNodeId,  setSelectedNodeId]  = useState(null)
@@ -11,8 +13,12 @@ export default function App() {
   const [searchTerm,      setSearchTerm]      = useState('')
   const [focusMode,       setFocusMode]       = useState(false)
   const [legendCollapsed, setLegendCollapsed] = useState(false)
+  const [portraitMode,    setPortraitMode]    = useState(false)
+  const [lightboxNodeId,  setLightboxNodeId]  = useState(null)
 
-  // When navigating from the detail panel, also centre the graph
+  // Probe all portrait images once; both GraphCanvas and DetailPanel read this Set.
+  const portraitLoaded = usePortraitLoader()
+
   const handleNodeSelect = (id) => {
     setSelectedNodeId(prev => prev === id ? null : id)
   }
@@ -23,25 +29,25 @@ export default function App() {
     >
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <FilterBar
-        searchTerm={searchTerm}         onSearch={setSearchTerm}
-        filterCategory={filterCategory} onFilterCategory={setFilterCategory}
+        searchTerm={searchTerm}           onSearch={setSearchTerm}
+        filterCategory={filterCategory}   onFilterCategory={setFilterCategory}
         filterArchetype={filterArchetype} onFilterArchetype={setFilterArchetype}
-        focusMode={focusMode}           onToggleFocusMode={() => setFocusMode(f => !f)}
+        focusMode={focusMode}             onToggleFocusMode={() => setFocusMode(f => !f)}
+        portraitMode={portraitMode}       onTogglePortraitMode={() => setPortraitMode(p => !p)}
       />
 
       {/* ── Main area ───────────────────────────────────────────────────── */}
       <main
         style={{
-          flex:     1,
-          display:  'flex',
-          overflow: 'hidden',
-          minHeight: 0,
-          // Stack vertically on mobile
+          flex:          1,
+          display:       'flex',
+          overflow:      'hidden',
+          minHeight:     0,
           flexDirection: 'column',
         }}
         className="md-row"
       >
-        {/* Graph — flex-1 on desktop, 55vh on mobile */}
+        {/* Graph */}
         <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
           <GraphCanvas
             selectedNodeId={selectedNodeId}
@@ -50,17 +56,19 @@ export default function App() {
             filterArchetype={filterArchetype}
             searchTerm={searchTerm}
             focusMode={focusMode}
+            portraitMode={portraitMode}
+            portraitLoaded={portraitLoaded}
+            onOpenLightbox={setLightboxNodeId}
           />
         </div>
 
-        {/* Detail panel — 35% on desktop, auto on mobile */}
-        <div
-          className="detail-panel-container"
-          style={{ flexShrink: 0 }}
-        >
+        {/* Detail panel */}
+        <div className="detail-panel-container" style={{ flexShrink: 0 }}>
           <DetailPanel
             selectedNodeId={selectedNodeId}
             onNodeSelect={handleNodeSelect}
+            portraitLoaded={portraitLoaded}
+            onOpenLightbox={setLightboxNodeId}
           />
         </div>
       </main>
@@ -70,6 +78,14 @@ export default function App() {
         collapsed={legendCollapsed}
         onToggle={() => setLegendCollapsed(c => !c)}
       />
+
+      {/* ── Lightbox ────────────────────────────────────────────────────── */}
+      {lightboxNodeId && (
+        <Lightbox
+          nodeId={lightboxNodeId}
+          onClose={() => setLightboxNodeId(null)}
+        />
+      )}
     </div>
   )
 }

@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { nodes } from '../data/mythology'
 import { categoryConfig } from '../data/categoryConfig'
 import { archetypeMap } from '../data/archetypeMap'
 import { getConnectedNodes } from '../utils/graphHelpers'
 import { links } from '../data/mythology'
+import { getPortraitUrl } from '../hooks/usePortraitLoader'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const HR = () => (
@@ -50,6 +51,73 @@ const ConnectedGroup = ({ icon, label, entries, onNodeSelect }) => {
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+// ─── Midjourney prompt section ────────────────────────────────────────────────
+function PromptSection({ prompt }) {
+  const [open,   setOpen]   = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const copy = () => {
+    navigator.clipboard.writeText(prompt).catch(() => {})
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1 w-full text-left"
+        style={{
+          fontFamily:    'Cinzel, serif',
+          fontSize:       9,
+          letterSpacing: '0.2em',
+          color:          '#4b5563',
+          textTransform: 'uppercase',
+          background:    'none',
+          border:        'none',
+          cursor:        'pointer',
+          padding:       0,
+        }}
+        onMouseEnter={e => e.currentTarget.style.color = '#6b7280'}
+        onMouseLeave={e => e.currentTarget.style.color = '#4b5563'}
+      >
+        Midjourney Prompt {open ? '▾' : '▸'}
+      </button>
+      {open && (
+        <div style={{ marginTop: 8 }}>
+          <p
+            style={{
+              fontFamily:  '"DM Mono", "Fira Code", monospace',
+              fontSize:     11,
+              color:        '#6b7280',
+              lineHeight:   1.6,
+              marginBottom: 8,
+              wordBreak:   'break-word',
+            }}
+          >
+            {prompt}
+          </p>
+          <button
+            onClick={copy}
+            style={{
+              fontFamily:    'Cinzel, serif',
+              fontSize:       9,
+              letterSpacing: '0.12em',
+              color:          copied ? '#4ade80' : '#c9a84c',
+              background:    'none',
+              border:        `1px solid ${copied ? '#4ade8044' : '#c9a84c44'}`,
+              padding:       '3px 10px',
+              cursor:        'pointer',
+            }}
+          >
+            {copied ? '✓ Copied' : 'Copy prompt'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -117,7 +185,7 @@ function EmptyState() {
 }
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
-export default function DetailPanel({ selectedNodeId, onNodeSelect }) {
+export default function DetailPanel({ selectedNodeId, onNodeSelect, portraitLoaded, onOpenLightbox }) {
   const node = useMemo(
     () => nodes.find(n => n.id === selectedNodeId) ?? null,
     [selectedNodeId]
@@ -144,6 +212,38 @@ export default function DetailPanel({ selectedNodeId, onNodeSelect }) {
       {!node ? (
         <EmptyState />
       ) : (
+        <>
+          {/* Portrait hero — full width, 240px, clickable → lightbox */}
+          {portraitLoaded?.has(node.id) && (
+            <div
+              onClick={() => onOpenLightbox(node.id)}
+              style={{
+                position:   'relative',
+                width:      '100%',
+                height:     240,
+                flexShrink: 0,
+                cursor:     'pointer',
+                overflow:   'hidden',
+              }}
+            >
+              <img
+                src={getPortraitUrl(node)}
+                alt={node.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+              {/* Fade out to panel background */}
+              <div style={{
+                position:   'absolute',
+                bottom:     0,
+                left:       0,
+                right:      0,
+                height:     90,
+                background: 'linear-gradient(to bottom, transparent, #0d111c)',
+                pointerEvents: 'none',
+              }} />
+            </div>
+          )}
+
         <div className="p-5">
 
           {/* Category + Roman equivalent */}
@@ -297,7 +397,16 @@ export default function DetailPanel({ selectedNodeId, onNodeSelect }) {
             </>
           )}
 
+          {/* Midjourney Prompt */}
+          {node.image_prompt && (
+            <>
+              <HR />
+              <PromptSection prompt={node.image_prompt} />
+            </>
+          )}
+
         </div>
+        </>
       )}
     </div>
   )
