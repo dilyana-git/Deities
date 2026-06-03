@@ -6,7 +6,6 @@ export default function FilterBar({
   filterCategory, onFilterCategory,
   filterArchetype, onFilterArchetype,
   focusMode, onToggleFocusMode,
-  portraitMode, onTogglePortraitMode,
 }) {
   return (
     <header
@@ -127,22 +126,6 @@ export default function FilterBar({
           <option key={a} value={a}>{a}</option>
         ))}
       </select>
-
-      {/* Portraits toggle */}
-      <button
-        onClick={onTogglePortraitMode}
-        className="px-2 py-1 text-[11px] transition-all shrink-0"
-        style={{
-          fontFamily:    'Cinzel, serif',
-          letterSpacing: '0.08em',
-          border:        `1px solid ${portraitMode ? '#a855f7' : '#1e2a3a'}`,
-          background:    portraitMode ? '#a855f722' : 'transparent',
-          color:         portraitMode ? '#a855f7' : '#6b7280',
-          cursor:        'pointer',
-        }}
-      >
-        {portraitMode ? '◉ PORTRAITS' : '◎ PORTRAITS'}
-      </button>
 
       {/* Focus mode toggle */}
       <button

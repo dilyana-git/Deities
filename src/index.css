@@ -124,6 +124,65 @@ svg {
   .cloud-near-track { animation: none; }
 }
 
+/* ── Deity modal layout ─────────────────────────────────────────────────── */
+
+/* Mobile-first: single column, whole dialog scrolls */
+.deity-modal-body {
+  display:    flex;
+  flex-direction: column;
+  flex:       1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.deity-modal-image {
+  position:   relative;
+  flex-shrink: 0;
+  height:     300px;          /* fixed height on mobile */
+  background: #080b14;
+  overflow:   hidden;
+}
+
+.deity-modal-info {
+  flex:       1;
+  padding:    20px 22px;
+  overflow-y: visible;        /* outer dialog scrolls on mobile */
+}
+
+/* Desktop ≥768px: two-column layout, only info panel scrolls */
+@media (min-width: 768px) {
+  .deity-modal-body {
+    flex-direction: row;
+    overflow:       hidden;   /* contain scroll to info column */
+  }
+
+  .deity-modal-image {
+    width:  45%;
+    height: auto;             /* fills the two-column row */
+  }
+
+  .deity-modal-info {
+    overflow-y: auto;         /* only info scrolls on desktop */
+  }
+}
+
+/* ── Skeleton loading pulse ─────────────────────────────────────────────── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.22; }
+  50%       { opacity: 0.50; }
+}
+
+.image-skeleton {
+  position:   absolute;
+  inset:      0;
+  background: #1a2234;
+  animation:  skeleton-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-skeleton { animation: none; opacity: 0.3; }
+}
+
 /* ── Body reset ─────────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;

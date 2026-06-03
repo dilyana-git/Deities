@@ -1,13 +1,25 @@
 import { useState, useEffect } from 'react'
 import { nodes } from '../data/mythology'
 
-export function getPortraitUrl(node) {
-  return `/deities/${node.image ?? node.id + '.webp'}`
+// ── URL helpers ──────────────────────────────────────────────────────────────
+
+export function getHeadImageUrl(node) {
+  return `/deities/${node.head_image ?? node.id + '-head.webp'}`
 }
 
-// Returns a Set of node IDs whose primary portrait image has loaded successfully.
-// Images are probed once on mount; results arrive asynchronously as files load.
-export function usePortraitLoader() {
+export function getFullImageUrl(node) {
+  return `/deities/${node.full_image ?? node.id + '-full.webp'}`
+}
+
+// Backward-compat alias (DetailPanel / Lightbox still import this)
+export function getPortraitUrl(node) {
+  return getHeadImageUrl(node)
+}
+
+// ── Head loader hook ─────────────────────────────────────────────────────────
+
+// Probes all head images on mount; returns a Set that grows as images load.
+export function useHeadLoader() {
   const [loaded, setLoaded] = useState(() => new Set())
 
   useEffect(() => {
@@ -18,9 +30,14 @@ export function usePortraitLoader() {
         next.add(node.id)
         return next
       })
-      img.src = getPortraitUrl(node)
+      img.src = getHeadImageUrl(node)
     })
   }, [])
 
   return loaded
+}
+
+// Backward-compat alias
+export function usePortraitLoader() {
+  return useHeadLoader()
 }

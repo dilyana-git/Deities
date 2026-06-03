@@ -1,10 +1,9 @@
-import { useState } from 'react'
-import FilterBar         from './components/FilterBar'
-import GraphCanvas       from './components/GraphCanvas'
-import DetailPanel       from './components/DetailPanel'
-import LegendBar         from './components/LegendBar'
-import Lightbox          from './components/Lightbox'
-import { usePortraitLoader } from './hooks/usePortraitLoader'
+import { useState, useCallback } from 'react'
+import FilterBar      from './components/FilterBar'
+import GraphCanvas    from './components/GraphCanvas'
+import LegendBar      from './components/LegendBar'
+import DeityModal     from './components/DeityModal'
+import { useHeadLoader } from './hooks/usePortraitLoader'
 
 export default function App() {
   const [selectedNodeId,  setSelectedNodeId]  = useState(null)
@@ -13,15 +12,40 @@ export default function App() {
   const [searchTerm,      setSearchTerm]      = useState('')
   const [focusMode,       setFocusMode]       = useState(false)
   const [legendCollapsed, setLegendCollapsed] = useState(false)
-  const [portraitMode,    setPortraitMode]    = useState(false)
-  const [lightboxNodeId,  setLightboxNodeId]  = useState(null)
 
-  // Probe all portrait images once; both GraphCanvas and DetailPanel read this Set.
-  const portraitLoaded = usePortraitLoader()
+  // Modal state
+  const [modalNodeId, setModalNodeId] = useState(null)
+  const [backStack,   setBackStack]   = useState([])
 
-  const handleNodeSelect = (id) => {
-    setSelectedNodeId(prev => prev === id ? null : id)
-  }
+  // Probe head images for all nodes once; passed to GraphCanvas + DeityModal
+  const headLoaded = useHeadLoader()
+
+  // Node click in the graph: select node + open modal fresh (clear back stack)
+  const handleNodeClick = useCallback((id) => {
+    setSelectedNodeId(id)
+    setModalNodeId(id)
+    setBackStack([])
+  }, [])
+
+  // Navigation inside the modal: push current to back stack, show new
+  const handleModalNavigate = useCallback((id) => {
+    setBackStack(prev => [...prev, modalNodeId])
+    setModalNodeId(id)
+    setSelectedNodeId(id)   // graph pans to newly viewed deity
+  }, [modalNodeId])
+
+  // Back button inside the modal: pop back stack
+  const handleModalBack = useCallback(() => {
+    const prev = backStack[backStack.length - 1]
+    setBackStack(s => s.slice(0, -1))
+    setModalNodeId(prev)
+    setSelectedNodeId(prev)
+  }, [backStack])
+
+  const handleModalClose = useCallback(() => {
+    setModalNodeId(null)
+    setBackStack([])
+  }, [])
 
   return (
     <div
@@ -33,44 +57,19 @@ export default function App() {
         filterCategory={filterCategory}   onFilterCategory={setFilterCategory}
         filterArchetype={filterArchetype} onFilterArchetype={setFilterArchetype}
         focusMode={focusMode}             onToggleFocusMode={() => setFocusMode(f => !f)}
-        portraitMode={portraitMode}       onTogglePortraitMode={() => setPortraitMode(p => !p)}
       />
 
-      {/* ── Main area ───────────────────────────────────────────────────── */}
-      <main
-        style={{
-          flex:          1,
-          display:       'flex',
-          overflow:      'hidden',
-          minHeight:     0,
-          flexDirection: 'column',
-        }}
-        className="md-row"
-      >
-        {/* Graph */}
-        <div style={{ flex: 1, minWidth: 0, minHeight: 0 }}>
-          <GraphCanvas
-            selectedNodeId={selectedNodeId}
-            onNodeSelect={handleNodeSelect}
-            filterCategory={filterCategory}
-            filterArchetype={filterArchetype}
-            searchTerm={searchTerm}
-            focusMode={focusMode}
-            portraitMode={portraitMode}
-            portraitLoaded={portraitLoaded}
-            onOpenLightbox={setLightboxNodeId}
-          />
-        </div>
-
-        {/* Detail panel */}
-        <div className="detail-panel-container" style={{ flexShrink: 0 }}>
-          <DetailPanel
-            selectedNodeId={selectedNodeId}
-            onNodeSelect={handleNodeSelect}
-            portraitLoaded={portraitLoaded}
-            onOpenLightbox={setLightboxNodeId}
-          />
-        </div>
+      {/* ── Graph — full main area ───────────────────────────────────────── */}
+      <main style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
+        <GraphCanvas
+          selectedNodeId={selectedNodeId}
+          onNodeClick={handleNodeClick}
+          filterCategory={filterCategory}
+          filterArchetype={filterArchetype}
+          searchTerm={searchTerm}
+          focusMode={focusMode}
+          headLoaded={headLoaded}
+        />
       </main>
 
       {/* ── Legend bar ──────────────────────────────────────────────────── */}
@@ -79,11 +78,15 @@ export default function App() {
         onToggle={() => setLegendCollapsed(c => !c)}
       />
 
-      {/* ── Lightbox ────────────────────────────────────────────────────── */}
-      {lightboxNodeId && (
-        <Lightbox
-          nodeId={lightboxNodeId}
-          onClose={() => setLightboxNodeId(null)}
+      {/* ── Deity modal (primary detail view) ───────────────────────────── */}
+      {modalNodeId && (
+        <DeityModal
+          nodeId={modalNodeId}
+          backStack={backStack}
+          headLoaded={headLoaded}
+          onClose={handleModalClose}
+          onNavigate={handleModalNavigate}
+          onBack={handleModalBack}
         />
       )}
     </div>

@@ -5,7 +5,7 @@ import { categoryConfig } from '../data/categoryConfig'
 import { linkTypeConfig } from '../data/linkTypeConfig'
 import { useGraphSimulation } from '../hooks/useGraphSimulation'
 import { getNodeRadius, getNeighborIds } from '../utils/graphHelpers'
-import { getPortraitUrl } from '../hooks/usePortraitLoader'
+import { getHeadImageUrl } from '../hooks/usePortraitLoader'
 import NodeTooltip from './NodeTooltip'
 
 // One clipPath per unique node radius — shared across all nodes of the same size.
@@ -33,10 +33,10 @@ function getDisplayName(node, zoom) {
 }
 
 export default function GraphCanvas({
-  selectedNodeId, onNodeSelect,
+  selectedNodeId, onNodeClick,
   filterCategory, searchTerm, filterArchetype,
   focusMode,
-  portraitMode, portraitLoaded, onOpenLightbox,
+  headLoaded,
 }) {
   const containerRef = useRef(null)
   const svgRef       = useRef(null)
@@ -407,7 +407,7 @@ export default function GraphCanvas({
                 key={node.id}
                 transform={`translate(${pos.x}, ${pos.y})`}
                 style={{ opacity, cursor: 'pointer' }}
-                onClick={() => onNodeSelect(node.id)}
+                onClick={() => onNodeClick(node.id)}
                 onPointerDown={e => handleNodePointerDown(e, node.id)}
                 onPointerEnter={e => setTooltip({
                   node,
@@ -428,22 +428,17 @@ export default function GraphCanvas({
                   />
                 )}
 
-                {portraitMode && portraitLoaded?.has(node.id) ? (
-                  /* ── Portrait mode: clipped image + category ring ─────── */
+                {headLoaded?.has(node.id) ? (
+                  /* ── Head portrait: clipped image + category ring ─────── */
                   <>
                     <image
-                      href={getPortraitUrl(node)}
+                      href={getHeadImageUrl(node)}
                       x={-r} y={-r} width={r * 2} height={r * 2}
                       clipPath={`url(#clip-r${r})`}
                       preserveAspectRatio="xMidYMid slice"
-                      style={{ cursor: 'pointer' }}
-                      onClick={e => {
-                        e.stopPropagation()
-                        onNodeSelect(node.id)
-                        onOpenLightbox(node.id)
-                      }}
+                      style={{ pointerEvents: 'none' }}
                     />
-                    {/* Category-colored ring preserved over portrait */}
+                    {/* Category-colored ring on top of portrait */}
                     <circle
                       r={r}
                       fill="none"
@@ -453,7 +448,7 @@ export default function GraphCanvas({
                     />
                   </>
                 ) : (
-                  /* ── Normal mode: solid colored circle ────────────────── */
+                  /* ── No image: solid colored circle ──────────────────── */
                   <circle
                     r={r}
                     fill={cat.fill ?? '#111'}
