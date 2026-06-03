@@ -41,9 +41,19 @@ export default function GraphCanvas({
   const containerRef = useRef(null)
   const svgRef       = useRef(null)
   const zoomRef      = useRef(null)
+  const cloudRef     = useRef(null)
   const [dims, setDims]         = useState({ w: 800, h: 600 })
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 })
   const [tooltip, setTooltip]   = useState({ node: null, x: 0, y: 0 })
+
+  // ── Pause cloud animations when tab is hidden (saves battery) ───────────
+  useEffect(() => {
+    const el = cloudRef.current
+    if (!el) return
+    const handler = () => el.classList.toggle('paused', document.hidden)
+    document.addEventListener('visibilitychange', handler)
+    return () => document.removeEventListener('visibilitychange', handler)
+  }, [])
 
   // ── Resize observer ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -247,20 +257,32 @@ export default function GraphCanvas({
   const { x: tx, y: ty, k: tk } = transform
 
   return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden">
+    <div
+      ref={containerRef}
+      className="relative w-full h-full overflow-hidden"
+      style={{ background: 'radial-gradient(ellipse at 50% 60%, #0d1424 0%, #05080f 70%, #020408 100%)' }}
+    >
+      {/* ── Cloud layers (parallax, GPU-composited) ──────────────────────── */}
+      <div ref={cloudRef} className="bg-clouds" style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+
+        {/* Far cloud stratum — slow horizontal drift + gentle sway */}
+        <div className="cloud-sway-far" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+          <div className="cloud-far-track" style={{ width: '200%', height: '100%', willChange: 'transform', transform: 'translateZ(0)' }} />
+        </div>
+
+        {/* Near wisp stratum — opposite drift direction, slightly faster */}
+        <div className="cloud-sway-near" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+          <div className="cloud-near-track" style={{ width: '200%', height: '100%', willChange: 'transform', transform: 'translateZ(0)' }} />
+        </div>
+
+      </div>
+
       <svg
         ref={svgRef}
         width="100%" height="100%"
-        style={{ display: 'block', cursor: 'grab' }}
+        style={{ display: 'block', cursor: 'grab', position: 'relative' }}
       >
         <defs>
-          {/* Radial gradient background */}
-          <radialGradient id="bg-grad" cx="50%" cy="50%" r="60%">
-            <stop offset="0%"   stopColor="#0d1424" />
-            <stop offset="70%"  stopColor="#05080f" />
-            <stop offset="100%" stopColor="#020408" />
-          </radialGradient>
-
           {/* Grain texture */}
           <filter id="grain" x="0%" y="0%" width="100%" height="100%">
             <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="noise"/>
@@ -301,9 +323,8 @@ export default function GraphCanvas({
           })}
         </defs>
 
-        {/* Background */}
-        <rect width="100%" height="100%" fill="url(#bg-grad)" />
-        <rect width="100%" height="100%" fill="transparent" filter="url(#grain)" opacity="0.18" />
+        {/* Grain texture overlay — sits above the HTML cloud layers */}
+        <rect width="100%" height="100%" fill="#07090e" filter="url(#grain)" opacity="0.22" />
 
         {/* Zoomable graph group */}
         <g transform={`translate(${tx},${ty}) scale(${tk})`}>
