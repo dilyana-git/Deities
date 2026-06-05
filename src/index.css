@@ -221,3 +221,195 @@ body {
 .wf-page ::-webkit-scrollbar       { width: 6px }
 .wf-page ::-webkit-scrollbar-track { background: #0b0d12 }
 .wf-page ::-webkit-scrollbar-thumb { background: #2a3140; border-radius: 3px }
+/* ── Animated link flows ─────────────────────────────────────────────────── */
+@keyframes dash-flow {
+  to { stroke-dashoffset: -24; }
+}
+
+.link-transformed {
+  stroke-dasharray: 10 5;
+  animation: dash-flow 0.8s linear infinite;
+}
+
+.link-cursed {
+  stroke-dasharray: 8 4;
+  animation: dash-flow 0.6s linear infinite;
+}
+
+/* ── Selected node gold pulse ────────────────────────────────────────────── */
+@keyframes gold-pulse {
+  0%, 100% { stroke-opacity: 0.2; stroke-width: 1.5px; }
+  50%       { stroke-opacity: 0.7; stroke-width: 3px;   }
+}
+
+.node-selected-ring {
+  animation: gold-pulse 2s ease-in-out infinite;
+}
+
+/* ── Prevent text selection during drag ─────────────────────────────────── */
+svg {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── Detail panel scrollbar ─────────────────────────────────────────────── */
+.detail-scroll::-webkit-scrollbar       { width: 4px; }
+.detail-scroll::-webkit-scrollbar-track { background: #0d111c; }
+.detail-scroll::-webkit-scrollbar-thumb { background: #1e2a3a; border-radius: 2px; }
+.detail-scroll                          { scrollbar-width: thin; scrollbar-color: #1e2a3a #0d111c; }
+
+/* ── Desktop: side-by-side layout ───────────────────────────────────────── */
+@media (min-width: 768px) {
+  .md-row {
+    flex-direction: row !important;
+  }
+
+  .detail-panel-container {
+    width: 35%;
+    height: 100%;
+  }
+}
+
+/* ── Mobile: stacked layout ─────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .detail-panel-container {
+    height: 45vh;
+    width: 100%;
+    border-top: 1px solid #1e2a3a;
+  }
+}
+
+/* ── Ambient cloud motion ───────────────────────────────────────────────── */
+
+/* Keyframes — GPU-only (transform only, no layout/paint) */
+@keyframes cloud-drift-far {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes cloud-drift-near {
+  /* opposite direction creates parallax depth */
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+@keyframes cloud-sway {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.5%); }
+}
+
+/* Far cloud stratum: large soft masses behind the palace, slow ~150s loop.
+   Two gradient copies at background-size:50% tile seamlessly: when the track
+   translateX reaches -50% the view wraps back to the start imperceptibly. */
+.cloud-sway-far {
+  animation: cloud-sway 40s ease-in-out infinite;
+}
+.cloud-far-track {
+  background-image:
+    radial-gradient(ellipse 58% 42% at  9% 52%, rgba(155,165,200,0.10) 0%, transparent 65%),
+    radial-gradient(ellipse 72% 55% at 37% 43%, rgba(145,158,195,0.08) 0%, transparent 62%),
+    radial-gradient(ellipse 44% 38% at 62% 62%, rgba(150,162,198,0.09) 0%, transparent 58%),
+    radial-gradient(ellipse 66% 50% at 88% 38%, rgba(140,152,192,0.10) 0%, transparent 68%);
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  filter: blur(28px);
+  animation: cloud-drift-far 150s linear infinite;
+}
+
+/* Near wisp stratum: thinner, wispier, opposite drift for parallax, ~90s loop */
+.cloud-sway-near {
+  /* Offset sway phase so near/far layers breathe independently */
+  animation: cloud-sway 55s ease-in-out infinite;
+  animation-delay: -22s;
+}
+.cloud-near-track {
+  background-image:
+    radial-gradient(ellipse 78% 22% at 18% 44%, rgba(185,192,222,0.07) 0%, transparent 58%),
+    radial-gradient(ellipse 55% 18% at 50% 54%, rgba(175,182,218,0.06) 0%, transparent 52%),
+    radial-gradient(ellipse 88% 26% at 84% 36%, rgba(180,188,220,0.07) 0%, transparent 64%);
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  filter: blur(38px);
+  animation: cloud-drift-near 90s linear infinite;
+  opacity: 0.75;
+}
+
+/* Pause everything inside when tab hidden (visibilitychange sets this class) */
+.bg-clouds.paused * { animation-play-state: paused; }
+
+/* Reduced motion: render cloud shapes statically — no drift, no sway */
+@media (prefers-reduced-motion: reduce) {
+  .cloud-sway-far,
+  .cloud-sway-near,
+  .cloud-far-track,
+  .cloud-near-track { animation: none; }
+}
+
+/* ── Deity modal layout ─────────────────────────────────────────────────── */
+
+/* Mobile-first: single column, whole dialog scrolls */
+.deity-modal-body {
+  display:    flex;
+  flex-direction: column;
+  flex:       1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.deity-modal-image {
+  position:   relative;
+  flex-shrink: 0;
+  height:     300px;          /* fixed height on mobile */
+  background: #080b14;
+  overflow:   hidden;
+}
+
+.deity-modal-info {
+  flex:       1;
+  padding:    20px 22px;
+  overflow-y: visible;        /* outer dialog scrolls on mobile */
+}
+
+/* Desktop ≥768px: two-column layout, only info panel scrolls */
+@media (min-width: 768px) {
+  .deity-modal-body {
+    flex-direction: row;
+    overflow:       hidden;   /* contain scroll to info column */
+  }
+
+  .deity-modal-image {
+    width:  45%;
+    height: auto;             /* fills the two-column row */
+  }
+
+  .deity-modal-info {
+    overflow-y: auto;         /* only info scrolls on desktop */
+  }
+}
+
+/* ── Skeleton loading pulse ─────────────────────────────────────────────── */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.22; }
+  50%       { opacity: 0.50; }
+}
+
+.image-skeleton {
+  position:   absolute;
+  inset:      0;
+  background: #1a2234;
+  animation:  skeleton-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-skeleton { animation: none; opacity: 0.3; }
+}
+
+/* ── Body reset ─────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #05080f;
+  overflow: hidden;
+}

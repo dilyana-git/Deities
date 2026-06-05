@@ -728,7 +728,4 @@ export default function App() {
       <div id="tip"/>
 
       {/* wireframes overlay */}
-      {wireframesOpen && <WireframesPage onClose={() => setWireframesOpen(false)} />}
-    </div>
-  )
-}
+      {wireframesOpen && <WireframesPage onClose={() => setWireframesOpen(false)} />}/</div>)}
