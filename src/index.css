@@ -1,0 +1,223 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #06080e;
+  color: #aab2c0;
+}
+
+body {
+  font-family: 'Crimson Pro', Georgia, serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: #cdb88a44; }
+
+/* ── Custom scrollbar ──────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #090c13; }
+::-webkit-scrollbar-thumb { background: #19202d; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #262e3c; }
+
+/* ── Atlas sky SVG ─────────────────────────────────────────────────────────── */
+#sky { cursor: grab; display: block; }
+#sky:active { cursor: grabbing; }
+
+/* cluster label */
+.cluster-label {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: .34em;
+  fill: #3a4354;
+  pointer-events: none;
+  text-transform: uppercase;
+}
+
+/* node label */
+.node-label {
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  fill: #c4cad6;
+  pointer-events: none;
+  opacity: 0;
+  paint-order: stroke;
+  stroke: #06080e;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.node.prominent .node-label { opacity: .62; }
+
+/* node interaction states */
+.node .core { transition: opacity .2s; }
+.node .ring { transition: stroke .2s, stroke-width .2s; }
+.node { transition: opacity .22s; }
+
+.nodes.focusing .node.faded   { opacity: .16; }
+.nodes.focusing .node.lit     .node-label { opacity: 1; fill: #e7ebf2; }
+.nodes.focusing .node.faded   .node-label { opacity: 0 !important; }
+#sky.zoomed-in                .node-label { opacity: .72; }
+
+.node.lit    .ring { stroke-width: 1.6px; opacity: .9; }
+.node.selected .ring  { stroke: #cdb88a !important; stroke-width: 2.2px; opacity: 1; }
+.node.selected .core  { opacity: 1; }
+.node.selected .node-label { opacity: 1 !important; fill: #cdb88a !important; }
+.node.route   .ring  { stroke: #cdb88a !important; stroke-width: 2px; opacity: 1; }
+.node.route   .node-label { opacity: 1 !important; fill: #cdb88a !important; }
+
+/* link interaction states */
+.link { transition: opacity .22s; }
+.links .link.faded { opacity: .045 !important; }
+.links .link.lit   { opacity: .8  !important; stroke-width: 1.6px; }
+.link.route {
+  stroke: #cdb88a !important;
+  opacity: 1 !important;
+  stroke-width: 2.4px !important;
+  stroke-dasharray: none !important;
+}
+
+/* ── Animated dashed links ─────────────────────────────────────────────────── */
+@keyframes dashFlow { to { stroke-dashoffset: -60; } }
+.link-animated { animation: dashFlow 2.5s linear infinite; }
+
+/* ── Panel slide-in ────────────────────────────────────────────────────────── */
+.detail-panel {
+  position: absolute; top: 0; right: 0; height: 100%; width: 356px; z-index: 28;
+  background: linear-gradient(180deg, #0c1019, #090c13);
+  border-left: 1px solid #262e3c;
+  transform: translateX(100%);
+  transition: transform .34s cubic-bezier(.4,0,.2,1);
+  overflow-y: auto; overflow-x: hidden;
+}
+.detail-panel.open { transform: translateX(0); box-shadow: -22px 0 60px rgba(0,0,0,.5); }
+.detail-panel::-webkit-scrollbar { width: 8px; }
+.detail-panel::-webkit-scrollbar-thumb { background: #19202d; border-radius: 4px; }
+
+/* ── Tour bar slide-up ─────────────────────────────────────────────────────── */
+.tourbar {
+  position: absolute;
+  left: 50%; bottom: 22px;
+  transform: translateX(-50%) translateY(20px);
+  z-index: 25;
+  width: min(560px, calc(100% - 392px));
+  background: rgba(9,12,19,.94);
+  border: 1px solid #262e3c;
+  border-radius: 13px;
+  padding: 15px 18px 13px;
+  box-shadow: 0 18px 50px rgba(0,0,0,.55);
+  backdrop-filter: blur(10px);
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s, transform .3s;
+}
+.tourbar.open {
+  opacity: 1; pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Popover animation ─────────────────────────────────────────────────────── */
+@keyframes pop {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: none; }
+}
+.pop-in { animation: pop .16s ease; }
+
+/* ── Detail panel section reveal ──────────────────────────────────────────── */
+@keyframes panelFadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.panel-section {
+  animation: panelFadeIn 0.38s ease both;
+}
+
+/* ── Story drop cap ────────────────────────────────────────────────────────── */
+.story-text::first-letter {
+  font-family: 'Cinzel', serif;
+  font-size: 2.75em;
+  font-weight: 500;
+  color: #cdb88a;
+  float: left;
+  line-height: 0.82;
+  margin: 0.06em 0.13em 0 0;
+  padding: 0;
+  text-shadow: 0 0 18px rgba(205,184,138,.22);
+}
+
+/* ── Tip tooltip ───────────────────────────────────────────────────────────── */
+#tip {
+  position: fixed; z-index: 50; pointer-events: none; opacity: 0;
+  transition: opacity .12s;
+  font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: .08em; color: #e7ebf2;
+  background: rgba(6,8,14,.9); border: 1px solid #262e3c; border-radius: 6px;
+  padding: 4px 9px; transform: translateY(-50%);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   WireframesPage
+   ══════════════════════════════════════════════════════════════════════════════ */
+@keyframes wfFade {
+  from { opacity: 0; transform: translateY(6px) }
+  to   { opacity: 1; transform: none }
+}
+@keyframes wfSlide {
+  from { opacity: 0; transform: translateY(14px) }
+  to   { opacity: 1; transform: none }
+}
+
+/* ── SVG star elements ── */
+.wf-page .wfstar   { fill: #586074 }
+.wf-page .wfmid    { fill: #8b93a4 }
+.wf-page .wfbright { fill: #cdb88a }
+
+.wf-page.dim-stars .wfstar  { opacity: .35 }
+.wf-page.dim-stars .wfmid   { opacity: .6  }
+
+.wf-page .wfstarlbl {
+  fill: #8b93a4;
+  font-family: 'EB Garamond', serif;
+  font-size: 14px;
+  letter-spacing: .04em;
+}
+.wf-page .wfstarlbl.wflbright { fill: #cdb88a }
+
+/* ── constellation lines ── */
+.wf-page .wfcline        { fill: none; stroke: #39414f; stroke-width: 1; stroke-dasharray: 1 5; stroke-linecap: round }
+.wf-page .wfcline.active { stroke: #cdb88a; stroke-width: 1.4; stroke-dasharray: 2 5; opacity: .85 }
+
+/* ── UI placeholder shapes ── */
+.wf-page .wfuifill  { fill: #0d1119; stroke: #4b5468; stroke-width: 1.3 }
+.wf-page .wfuidash  { fill: none;    stroke: #4b5468; stroke-width: 1.3; stroke-dasharray: 5 4 }
+.wf-page .wfuigold  { fill: none;    stroke: #5c5536; stroke-width: 1.3 }
+.wf-page .wfscreenframe { fill: none; stroke: #2a3140; stroke-width: 1.4 }
+
+/* ── rings / labels ── */
+.wf-page .wfring    { fill: none; stroke: #39414f; stroke-width: 1; stroke-dasharray: 2 6 }
+.wf-page .wfringlbl { fill: #5b6476; font-family: 'EB Garamond', serif; font-size: 13px; letter-spacing: .22em }
+.wf-page .wfhorizon { stroke: #2a3140; stroke-width: 1; stroke-dasharray: 3 6; fill: none }
+
+/* ── UI label text inside SVG ── */
+.wf-page .wfuitext    { fill: #5b6476; font-family: 'Kalam', cursive; font-size: 13px }
+.wf-page .wfuitext.sm { font-size: 11px }
+
+/* ── chalk annotations ── */
+.wf-page .wfanno    { font-family: 'Caveat', cursive; font-weight: 600; fill: #cabfa9; font-size: 21px }
+.wf-page .wfanno.sm { font-size: 18px; font-weight: 500; fill: #7b7565 }
+.wf-page .wfarrow   { fill: none; stroke: #7b7565; stroke-width: 1.4 }
+
+/* ── toggle states ── */
+.wf-page.hide-anno .wfanno,
+.wf-page.hide-anno .wfarrow { display: none }
+
+/* ── scrollbar inside wireframe page ── */
+.wf-page ::-webkit-scrollbar       { width: 6px }
+.wf-page ::-webkit-scrollbar-track { background: #0b0d12 }
+.wf-page ::-webkit-scrollbar-thumb { background: #2a3140; border-radius: 3px }
