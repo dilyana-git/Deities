@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import SkyGraph, { CAT, LCOL } from './components/SkyGraph.jsx'
 import DetailPanel from './components/DetailPanel.jsx'
-import WireframesPage from './components/WireframesPage.jsx'
 import { nodes as allNodes, links as allLinks } from './data/mythology.js'
 import { categoryConfig, categoryOrder } from './data/categoryConfig.js'
 import { linkTypeConfig, linkTypeOrder } from './data/linkTypeConfig.js'
@@ -488,7 +487,6 @@ export default function App() {
   const [activeTour,      setActiveTour]      = useState(null)
   const [tourStep,        setTourStep]        = useState(0)
   const [hintFaded,       setHintFaded]       = useState(false)
-  const [wireframesOpen,  setWireframesOpen]  = useState(false)
 
   /* precompute for autocomplete + BFS */
   const { sortedNodes, nodeById, adj } = useMemo(() => {
@@ -602,18 +600,6 @@ export default function App() {
           <button style={hbtn(legendOpen)} onClick={() => setLegendOpen(v => !v)}>
             LEGEND
           </button>
-          <button
-            style={{
-              ...S.hbtn,
-              borderStyle: 'dashed',
-              borderColor: wireframesOpen ? '#5a5440' : '#19202d',
-              color: wireframesOpen ? '#cdb88a' : '#3a4354',
-              background: wireframesOpen ? '#13110a' : 'transparent',
-            }}
-            onClick={() => setWireframesOpen(v => !v)}
-          >
-            WIREFRAMES
-          </button>
         </div>
       </header>
 
@@ -726,6 +712,6 @@ export default function App() {
 
       {/* tooltip anchor (position driven by mousemove in SkyGraph) */}
       <div id="tip"/>
-
-      {/* wireframes overlay */}
-      {wireframesOpen && <WireframesPage onClose={() => setWireframesOpen(false)} />}/</div>)}
+    </div>
+  )
+}

@@ -224,17 +224,6 @@ body {
   padding: 4px 9px; transform: translateY(-50%);
 }
 
-/* ══════════════════════════════════════════════════════════════════════════════
-   WireframesPage
-   ══════════════════════════════════════════════════════════════════════════════ */
-@keyframes wfFade {
-  from { opacity: 0; transform: translateY(6px) }
-  to   { opacity: 1; transform: none }
-}
-@keyframes wfSlide {
-  from { opacity: 0; transform: translateY(14px) }
-  to   { opacity: 1; transform: none }
-}
 
 /* ── SVG star elements ── */
 .wf-page .wfstar   { fill: #586074 }
@@ -280,10 +269,6 @@ body {
 .wf-page.hide-anno .wfanno,
 .wf-page.hide-anno .wfarrow { display: none }
 
-/* ── scrollbar inside wireframe page ── */
-.wf-page ::-webkit-scrollbar       { width: 6px }
-.wf-page ::-webkit-scrollbar-track { background: #0b0d12 }
-.wf-page ::-webkit-scrollbar-thumb { background: #2a3140; border-radius: 3px }
 /* ── Breathing links ───────────────────────────────────────────────────────
    Marching dashes read as a progress-bar/loading-spinner convention — too
    "technical" against this painterly mythic palette. Breathing instead pulses
