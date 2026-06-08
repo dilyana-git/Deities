@@ -42,6 +42,68 @@ body {
   text-transform: uppercase;
 }
 
+/* ── Flaring stars ─────────────────────────────────────────────────────────
+   A plain opacity-pulse on a ~1px circle never reads — the absolute pixel
+   delta is too small to register against the graph/clouds/grain. Instead each
+   flare is a separate, much larger, blurred halo (#glow filter, 5x the star's
+   radius) that blooms from invisible to --flare-peak and fades — a real
+   change in lit pixel area, not just a brightness fraction. --flare-peak/
+   --flare-dur/--flare-delay are set per element in SkyGraph so ~70 of the
+   brightest stars bloom out of phase. */
+/* Asymmetric flash — quick bloom (peak at 18%), long slow fade — reads as a
+   genuine "flare" rather than a smooth breathing pulse, and arrives fast
+   enough to actually catch the eye. */
+@keyframes star-flare {
+  0%   { opacity: 0; }
+  18%  { opacity: var(--flare-peak, 0.35); }
+  100% { opacity: 0; }
+}
+.flare {
+  animation: star-flare var(--flare-dur, 2.4s) ease-out infinite;
+  animation-delay: var(--flare-delay, 0s);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flare { animation: none; opacity: calc(var(--flare-peak, 0.35) * 0.5); }
+}
+
+/* ── Floating graph ────────────────────────────────────────────────────────
+   The settled force layout used to feel frozen. Two nested groups each
+   animate one transform axis on its own period — float-y bobs vertically
+   (~14s, the dominant "floating" cue), float-x drifts sideways more slowly
+   and faintly (~70s). Composed, they trace a slow organic loop instead of a
+   mechanical diagonal sway — like something resting on calm water, not
+   scrolling. Same layered technique as .cloud-sway-far/.cloud-far-track;
+   transform-only → GPU compositor; physics-driven node positions underneath
+   are untouched. */
+@keyframes float-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3.5px); }
+}
+@keyframes float-drift {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(2.5px); }
+}
+.float-y {
+  animation: float-bob 14s ease-in-out infinite;
+}
+.float-x {
+  animation: float-drift 70s ease-in-out infinite;
+  animation-delay: -25s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .float-y, .float-x { animation: none; }
+}
+
+/* Pause sky-layer CSS animations when the tab is hidden (mirrors .bg-clouds.paused) */
+#sky.paused .flare,
+#sky.paused .float-y,
+#sky.paused .float-x,
+#sky.paused .link-transformed,
+#sky.paused .link-cursed {
+  animation-play-state: paused;
+}
+
 /* node label */
 .node-label {
   font-family: 'Crimson Pro', Georgia, serif;
@@ -73,6 +135,7 @@ body {
 .node.selected .node-label { opacity: 1 !important; fill: #cdb88a !important; }
 .node.route   .ring  { stroke: #cdb88a !important; stroke-width: 2px; opacity: 1; }
 .node.route   .node-label { opacity: 1 !important; fill: #cdb88a !important; }
+.node.nolabel .node-label { opacity: 0 !important; }
 
 /* link interaction states */
 .link { transition: opacity .22s; }
@@ -221,19 +284,29 @@ body {
 .wf-page ::-webkit-scrollbar       { width: 6px }
 .wf-page ::-webkit-scrollbar-track { background: #0b0d12 }
 .wf-page ::-webkit-scrollbar-thumb { background: #2a3140; border-radius: 3px }
-/* ── Animated link flows ─────────────────────────────────────────────────── */
-@keyframes dash-flow {
-  to { stroke-dashoffset: -24; }
+/* ── Breathing links ───────────────────────────────────────────────────────
+   Marching dashes read as a progress-bar/loading-spinner convention — too
+   "technical" against this painterly mythic palette. Breathing instead pulses
+   opacity + stroke-width on the link itself, echoing the existing gold-pulse
+   selection-ring language. --breathe-delay (set per element in SkyGraph)
+   keeps the ~13 transformation/curse links from pulsing in lockstep. */
+@keyframes link-breathe {
+  0%, 100% { opacity: 0.22; stroke-width: 1.1px; }
+  50%      { opacity: 0.6;  stroke-width: 1.85px; }
 }
 
 .link-transformed {
-  stroke-dasharray: 10 5;
-  animation: dash-flow 0.8s linear infinite;
+  animation: link-breathe 3.6s ease-in-out infinite;
+  animation-delay: var(--breathe-delay, 0s);
 }
 
 .link-cursed {
-  stroke-dasharray: 8 4;
-  animation: dash-flow 0.6s linear infinite;
+  animation: link-breathe 2.3s ease-in-out infinite;
+  animation-delay: var(--breathe-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link-transformed, .link-cursed { animation: none; opacity: 0.4; }
 }
 
 /* ── Selected node gold pulse ────────────────────────────────────────────── */

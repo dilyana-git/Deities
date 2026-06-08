@@ -47,7 +47,6 @@ const CAT_LABEL = {
 }
 
 const LINK_DASH = {
-  transformed_into: '7 5', cursed_into: '6 4',
   created_by: '2 4', split_from: '6 3 2 3', enemy_of: '5 3',
 }
 
@@ -90,7 +89,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     nodes.forEach(n => { n.degree = adj[n.id].size })
     const maxDeg = Math.max(...nodes.map(n => n.degree))
     nodes.forEach(n => { n.prom = Math.sqrt(n.degree) / Math.sqrt(maxDeg) })
-    const radius = n => 3.0 + n.prom * 8.0
+    const radius = n => 2.2 + n.prom * 13.8
 
     /* ── svg scaffold ───────────────────────────────────────────── */
     const svg = d3.select(el)
@@ -115,20 +114,48 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     const zoomLayer    = svg.append('g').attr('class','zoom')
     const bgLayer      = zoomLayer.append('g').attr('class','bg')
-    const clusterLayer = zoomLayer.append('g').attr('class','clusters')
-    const linkLayer    = zoomLayer.append('g').attr('class','links')
-    const nodeLayer    = zoomLayer.append('g').attr('class','nodes')
+    /* float-y/float-x: two nested groups, each animating one transform axis on
+       its own period — the same layered technique the cloud strata use
+       (sway wrapper + drift track). Composed, they trace a slow organic
+       loop rather than a mechanical back-and-forth: a faint vertical bob
+       (float-y, ~14s) plus a slower, smaller horizontal drift (float-x,
+       ~70s) reads as gentle floating, not scrolling. Pure transform → GPU
+       compositor; physics-driven node positions underneath are untouched. */
+    const floatYLayer  = zoomLayer.append('g').attr('class','float-y')
+    const floatXLayer  = floatYLayer.append('g').attr('class','float-x')
+    const clusterLayer = floatXLayer.append('g').attr('class','clusters')
+    const linkLayer    = floatXLayer.append('g').attr('class','links')
+    const nodeLayer    = floatXLayer.append('g').attr('class','nodes')
 
-    /* faint background stars */
+    /* faint background stars, plus soft glow-bloom flares behind the brightest ones.
+       A 1px dot's opacity shifting by hundredths is imperceptible — but a much
+       larger blurred halo (same #glow filter the nodes use) blooming from
+       near-invisible to a soft glow reads clearly at this scale. */
     let _s = 7
     const rnd = () => { _s = (_s * 1103515245 + 12345) & 0x7fffffff; return _s / 0x7fffffff }
     const big = Math.max(W, H) * 2.2
-    bgLayer.selectAll('circle')
-      .data(d3.range(420).map(() => ({
-        x: -big * 0.3 + rnd() * big, y: -big * 0.3 + rnd() * big,
-        r: 0.4 + rnd() * 1.1, o: 0.12 + rnd() * 0.4,
-      })))
+    const starData = d3.range(420).map(() => ({
+      x: -big * 0.3 + rnd() * big, y: -big * 0.3 + rnd() * big,
+      r: 0.4 + rnd() * 1.1, o: 0.12 + rnd() * 0.4,
+    }))
+    const flareStars = starData.filter(d => d.o > 0.46)
+
+    bgLayer.selectAll('circle.flare')
+      .data(flareStars)
       .join('circle')
+      .attr('class', 'flare')
+      .attr('cx', d => d.x).attr('cy', d => d.y)
+      .attr('r',    d => d.r * 5)
+      .attr('fill', '#cdd2dc')
+      .attr('filter', 'url(#glow)')
+      .style('--flare-peak',  d => (0.32 + d.o * 0.5).toFixed(2))
+      .style('--flare-dur',   () => `${(1.5 + rnd() * 1.7).toFixed(2)}s`)
+      .style('--flare-delay', () => `-${(rnd() * 5).toFixed(2)}s`)
+
+    bgLayer.selectAll('circle.star')
+      .data(starData)
+      .join('circle')
+      .attr('class', 'star')
       .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', d => d.r)
       .attr('fill', '#cdd2dc').attr('opacity', d => d.o)
 
@@ -162,11 +189,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     /* ── links ──────────────────────────────────────────────────── */
     const linkSel = linkLayer.selectAll('line').data(links).join('line')
       .attr('class', 'link')
+      .classed('link-transformed', d => d.type === 'transformed_into')
+      .classed('link-cursed',      d => d.type === 'cursed_into')
       .attr('stroke',       d => LCOL[d.type] || '#555')
       .attr('stroke-width', d => d.type === 'enemy_of' ? 1.4 : 1.1)
       .attr('stroke-linecap', 'round')
       .attr('opacity', 0.22)
       .attr('stroke-dasharray', d => LINK_DASH[d.type] || null)
+      .style('--breathe-delay', () => `-${(rnd() * 3).toFixed(2)}s`)
 
     /* ── cluster labels ─────────────────────────────────────────── */
     const cats       = [...new Set(nodes.map(n => n.category))]
@@ -179,6 +209,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const gNode = nodeLayer.selectAll('g').data(nodes).join('g')
       .attr('class', 'node')
       .classed('prominent', d => d.prom > 0.55)
+      .classed('nolabel',   d => d.degree === 0)
       .style('cursor', 'pointer')
       .on('click',      (e, d) => { e.stopPropagation(); api.select(d.id, true) })
       .on('mouseenter', (e, d) => hoverOn(d))
@@ -263,6 +294,10 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       })
     svg.call(zoom).on('dblclick.zoom', null)
     svg.on('click', () => api.clearSelection())
+
+    /* pause twinkle/mythic-flow CSS animations when the tab is hidden */
+    const handleVisibility = () => svg.classed('paused', document.hidden)
+    document.addEventListener('visibilitychange', handleVisibility)
 
     /* fit view */
     function fitView() {
@@ -406,6 +441,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     apiRef.current = api
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
       sim.stop()
       svg.selectAll('*').remove()
       apiRef.current = null

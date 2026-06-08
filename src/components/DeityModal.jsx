@@ -14,10 +14,10 @@ const HR = () => (
 const SectionLabel = ({ children }) => (
   <div style={{
     fontFamily:    'Cinzel, serif',
-    fontSize:       9,
+    fontSize:       10,
     letterSpacing: '0.22em',
     textTransform: 'uppercase',
-    color:          '#4b5563',
+    color:          '#7b8494',
     marginBottom:   6,
   }}>
     {children}
@@ -109,17 +109,17 @@ function PromptSection({ prompt }) {
           alignItems:    'center',
           gap:            6,
           fontFamily:    'Cinzel, serif',
-          fontSize:       9,
+          fontSize:       10,
           letterSpacing: '0.2em',
           textTransform: 'uppercase',
-          color:          '#4b5563',
+          color:          '#7b8494',
           background:    'none',
           border:        'none',
           cursor:        'pointer',
           padding:        0,
         }}
-        onMouseEnter={e => e.currentTarget.style.color = '#6b7280'}
-        onMouseLeave={e => e.currentTarget.style.color = '#4b5563'}
+        onMouseEnter={e => e.currentTarget.style.color = '#9ca3af'}
+        onMouseLeave={e => e.currentTarget.style.color = '#7b8494'}
       >
         {open ? '▾' : '▸'} Midjourney Prompt
       </button>
@@ -328,7 +328,7 @@ export default function DeityModal({
             )}
             {/* Breadcrumb trail (last 2 entries) */}
             {backStack.length > 0 && (
-              <span style={{ fontFamily: 'Cinzel, serif', fontSize: 9, color: '#374151', letterSpacing: '0.08em' }}>
+              <span style={{ fontFamily: 'Cinzel, serif', fontSize: 10, color: '#7b8494', letterSpacing: '0.08em' }}>
                 {backStack.slice(-2).map(id => {
                   const n = nodes.find(x => x.id === id)
                   return n?.name ?? id
@@ -385,8 +385,8 @@ export default function DeityModal({
                 {cat.label ?? node.category}
               </span>
               {node.roman_equivalent && (
-                <span style={{ fontFamily: '"Crimson Pro", Georgia, serif', fontStyle: 'italic', fontSize: 11, color: '#4b5563' }}>
-                  Roman: <span style={{ color: '#6b7280' }}>{node.roman_equivalent}</span>
+                <span style={{ fontFamily: '"Crimson Pro", Georgia, serif', fontStyle: 'italic', fontSize: 11, color: '#7b8494' }}>
+                  Roman: <span style={{ color: '#9ca3af' }}>{node.roman_equivalent}</span>
                 </span>
               )}
             </div>
