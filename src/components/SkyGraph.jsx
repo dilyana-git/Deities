@@ -180,10 +180,10 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* ── simulation ─────────────────────────────────────────────── */
     const sim = d3.forceSimulation(nodes)
-      .force('link',    d3.forceLink(links).id(d => d.id).distance(46).strength(0.25))
-      .force('charge',  d3.forceManyBody().strength(-150).distanceMax(360))
-      .force('cluster', clusterForce(0.09))
-      .force('collide', d3.forceCollide().radius(d => radius(d) + 13).strength(0.85))
+      .force('link',    d3.forceLink(links).id(d => d.id).distance(66).strength(0.23))
+      .force('charge',  d3.forceManyBody().strength(-250).distanceMax(480))
+      .force('cluster', clusterForce(0.065))
+      .force('collide', d3.forceCollide().radius(d => radius(d) + 26).strength(0.92))
       .alpha(1).alphaDecay(0.028)
 
     /* ── links ──────────────────────────────────────────────────── */
@@ -281,7 +281,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* partial pre-settle then let sim run for gentle drift */
     sim.stop()
-    for (let i = 0; i < 160; i++) sim.tick()
+    for (let i = 0; i < 240; i++) sim.tick()
     ticked()
     sim.on('tick', ticked)
     sim.restart()
