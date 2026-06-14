@@ -224,6 +224,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('fill',     d => CAT[d.category])
       .attr('opacity',  d => 0.05 + d.prom * 0.14)
       .attr('filter',  'url(#glow)')
+      /* per-node twinkle: the glow halo breathes around its base opacity, out
+         of phase from neighbour (mirrors the background --flare-* vars). The
+         crisp core (next) stays put so figures shimmer without pulsing in size. */
+      .style('--glow-base',     d => (0.05 + d.prom * 0.14).toFixed(3))
+      .style('--twinkle-dur',   () => `${(4.5 + rnd() * 4.5).toFixed(2)}s`)
+      .style('--twinkle-delay', () => `-${(rnd() * 7).toFixed(2)}s`)
 
     gNode.append('circle').attr('class','core')
       .attr('r',       d => radius(d))
