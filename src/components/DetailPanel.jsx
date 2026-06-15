@@ -17,6 +17,17 @@ const _nodeMap = Object.fromEntries(allNodes.map(n => ({
   prom:   Math.sqrt(_adj[n.id]?.size || 0) / Math.sqrt(_maxDeg),
 })).map(n => [n.id, n]))
 
+/* ── vertical rhythm scale (4px base) ─────────────────────────────────────
+   Each tier is clearly larger than the one it nests inside, so the eye groups
+   content without borders:  within-a-thought < label→content < between-sections.
+   Tune the whole panel's density by editing these four numbers. */
+const SP = {
+  tight:   8,   // intra-element: chip/list gaps, label→inline value
+  label:  12,   // a section's rule label → its content
+  section:24,   // between whole sections (body column gap)
+  padX:   18,   // horizontal padding — constant across the panel
+}
+
 /* ── sigil ───────────────────────────────────────────────────────────── */
 function Sigil({ node, catColor }) {
   const W = 320, H = 172, cx = W / 2, cy = H / 2 + 10
@@ -97,7 +108,7 @@ function Portrait({ nodeId, onLoaded }) {
 function Section({ label, children, index = 0 }) {
   return (
     <div className="panel-section" style={{ animationDelay: `${index * 0.065 + 0.08}s` }}>
-      <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:8 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:SP.label }}>
         <div style={{ flex:1, height:1, background:'#19202d' }}/>
         <span style={{
           fontFamily:'Cinzel, serif', fontSize:8.5, letterSpacing:'.22em',
@@ -273,7 +284,7 @@ function PanelContent({ node, connections, onClose, onNavigate }) {
       )}
 
       {/* Renown bar */}
-      <div style={{ padding:'11px 18px 0' }}>
+      {/* <div style={{ padding:'11px 18px 0' }}>
         <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <span style={{
             fontFamily:'Cinzel, serif', fontSize:8, letterSpacing:'.24em',
@@ -290,17 +301,17 @@ function PanelContent({ node, connections, onClose, onNavigate }) {
             {node.degree}
           </span>
         </div>
-      </div>
+      </div> */}
 
       {/* ── Body ─────────────────────────────────────────────────────── */}
-      <div style={{ padding:'16px 18px 44px', display:'flex', flexDirection:'column', gap:18 }}>
+      <div style={{ padding:`22px ${SP.padX}px 40px`, display:'flex', flexDirection:'column', gap:SP.section }}>
 
         {/* Ornamental separator */}
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        {/* <div style={{ display:'flex', alignItems:'center', gap:10 }}>
           <div style={{ flex:1, height:1, background:'#141820' }}/>
           <span style={{ color:'#2e3545', fontSize:8 }}>✦</span>
           <div style={{ flex:1, height:1, background:'#141820' }}/>
-        </div>
+        </div> */}
 
         {node.jungian_archetype && (
           <Section label="Archetype" index={sectionIdx++}>
@@ -321,7 +332,7 @@ function PanelContent({ node, connections, onClose, onNavigate }) {
               </span>
             </div>
             {archetype && (
-              <p style={{ margin:'6px 0 0', fontStyle:'italic', fontSize:14, color:'#4e5a6a', lineHeight:1.55 }}>
+              <p style={{ margin:`${SP.tight}px 0 0`, fontStyle:'italic', fontSize:14, color:'#4e5a6a', lineHeight:1.55 }}>
                 {archetype.description}
               </p>
             )}
@@ -330,11 +341,17 @@ function PanelContent({ node, connections, onClose, onNavigate }) {
 
         {storyText && (
           <Section label="Origins" index={sectionIdx++}>
-            <p className="story-text" style={{ margin:0, fontSize:15.5, lineHeight:1.65, color:'#bcc4d2' }}>
-              {storyText}
-            </p>
+            {storyText.split(/\n\s*\n/).map((para, i) => (
+              <p
+                key={i}
+                className={i === 0 ? 'story-text' : undefined}
+                style={{ margin: i === 0 ? 0 : `${SP.tight}px 0 0`, fontSize:15.5, lineHeight:1.65, color:'#bcc4d2' }}
+              >
+                {para}
+              </p>
+            ))}
             {storySource && (
-              <p style={{ margin:'6px 0 0', fontStyle:'italic', fontSize:12, color:'#3a4354', letterSpacing:'.02em' }}>
+              <p style={{ margin:`${SP.tight}px 0 0`, fontStyle:'italic', fontSize:12, color:'#3a4354', letterSpacing:'.02em' }}>
                 — {storySource}
               </p>
             )}
@@ -343,7 +360,7 @@ function PanelContent({ node, connections, onClose, onNavigate }) {
 
         {node.domains?.length > 0 && (
           <Section label="Domains" index={sectionIdx++}>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6 /* dense inline tags — one notch under SP.tight */ }}>
               {node.domains.map(d => (
                 <span key={d} style={{
                   fontSize:12.5, fontStyle:'italic', color:'#5c6678',
@@ -357,7 +374,7 @@ function PanelContent({ node, connections, onClose, onNavigate }) {
 
         {node.notable_myths?.length > 0 && (
           <Section label="Myths" index={sectionIdx++}>
-            <ul style={{ listStyle:'none', margin:0, padding:0, display:'flex', flexDirection:'column', gap:5 }}>
+            <ul style={{ listStyle:'none', margin:0, padding:0, display:'flex', flexDirection:'column', gap:SP.tight }}>
               {node.notable_myths.map(m => (
                 <li key={m} style={{ display:'flex', gap:9, fontSize:14, color:'#4e5a6a', lineHeight:1.45 }}>
                   <span style={{ color:'#4a4030', fontSize:8, marginTop:5, flexShrink:0 }}>✦</span>
@@ -378,7 +395,7 @@ function PanelContent({ node, connections, onClose, onNavigate }) {
 
         {connections.length > 0 && (
           <Section label={`Connections · ${connections.length}`} index={sectionIdx++}>
-            <div style={{ display:'flex', flexDirection:'column', gap:1 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:4 /* padded rows already carry 7px of internal space */ }}>
               {connections.map((c, i) => {
                 const lc  = LCOL[c.type] || '#888'
                 const cfg = linkTypeConfig[c.type] || {}

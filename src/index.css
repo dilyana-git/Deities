@@ -78,11 +78,11 @@ body {
    are untouched. */
 @keyframes float-bob {
   0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-3.5px); }
+  50%      { transform: translateY(-9px); }
 }
 @keyframes float-drift {
   0%, 100% { transform: translateX(0); }
-  50%      { transform: translateX(2.5px); }
+  50%      { transform: translateX(7px); }
 }
 .float-y {
   animation: float-bob 14s ease-in-out infinite;
@@ -168,6 +168,21 @@ body {
   stroke-width: 2.4px !important;
   stroke-dasharray: none !important;
 }
+
+/* relationship labels riding the selected node's edges (fill set inline = LCOL[type]) */
+@keyframes labelIn { from { opacity: 0 } to { opacity: 1 } }
+.link-labels text {
+  font-family: 'Cinzel', serif;
+  font-size: 7px;
+  letter-spacing: .04em;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: #06080e;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  animation: labelIn .22s ease both;
+}
+#sky.paused .link-labels text { animation: none; }
 
 /* ── Animated dashed links ─────────────────────────────────────────────────── */
 @keyframes dashFlow { to { stroke-dashoffset: -60; } }

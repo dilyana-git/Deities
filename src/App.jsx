@@ -518,7 +518,7 @@ export default function App() {
     if (!activeTour || !graphRef.current) return
     const [id] = activeTour.steps[tourStep]
     graphRef.current.setTourLock(false)
-    graphRef.current.select(id, true)
+    graphRef.current.select(id, true, { tour: true })
     graphRef.current.setTourLock(true)
     if (tourStep > 0) graphRef.current.litEdge(activeTour.steps[tourStep - 1][0], id)
     else              graphRef.current.clearLitEdge()
@@ -538,6 +538,7 @@ export default function App() {
     setPathOpen(true)
     setSelectedId(null)
     graphRef.current?.clearSelection()
+    graphRef.current?.resetView()   // enter path mode at the opening overview
   }
   function closePath() {
     setPathOpen(false)
@@ -590,7 +591,15 @@ export default function App() {
         </span>
 
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-          <button style={hbtn(!!activeTour)} onClick={e => { e.stopPropagation(); setTourMenuOpen(v => !v) }}>
+          <button style={hbtn(!!activeTour)} onClick={e => {
+            e.stopPropagation()
+            if (!tourMenuOpen) {            // opening the menu → reset to the overview
+              setSelectedId(null)
+              graphRef.current?.clearSelection()
+              graphRef.current?.resetView()
+            }
+            setTourMenuOpen(v => !v)
+          }}>
             <span style={{ width:6, height:6, borderRadius:'50%', background:'currentColor', opacity:.7 }}/>
             TOURS
           </button>
@@ -677,6 +686,7 @@ export default function App() {
           onClose={() => {
             setSelectedId(null)
             graphRef.current?.clearSelection()
+            graphRef.current?.resetView()   // return to the opening overview
           }}
           onNavigate={id => {
             graphRef.current?.select(id, true)

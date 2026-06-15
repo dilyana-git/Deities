@@ -1,6 +1,7 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import * as d3 from 'd3'
 import { nodes as rawNodes, links as rawLinks } from '../data/mythology.js'
+import { linkTypeConfig } from '../data/linkTypeConfig.js'
 
 /* ── muted OKLCH palettes (matching atlas-core.js) ────────────────────── */
 const CAT = {
@@ -52,6 +53,10 @@ const LINK_DASH = {
 
 const W = 1200, H = 740
 
+/* perpetual "warm" sim energy — the antagonistic cluster/collide/charge forces
+   never fully settle, so the graph keeps drifting gently. Higher = more motion. */
+const WARM_ALPHA = 0.065
+
 /* ════════════════════════════════════════════════════════════════════════
    SkyGraph — D3 celestial-atlas graph, exposed as an imperative React ref
    ════════════════════════════════════════════════════════════════════════ */
@@ -60,7 +65,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
   const apiRef = useRef(null)
 
   useImperativeHandle(ref, () => ({
-    select           : (id, fly)  => apiRef.current?.select(id, fly),
+    select           : (id, fly, opts) => apiRef.current?.select(id, fly, opts),
     clearSelection   : ()         => apiRef.current?.clearSelection(),
     flyTo            : (id, scale)=> apiRef.current?.flyTo(id, scale),
     resetView        : ()         => apiRef.current?.resetView(),
@@ -130,6 +135,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const floatXLayer  = floatYLayer.append('g').attr('class','float-x')
     const clusterLayer = floatXLayer.append('g').attr('class','clusters')
     const linkLayer    = floatXLayer.append('g').attr('class','links')
+    const linkLabelLayer = floatXLayer.append('g').attr('class','link-labels')
     const nodeLayer    = floatXLayer.append('g').attr('class','nodes')
 
     /* faint background stars, plus soft glow-bloom flares behind the brightest ones.
@@ -222,7 +228,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .call(d3.drag()
         .on('start', (e, d) => { if (!e.active) sim.alphaTarget(0.18).restart(); d.fx = d.x; d.fy = d.y })
         .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; d.x = e.x; d.y = e.y; ticked() })
-        .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null }))
+        .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(WARM_ALPHA); d.fx = null; d.fy = null }))
 
     gNode.append('circle').attr('class','glow')
       .attr('r',        d => radius(d) * 2.4)
@@ -288,14 +294,20 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         const cx = d3.mean(ms, n => n.x), cy = d3.min(ms, n => n.y) - 26
         d3.select(this).attr('x', cx).attr('y', cy)
       })
+      positionEdgeLabels()
     }
 
-    /* partial pre-settle then let sim run for gentle drift */
+    /* Pre-settle the layout off-screen, then hold the sim "warm" so it never
+       freezes: a low constant alphaTarget keeps cluster/charge/collide
+       micro-adjusting forever. Those constraints can't all be satisfied at once
+       (every node pulled to its cluster anchor yet pushed apart by collide), so
+       the frustrated system drifts gently and perpetually — real physics, not a
+       scripted loop. Stopped when the tab is hidden (visibility handler below). */
     sim.stop()
     for (let i = 0; i < 240; i++) sim.tick()
     ticked()
     sim.on('tick', ticked)
-    sim.restart()
+    sim.alphaTarget(WARM_ALPHA).alpha(WARM_ALPHA).restart()
 
     /* ── zoom / pan ─────────────────────────────────────────────── */
     const zoom = d3.zoom().scaleExtent([0.35, 4.5])
@@ -306,8 +318,13 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     svg.call(zoom).on('dblclick.zoom', null)
     svg.on('click', () => api.clearSelection())
 
-    /* pause twinkle/mythic-flow CSS animations when the tab is hidden */
-    const handleVisibility = () => svg.classed('paused', document.hidden)
+    /* pause CSS animations AND the warm sim when the tab is hidden — the sim
+       would otherwise tick forever in the background, wasting CPU */
+    const handleVisibility = () => {
+      svg.classed('paused', document.hidden)
+      if (document.hidden) sim.stop()
+      else sim.alphaTarget(WARM_ALPHA).restart()
+    }
     document.addEventListener('visibilitychange', handleVisibility)
 
     /* fit view */
@@ -341,6 +358,64 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const srcId = l => (typeof l.source === 'object' ? l.source.id : l.source)
     const tgtId = l => (typeof l.target === 'object' ? l.target.id : l.target)
 
+    /* edge labels — short relationship names riding the selected node's lit edges */
+    const MAX_EDGE_LABELS = 10
+    function renderEdgeLabels(id) {
+      if (!id) { linkLabelLayer.selectAll('text').remove(); return }
+      let inc = links.filter(l => srcId(l) === id || tgtId(l) === id)
+      if (inc.length > MAX_EDGE_LABELS) {
+        // clutter guard: keep the highest-renown neighbours; the rest rely on hover
+        inc = inc
+          .map(l => ({ l, prom: byId[srcId(l) === id ? tgtId(l) : srcId(l)]?.prom || 0 }))
+          .sort((a, b) => b.prom - a.prom)
+          .slice(0, MAX_EDGE_LABELS)
+          .map(d => d.l)
+      }
+      linkLabelLayer.selectAll('text')
+        .data(inc, d => srcId(d) + '|' + tgtId(d) + '|' + d.type)
+        .join('text')
+        .attr('class', 'link-label')
+        .attr('text-anchor', 'middle')
+        .attr('fill', d => LCOL[d.type] || '#888')
+        .text(d => linkTypeConfig[d.type]?.label || d.type)
+      positionEdgeLabels()
+    }
+
+    function positionEdgeLabels() {
+      // empty layer (no selection) → binds 0 elements → free; safe to call every tick
+      linkLabelLayer.selectAll('text')
+        .attr('x', d => (d.source.x + d.target.x) / 2)
+        .attr('y', d => (d.source.y + d.target.y) / 2)
+    }
+
+    /* grow the clicked node above the field. Every sized piece of the glyph —
+       glow, core, clipped portrait, ring, label offset — plus the portrait's
+       clipPath circle in <defs> is rescaled off one shared transition so they
+       enlarge in lockstep (the clip MUST move too or the portrait overflows it).
+       Physics radius is left alone, so the layout doesn't reflow. */
+    const SEL_GROW = 1.7
+    let _grownId = null
+    function sizeNode(id, scale) {
+      const g = gNode.filter(n => n.id === id)
+      if (g.empty()) return
+      const d = g.datum()
+      const r = radius(d) * scale
+      const t = d3.transition().duration(280).ease(d3.easeCubicOut)
+      g.select('.glow').transition(t).attr('r', r * 2.4)
+      g.select('.core').transition(t).attr('r', r)
+      g.select('image').transition(t)
+        .attr('x', -r).attr('y', -r).attr('width', r * 2).attr('height', r * 2)
+      g.select('.ring').transition(t).attr('r', r + 1.6)
+      g.select('.node-label').transition(t).attr('x', r + 6)
+      defs.select(`#clip-${d.id} circle`).transition(t).attr('r', r)
+    }
+    function enlargeSelected(id) {
+      if (_grownId === id) return            // already correct — skip redundant transitions
+      if (_grownId) sizeNode(_grownId, 1)    // restore the previously selected node
+      if (id) sizeNode(id, SEL_GROW)
+      _grownId = id
+    }
+
     function applySelectVisual(id) {
       gNode.classed('selected', n => n.id === id)
       if (id) {
@@ -355,6 +430,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         linkSel.classed('faded', false).classed('lit', false)
         nodeLayer.classed('focusing', false)
       }
+      renderEdgeLabels(id)
+      enlargeSelected(id)
     }
 
     function hoverOn(d) {
@@ -392,13 +469,55 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       svg.transition().duration(820).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
     }
 
+    /* Frame the selected node together with ALL its neighbours, fitting them
+       into the slice of screen NOT covered by the right-hand detail panel.
+       The panel is a fixed pixel width but the graph lives in viewBox units
+       (preserveAspectRatio "meet"), so we convert px → viewBox via the meet
+       scale `s`, shrink the usable width by the panel, and shift the target
+       centre left by half the panel so nothing the user clicked hides under it. */
+    function frameSelection(id, opts = {}) {
+      const center = byId[id]; if (!center) return
+      const near = adj[id] || new Set()
+      const ns = [center, ...[...near].map(i => byId[i]).filter(Boolean)]
+      const xs = ns.map(n => n.x), ys = ns.map(n => n.y)
+      const x0 = Math.min(...xs), x1 = Math.max(...xs)
+      const y0 = Math.min(...ys), y1 = Math.max(...ys)
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2
+      const bw = Math.max(x1 - x0, 80), bh = Math.max(y1 - y0, 80)
+
+      const rect = el.getBoundingClientRect()
+      const s = Math.min(rect.width / W, rect.height / H) || 1   // screen px per viewBox unit
+
+      // Reserve screen space for whatever chrome covers the graph, then fit the
+      // cluster into the UNcovered region. Normal selection: the 356px right
+      // detail panel. Tour step: the panel is hidden, but the bottom caption
+      // bar is, so reserve height there instead. Both insets convert px →
+      // viewBox via the meet scale s, and the centre shifts away from the
+      // covered side by half the inset (same derivation on each axis).
+      const rightPx  = opts.tour ? 0 : (document.querySelector('.detail-panel')?.getBoundingClientRect().width || 356)
+      const bottomPx = opts.tour ? 150 : 0
+      const rightV   = rightPx  / s
+      const bottomV  = bottomPx / s
+
+      const padX = 96, padY = 80
+      const usableW = Math.max((rect.width  - rightPx)  / s, 120)
+      const usableH = Math.max((rect.height - bottomPx) / s, 120)
+      let k = Math.min((usableW - padX * 2) / bw, (usableH - padY * 2) / bh, 2.2)
+      k = Math.max(Math.min(k, 2.2), 0.35)                      // keep within zoom scaleExtent
+
+      const tx = (W / 2 - rightV  / 2) - k * cx                 // centre in the un-panelled width
+      const ty = (H / 2 - bottomV / 2) - k * cy                 // lift above the tour caption bar
+      svg.transition().duration(820).call(
+        zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
+    }
+
     /* ── public API ─────────────────────────────────────────────── */
     const api = {
-      select(id, fly) {
+      select(id, fly, opts) {
         if (state.pathLock) return
         state.selected = id
         applySelectVisual(id)
-        if (fly && id) api.flyTo(id, 1.9)
+        if (fly && id) frameSelection(id, opts)
         onSelect(id)
       },
       clearSelection() {
@@ -418,6 +537,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       resetView() { fitView() },
       highlightPath(ids) {
         state.pathLock = true
+        renderEdgeLabels(null)
         const set = new Set(ids)
         const edgeSet = new Set()
         for (let i = 0; i < ids.length - 1; i++) edgeSet.add(ids[i] + '|' + ids[i + 1])
