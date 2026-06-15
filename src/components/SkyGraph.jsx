@@ -495,7 +495,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       // viewBox via the meet scale s, and the centre shifts away from the
       // covered side by half the inset (same derivation on each axis).
       const rightPx  = opts.tour ? 0 : (document.querySelector('.detail-panel')?.getBoundingClientRect().width || 356)
-      const bottomPx = opts.tour ? 150 : 0
+      const bottomPx = opts.tour ? 188 : 0   // clear the (now taller) tour caption bar
       const rightV   = rightPx  / s
       const bottomV  = bottomPx / s
 
