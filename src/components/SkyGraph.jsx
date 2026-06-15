@@ -438,32 +438,102 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* edge labels — short relationship names riding the selected node's lit edges */
     const MAX_EDGE_LABELS = 10
+    const EDGE_LABEL_PAD = 6, EDGE_LABEL_H = 10
+    const edgeKey = l => srcId(l) + '|' + tgtId(l) + '|' + l.type
+    const edgeLabelSize = new Map()
+    const edgeLabelPos  = new Map()
+
+    // direction-aware: "label" when the selected node is the source (matches
+    // DetailPanel's dir === '→'), "inverseLabel" when it's the target (dir === '←')
+    function resolveLabel(l, id) {
+      const cfg = linkTypeConfig[l.type]
+      return (srcId(l) === id ? cfg?.label : cfg?.inverseLabel) || l.type
+    }
+
     function renderEdgeLabels(id) {
-      if (!id) { linkLabelLayer.selectAll('text').remove(); return }
-      let inc = links.filter(l => srcId(l) === id || tgtId(l) === id)
-      if (inc.length > MAX_EDGE_LABELS) {
-        // clutter guard: keep the highest-renown neighbours; the rest rely on hover
-        inc = inc
-          .map(l => ({ l, prom: byId[srcId(l) === id ? tgtId(l) : srcId(l)]?.prom || 0 }))
-          .sort((a, b) => b.prom - a.prom)
-          .slice(0, MAX_EDGE_LABELS)
-          .map(d => d.l)
+      if (!id) { linkLabelLayer.selectAll('text').remove(); edgeLabelPos.clear(); return }
+      const inc = links.filter(l => srcId(l) === id || tgtId(l) === id)
+
+      // dedupe: if several edges would show the same resolved text (e.g. many
+      // "Parent of" children), keep only the highest-renown neighbour's label
+      const byText = new Map()
+      for (const l of inc) {
+        const neighborId = srcId(l) === id ? tgtId(l) : srcId(l)
+        const prom = byId[neighborId]?.prom || 0
+        const text = resolveLabel(l, id)
+        const cur = byText.get(text)
+        if (!cur || prom > cur.prom) byText.set(text, { l, prom, text })
       }
-      linkLabelLayer.selectAll('text')
-        .data(inc, d => srcId(d) + '|' + tgtId(d) + '|' + d.type)
+      let items = [...byText.values()]
+
+      // clutter guard: keep the highest-renown neighbours; the rest rely on hover
+      if (items.length > MAX_EDGE_LABELS) {
+        items = items.sort((a, b) => b.prom - a.prom).slice(0, MAX_EDGE_LABELS)
+      }
+
+      const sel = linkLabelLayer.selectAll('text')
+        .data(items, d => edgeKey(d.l))
         .join('text')
         .attr('class', 'link-label')
         .attr('text-anchor', 'middle')
-        .attr('fill', d => LCOL[d.type] || '#888')
-        .text(d => linkTypeConfig[d.type]?.label || d.type)
+        .attr('fill', d => LCOL[d.l.type] || '#888')
+        .text(d => d.text)
+
+      edgeLabelSize.clear()
+      edgeLabelPos.clear()
+      sel.each(function(d) {
+        edgeLabelSize.set(edgeKey(d.l), { w: this.getComputedTextLength() + EDGE_LABEL_PAD, h: EDGE_LABEL_H })
+      })
       positionEdgeLabels()
     }
 
     function positionEdgeLabels() {
-      // empty layer (no selection) → binds 0 elements → free; safe to call every tick
-      linkLabelLayer.selectAll('text')
-        .attr('x', d => (d.source.x + d.target.x) / 2)
-        .attr('y', d => (d.source.y + d.target.y) / 2)
+      const sel = linkLabelLayer.selectAll('text')
+      if (sel.empty()) return
+
+      // seed/refresh each label's spring anchor at its edge midpoint
+      const items = []
+      sel.each(function(d) {
+        const key = edgeKey(d.l)
+        const anchor = { x: (d.l.source.x + d.l.target.x) / 2, y: (d.l.source.y + d.l.target.y) / 2 }
+        let pos = edgeLabelPos.get(key)
+        if (!pos) { pos = { x: anchor.x, y: anchor.y }; edgeLabelPos.set(key, pos) }
+        items.push({ anchor, pos, size: edgeLabelSize.get(key) || { w: 30, h: EDGE_LABEL_H } })
+      })
+
+      // light nudge pass: spring each label toward its edge midpoint, then
+      // separate any pair whose boxes overlap along their shallowest axis
+      for (let iter = 0; iter < 20; iter++) {
+        let moved = false
+        for (let i = 0; i < items.length; i++) {
+          const a = items[i]
+          a.pos.x += (a.anchor.x - a.pos.x) * 0.15
+          a.pos.y += (a.anchor.y - a.pos.y) * 0.15
+          for (let j = i + 1; j < items.length; j++) {
+            const b = items[j]
+            const dx = b.pos.x - a.pos.x
+            const dy = b.pos.y - a.pos.y
+            const overlapX = (a.size.w + b.size.w) / 2 - Math.abs(dx)
+            const overlapY = (a.size.h + b.size.h) / 2 - Math.abs(dy)
+            if (overlapX > 0 && overlapY > 0) {
+              moved = true
+              if (overlapX < overlapY) {
+                const shift = overlapX / 2 + 0.5
+                a.pos.x -= dx >= 0 ? shift : -shift
+                b.pos.x += dx >= 0 ? shift : -shift
+              } else {
+                const shift = overlapY / 2 + 0.5
+                a.pos.y -= dy >= 0 ? shift : -shift
+                b.pos.y += dy >= 0 ? shift : -shift
+              }
+            }
+          }
+        }
+        if (!moved) break
+      }
+
+      sel.attr('x', d => edgeLabelPos.get(edgeKey(d.l)).x)
+         .attr('y', d => edgeLabelPos.get(edgeKey(d.l)).y)
     }
 
     /* grow the clicked node above the field. Every sized piece of the glyph —
