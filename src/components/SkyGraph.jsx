@@ -89,7 +89,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     nodes.forEach(n => { n.degree = adj[n.id].size })
     const maxDeg = Math.max(...nodes.map(n => n.degree))
     nodes.forEach(n => { n.prom = Math.sqrt(n.degree) / Math.sqrt(maxDeg) })
-    const radius = n => 2.2 + n.prom * 13.8
+    /* node size scales with connection count (renown). The exponent on prom
+       steepens the gradient past the area-true sqrt so degree differences read
+       clearly across the field — leaf stars stay small, hubs (Zeus, Gaia)
+       grow visibly larger. prom itself is left untouched (it still drives glow
+       opacity, label prominence, renown bars). */
+    const radius = n => 2.4 + Math.pow(n.prom, 1.3) * 17
 
     /* ── svg scaffold ───────────────────────────────────────────── */
     const svg = d3.select(el)
