@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import SkyGraph, { CAT, LCOL } from './components/SkyGraph.jsx'
 import DetailPanel from './components/DetailPanel.jsx'
+import GuidedSky from './components/GuidedSky.jsx'
 import { nodes as allNodes, links as allLinks } from './data/mythology.js'
 import { categoryConfig, categoryOrder } from './data/categoryConfig.js'
 import { linkTypeConfig, linkTypeOrder } from './data/linkTypeConfig.js'
@@ -142,7 +143,7 @@ const S = {
     padding:'7px 13px', cursor:'pointer', transition:'.16s',
     display:'inline-flex', alignItems:'center', gap:7,
   },
-  hbtnActive: { color:'#cdb88a', borderColor:'#5a5440', background:'#13110a' },
+  hbtnActive: { color:'#cdb88a', border:'1px solid #5a5440', background:'#13110a' },
   overlay: {
     background:'rgba(9,12,19,.97)', border:'1px solid #262e3c', borderRadius:10,
     padding:6, boxShadow:'0 18px 48px rgba(0,0,0,.55)', backdropFilter:'blur(10px)',
@@ -485,6 +486,10 @@ export default function App() {
   const [activeTour,      setActiveTour]      = useState(null)
   const [tourStep,        setTourStep]        = useState(0)
   const [hintFaded,       setHintFaded]       = useState(false)
+  const [storyOpen,       setStoryOpen]       = useState(false)
+  const [storyTourId,     setStoryTourId]     = useState(null)
+
+  const prevBeatFigRef = useRef(null)
 
   /* precompute for autocomplete + BFS */
   const { sortedNodes, nodeById, adj } = useMemo(() => {
@@ -562,6 +567,33 @@ export default function App() {
     setSelectedId(null)
   }
 
+  /* ── Guided Sky (cinematic story mode) ──────────────────────────── */
+  function openStory() {
+    const tid = activeTour?.id ?? null
+    if (activeTour) endTour()
+    if (pathOpen) closePath()
+    setTourMenuOpen(false)
+    prevBeatFigRef.current = null
+    setStoryTourId(tid)
+    setStoryOpen(true)
+  }
+  function closeStory() {
+    setStoryOpen(false)
+    graphRef.current?.setTourLock(false)
+    graphRef.current?.clearLitEdge()
+    prevBeatFigRef.current = null
+  }
+  function handleStoryBeat(fig) {
+    graphRef.current?.select(fig, true, { tour: true })
+    graphRef.current?.setTourLock(true)
+    if (prevBeatFigRef.current && prevBeatFigRef.current !== fig) {
+      graphRef.current?.litEdge(prevBeatFigRef.current, fig)
+    } else {
+      graphRef.current?.clearLitEdge()
+    }
+    prevBeatFigRef.current = fig
+  }
+
   const handleNodeSelect = useCallback((id) => {
     setSelectedId(id)
     if (id) setHintFaded(true)
@@ -606,6 +638,10 @@ export default function App() {
           </button>
           <button style={hbtn(legendOpen)} onClick={() => setLegendOpen(v => !v)}>
             LEGEND
+          </button>
+          <button style={hbtn(storyOpen)} onClick={openStory}>
+            <span style={{ width:6, height:6, borderRadius:'50%', background:'currentColor', opacity:.7 }}/>
+            STORY
           </button>
         </div>
       </header>
@@ -720,6 +756,15 @@ export default function App() {
 
       {/* tooltip anchor (position driven by mousemove in SkyGraph) */}
       <div id="tip"/>
+
+      {/* guided sky — cinematic story overlay */}
+      {storyOpen && (
+        <GuidedSky
+          initialTourId={storyTourId}
+          onClose={closeStory}
+          onBeatChange={handleStoryBeat}
+        />
+      )}
     </div>
   )
 }
