@@ -45,8 +45,8 @@ class ConstellationEngine {
     return { g, nodes: [], edges: [], fig: null, spec: null, born: 0, dead: false, idle: false }
   }
 
-  show(fig, accent) {
-    const spec = getConstellation(fig)
+  show(fig, accent, specOverride) {
+    const spec = specOverride || getConstellation(fig)
     if (!spec) return
     this.svg.style.setProperty('--accent', accent)
     // retire the current layer (fade out), build into the other
@@ -169,7 +169,7 @@ class ConstellationEngine {
   }
 }
 
-export default function ConstellationStage({ fig, accent }) {
+export default function ConstellationStage({ fig, accent, spec }) {
   const svgRef = useRef(null)
   const engineRef = useRef(null)
 
@@ -180,8 +180,8 @@ export default function ConstellationStage({ fig, accent }) {
   }, [])
 
   useEffect(() => {
-    engineRef.current?.show(fig, accent)
-  }, [fig, accent])
+    engineRef.current?.show(fig, accent, spec)
+  }, [fig, accent, spec])
 
   return (
     <svg
