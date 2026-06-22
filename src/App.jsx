@@ -441,7 +441,7 @@ export default function App() {
       </header>
 
       {/* ── main ───────────────────────────────────────────────────── */}
-      <main style={{ position:'relative', flex:1, overflow:'hidden' }}>
+      <main className="atlas-main" style={{ position:'relative', flex:1, overflow:'hidden' }}>
         <SkyGraph ref={graphRef} onSelect={handleNodeSelect}/>
 
         {/* floating search (hidden while path panel is open) */}

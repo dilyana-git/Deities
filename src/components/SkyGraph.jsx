@@ -198,16 +198,15 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .alpha(1).alphaDecay(0.028)
 
     /* ── links ──────────────────────────────────────────────────── */
+    const NEUTRAL_EDGE = 'oklch(0.45 0.005 270)'
     const linkSel = linkLayer.selectAll('line').data(links).join('line')
       .attr('class', 'link')
-      .classed('link-transformed', d => d.type === 'transformed_into')
-      .classed('link-cursed',      d => d.type === 'cursed_into')
-      .attr('stroke',       d => LCOL[d.type] || '#555')
-      .attr('stroke-width', d => d.type === 'enemy_of' ? 1.4 : 1.1)
+      .attr('stroke', NEUTRAL_EDGE)
+      .attr('stroke-width', 0.7)
       .attr('stroke-linecap', 'round')
-      .attr('opacity', 0.22)
-      .attr('stroke-dasharray', d => LINK_DASH[d.type] || null)
-      .style('--breathe-delay', () => `-${(rnd() * 3).toFixed(2)}s`)
+      .attr('opacity', 0.08)
+      .attr('data-type-color', d => LCOL[d.type] || '#555')
+      .attr('data-type-dash', d => LINK_DASH[d.type] || '')
 
     /* ── cluster labels ─────────────────────────────────────────── */
     const cats       = [...new Set(nodes.map(n => n.category))]
@@ -249,14 +248,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(WARM_ALPHA); d.fx = null; d.fy = null }))
 
     gNode.append('circle').attr('class','glow')
-      .attr('r',        d => radius(d) * 2.4)
+      .attr('r',        d => radius(d) * 1.6)
       .attr('fill',     d => CAT[d.category])
-      .attr('opacity',  d => 0.05 + d.prom * 0.14)
-      .attr('filter',  'url(#glow)')
+      .attr('opacity',  d => 0.03 + d.prom * 0.08)
+      .attr('filter',   d => d.prom > 0.5 ? 'url(#glow)' : null)
       /* per-node twinkle: the glow halo breathes around its base opacity, out
          of phase from neighbour (mirrors the background --flare-* vars). The
          crisp core (next) stays put so figures shimmer without pulsing in size. */
-      .style('--glow-base',     d => (0.05 + d.prom * 0.14).toFixed(3))
+      .style('--glow-base',     d => (0.03 + d.prom * 0.08).toFixed(3))
       .style('--twinkle-dur',   () => `${(4.5 + rnd() * 4.5).toFixed(2)}s`)
       .style('--twinkle-delay', () => `-${(rnd() * 7).toFixed(2)}s`)
 
@@ -549,7 +548,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const d = g.datum()
       const r = radius(d) * scale
       const t = d3.transition().duration(280).ease(d3.easeCubicOut)
-      g.select('.glow').transition(t).attr('r', r * 2.4)
+      g.select('.glow').transition(t).attr('r', r * 1.6)
       g.select('.core').transition(t).attr('r', r)
       g.select('image').transition(t)
         .attr('x', -r).attr('y', -r).attr('width', r * 2).attr('height', r * 2)
@@ -562,6 +561,26 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       if (_grownId) sizeNode(_grownId, 1)    // restore the previously selected node
       if (id) sizeNode(id, SEL_GROW)
       _grownId = id
+    }
+
+    /* Apply per-type color/dash to lit edges, reset to neutral grey otherwise */
+    function styleEdgesByState() {
+      linkSel.each(function(d) {
+        const el = d3.select(this)
+        if (el.classed('lit') || el.classed('route')) {
+          el.attr('stroke', el.attr('data-type-color'))
+            .attr('stroke-dasharray', el.attr('data-type-dash') || null)
+            .classed('link-animated', !!LINK_DASH[d.type])
+            .classed('link-transformed', d.type === 'transformed_into')
+            .classed('link-cursed', d.type === 'cursed_into')
+        } else {
+          el.attr('stroke', NEUTRAL_EDGE)
+            .attr('stroke-dasharray', null)
+            .classed('link-animated', false)
+            .classed('link-transformed', false)
+            .classed('link-cursed', false)
+        }
+      })
     }
 
     function applySelectVisual(id) {
@@ -578,6 +597,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         linkSel.classed('faded', false).classed('lit', false)
         nodeLayer.classed('focusing', false)
       }
+      styleEdgesByState()
       renderEdgeLabels(id)
       enlargeSelected(id)
     }
@@ -590,6 +610,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
            .classed('lit',   n => n.id === d.id || near.has(n.id))
       linkSel.classed('faded', l => srcId(l) !== d.id && tgtId(l) !== d.id)
              .classed('lit',   l => srcId(l) === d.id || tgtId(l) === d.id)
+      styleEdgesByState()
       if (tip) { tip.textContent = d.name; tip.style.opacity = '1' }
     }
 
@@ -602,6 +623,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         nodeLayer.classed('focusing', false)
         gNode.classed('faded', false).classed('lit', false)
         linkSel.classed('faded', false).classed('lit', false)
+        styleEdgesByState()
       }
     }
 
@@ -698,6 +720,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
                  const a = srcId(l), b = tgtId(l)
                  return edgeSet.has(a + '|' + b) || edgeSet.has(b + '|' + a)
                })
+        styleEdgesByState()
         nodeLayer.classed('focusing', true)
         frameNodes(ids)
       },
