@@ -446,19 +446,155 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       }
     }
 
-    /* entry animation — staged fade-in: starfield → edges → nodes */
+    /* ── ignition sequence + parallax settle ────────────────────────
+       The cosmogony unfolds: open on near-black starfield, edges draw
+       themselves as thin light-traces (stroke-dashoffset sweep), nodes
+       ignite in genealogical order — Chaos first, then Gaia, the Titans,
+       the Olympians — hubs flare brightest, last. The whole web arrives
+       slightly over-zoomed and eases back to rest with a gentle overshoot
+       (parallax settle). Skippable on any input. */
+
+    const CAT_WAVE = {
+      primordial: 1, titan: 2, olympian: 3, chthonic: 3,
+      sea_deity: 4, nymph_minor: 4, monster: 5, hero: 5, mortal: 5,
+    }
+    const WAVE_MS = [280, 520, 880, 1200, 1480, 1700]
+    nodes.forEach(n => { n._wave = n.id === 'chaos' ? 0 : (CAT_WAVE[n.category] ?? 5) })
+
+    /* compute resting transform, then start 15% over-zoomed */
+    const _xs = nodes.map(n => n.x), _ys = nodes.map(n => n.y)
+    const _x0 = Math.min(..._xs), _x1 = Math.max(..._xs)
+    const _y0 = Math.min(..._ys), _y1 = Math.max(..._ys)
+    const _bw = _x1 - _x0, _bh = _y1 - _y0
+    const restK = (_bw > 0 && _bh > 0)
+      ? Math.min((W - 72) / _bw, (H - 72) / _bh, 1.3)
+      : 1
+    const _cx = _x0 + _bw / 2, _cy = _y0 + _bh / 2
+    const startK = restK * 1.15
+    const restTx  = d3.zoomIdentity.translate(W / 2 - restK  * _cx, H / 2 - restK  * _cy).scale(restK)
+    const startTx = d3.zoomIdentity.translate(W / 2 - startK * _cx, H / 2 - startK * _cy).scale(startK)
+
+    /* initial state: starfield dim, everything else invisible */
+    svg.call(zoom.transform, startTx)
     bgLayer.attr('opacity', 0)
-    linkLayer.attr('opacity', 0)
-    nodeLayer.attr('opacity', 0)
-    clusterLayer.attr('opacity', 0)
+    linkLayer.attr('opacity', 1)          // layer visible — edges hidden by dashoffset
+    nodeLayer.attr('opacity', 1)          // layer visible — individual nodes hidden
+    clusterLayer.attr('opacity', 1)
+    clusterSel.attr('opacity', 0)
+    gNode.attr('opacity', 0)
 
-    fitView(false)
-    requestAnimationFrame(() => fitView(false))
+    /* edges: hidden via dashoffset, slightly brighter during draw-in */
+    linkSel
+      .attr('stroke-dasharray', 2000)
+      .attr('stroke-dashoffset', 2000)
+      .attr('opacity', 0.15)
 
-    bgLayer.transition().duration(900).delay(100).attr('opacity', 1)
-    linkLayer.transition().duration(800).delay(500).attr('opacity', 1)
-    clusterLayer.transition().duration(800).delay(600).attr('opacity', 1)
-    nodeLayer.transition().duration(900).delay(700).attr('opacity', 1)
+    /* a light bloom overlay that fades out with the parallax (over-bright) */
+    const bloom = zoomLayer.append('rect')
+      .attr('width', W * 4).attr('height', H * 4)
+      .attr('x', -W * 1.5).attr('y', -H * 1.5)
+      .attr('fill', '#1a1e2a').attr('opacity', 0.18)
+      .attr('pointer-events', 'none')
+
+    let _ignitionDone = false
+
+    /* phase 1: starfield materialises */
+    bgLayer.transition('ign').duration(700).delay(80).attr('opacity', 1)
+
+    /* phase 2: edges draw in — each timed to the later of its two endpoints */
+    linkSel.each(function (d) {
+      const sW = d.source._wave ?? 5, tW = d.target._wave ?? 5
+      const delay = WAVE_MS[Math.max(sW, tW)] + rnd() * 180
+      d3.select(this)
+        .transition('ign').duration(550).delay(delay)
+        .ease(d3.easeCubicOut)
+        .attr('stroke-dashoffset', 0)
+        .transition('ign').duration(500)
+        .attr('opacity', 0.08)
+        .on('end', function () {
+          d3.select(this).attr('stroke-dasharray', null)
+        })
+    })
+
+    /* phase 3: nodes ignite in genealogical order */
+    gNode.each(function (d) {
+      const isHub = d.prom >= hubThreshold
+      const delay = WAVE_MS[d._wave] + (isHub ? 220 : 0) + rnd() * 100
+      d3.select(this)
+        .transition('ign').duration(380).delay(delay)
+        .ease(d3.easeCubicOut)
+        .attr('opacity', 1)
+    })
+
+    /* hub flare: top nodes get a momentary glow boost when they ignite */
+    gNode.filter(d => d.prom >= hubThreshold).each(function (d) {
+      const delay = WAVE_MS[d._wave] + 250 + rnd() * 60
+      d3.select(this).select('.glow')
+        .transition('ign').duration(260).delay(delay)
+        .attr('opacity', 0.3)
+        .transition('ign').duration(900).ease(d3.easeCubicOut)
+        .attr('opacity', 0.03 + d.prom * 0.08)
+    })
+
+    /* cluster labels seep in once their category's nodes have arrived */
+    clusterSel.each(function (c) {
+      const wave = CAT_WAVE[c] ?? 5
+      d3.select(this)
+        .transition('ign').duration(600).delay(WAVE_MS[wave] + 200)
+        .attr('opacity', 0.45)
+    })
+
+    /* phase 4: parallax settle — ease back from over-zoom to rest */
+    svg.transition('ign').duration(1500).delay(500)
+      .ease(d3.easeBackOut.overshoot(0.35))
+      .call(zoom.transform, restTx)
+
+    bloom.transition('ign').duration(1600).delay(600)
+      .ease(d3.easeCubicOut)
+      .attr('opacity', 0)
+      .on('end', function () { d3.select(this).remove() })
+
+    /* skip on any input — jump everything to its end state */
+    function finishIgnition() {
+      if (_ignitionDone) return
+      _ignitionDone = true
+
+      bgLayer.interrupt('ign').attr('opacity', 1)
+      linkSel.interrupt('ign')
+        .attr('stroke-dasharray', null)
+        .attr('stroke-dashoffset', null)
+        .attr('opacity', 0.08)
+      gNode.interrupt('ign').attr('opacity', 1)
+      gNode.selectAll('.glow').interrupt('ign')
+        .each(function (d) { d3.select(this).attr('opacity', 0.03 + d.prom * 0.08) })
+      clusterSel.interrupt('ign').attr('opacity', 0.45)
+      bloom.interrupt('ign').remove()
+      svg.interrupt('ign').call(zoom.transform, restTx)
+
+      teardownSkip()
+    }
+
+    function onSkipInput(e) {
+      if (_ignitionDone) return
+      if (e.type === 'keydown' && e.key === 'Tab') return  // let tab work normally
+      finishIgnition()
+    }
+
+    const skipOpts = { capture: true }
+    window.addEventListener('pointerdown', onSkipInput, skipOpts)
+    window.addEventListener('keydown',     onSkipInput, skipOpts)
+    window.addEventListener('wheel',       onSkipInput, skipOpts)
+
+    function teardownSkip() {
+      window.removeEventListener('pointerdown', onSkipInput, skipOpts)
+      window.removeEventListener('keydown',     onSkipInput, skipOpts)
+      window.removeEventListener('wheel',       onSkipInput, skipOpts)
+    }
+
+    /* natural completion — clean up listeners once the last wave finishes */
+    const ignitionTimer = setTimeout(() => {
+      _ignitionDone = true; teardownSkip()
+    }, WAVE_MS[5] + 1600)
 
     /* ── tooltip positioning ────────────────────────────────────── */
     const tip = document.getElementById('tip')
@@ -643,7 +779,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     }
 
     function hoverOn(d) {
-      if (state.pathLock || state.tourLock) return
+      if (state.pathLock || state.tourLock || !_ignitionDone) return
       const near = adj[d.id]
       nodeLayer.classed('focusing', true)
       gNode.classed('faded', n => n.id !== d.id && !near.has(n.id))
@@ -724,6 +860,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     /* ── public API ─────────────────────────────────────────────── */
     const api = {
       select(id, fly, opts) {
+        if (!_ignitionDone) finishIgnition()
         if (state.pathLock) return
         state.selected = id
         applySelectVisual(id)
@@ -783,6 +920,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     apiRef.current = api
 
     return () => {
+      clearTimeout(ignitionTimer)
+      teardownSkip()
       document.removeEventListener('visibilitychange', handleVisibility)
       sim.stop()
       svg.selectAll('*').remove()
