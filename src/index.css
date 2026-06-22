@@ -630,7 +630,11 @@ body {
 .gs-tale.on .gs-tale-t { color: #ece6d6; }
 
 /* ── hint ── */
-.gs-hint { position: absolute; bottom: 122px; right: 40px; z-index: 6; font-size: 12px; font-style: italic; color: var(--faint); letter-spacing: .02em; text-align: right; }
+.gs-hint {
+  position: absolute; bottom: 122px; left: 56px; z-index: 6;
+  font-size: 11px; font-style: italic; color: var(--faint); letter-spacing: .03em;
+  opacity: .5;
+}
 
 /* ── bottom scrubber ── */
 .gs-bottom { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; padding: 0 40px 26px; }

@@ -125,10 +125,12 @@ function SearchBox({ sortedNodes, onPick }) {
   const [q, setQ] = useState('')
   function handlePick(node) { setQ(''); onPick(node.id) }
   return (
-    <div style={{ position:'absolute', top:16, left:16, zIndex:20, width:262 }}>
+    <div style={{ position:'absolute', top:16, left:16, zIndex:20, width:262, opacity:0.65, transition:'opacity .2s' }}
+      onMouseEnter={e => e.currentTarget.style.opacity='1'}
+      onMouseLeave={e => e.currentTarget.style.opacity='0.65'}>
       <div style={{
         display:'flex', alignItems:'center', gap:9, padding:'9px 13px',
-        background:'rgba(10,13,20,.82)', border:'1px solid #262e3c', borderRadius:9,
+        background:'rgba(10,13,20,.72)', border:'1px solid #1e2530', borderRadius:9,
         backdropFilter:'blur(8px)',
       }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5c6678" strokeWidth="2">
@@ -497,12 +499,13 @@ export default function App() {
           onClick={() => { setSelectedId(null); graphRef.current?.clearSelection(); graphRef.current?.resetView() }}
           style={{
             position:'absolute', right:16, bottom:16, zIndex:22,
-            fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.14em', color:'#5c6678',
-            background:'rgba(9,12,19,.8)', border:'1px solid #19202d', borderRadius:7,
-            padding:'7px 12px', cursor:'pointer', transition:'.15s',
+            fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.14em', color:'#3e4654',
+            background:'rgba(9,12,19,.6)', border:'1px solid #161c28', borderRadius:7,
+            padding:'7px 12px', cursor:'pointer', transition:'opacity .2s, color .15s, border-color .15s',
+            opacity:0.6,
           }}
-          onMouseEnter={e => { e.currentTarget.style.color='#cdb88a'; e.currentTarget.style.borderColor='#5a5440' }}
-          onMouseLeave={e => { e.currentTarget.style.color='#5c6678'; e.currentTarget.style.borderColor='#19202d' }}
+          onMouseEnter={e => { e.currentTarget.style.opacity='1'; e.currentTarget.style.color='#cdb88a'; e.currentTarget.style.borderColor='#5a5440' }}
+          onMouseLeave={e => { e.currentTarget.style.opacity='0.6'; e.currentTarget.style.color='#3e4654'; e.currentTarget.style.borderColor='#161c28' }}
         >
           ⤢ RESET VIEW
         </button>

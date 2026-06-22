@@ -199,11 +199,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* ── links ──────────────────────────────────────────────────── */
     const NEUTRAL_EDGE = 'oklch(0.45 0.005 270)'
-    const linkSel = linkLayer.selectAll('line').data(links).join('line')
+    const linkSel = linkLayer.selectAll('path').data(links).join('path')
       .attr('class', 'link')
       .attr('stroke', NEUTRAL_EDGE)
       .attr('stroke-width', 0.7)
       .attr('stroke-linecap', 'round')
+      .attr('fill', 'none')
       .attr('opacity', 0.08)
       .attr('data-type-color', d => LCOL[d.type] || '#555')
       .attr('data-type-dash', d => LINK_DASH[d.type] || '')
@@ -301,9 +302,15 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* ── tick ───────────────────────────────────────────────────── */
     function ticked() {
-      linkSel
-        .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-        .attr('x2', d => d.target.x).attr('y2', d => d.target.y)
+      linkSel.attr('d', d => {
+        const sx = d.source.x, sy = d.source.y, tx = d.target.x, ty = d.target.y
+        const dx = tx - sx, dy = ty - sy
+        const len = Math.sqrt(dx * dx + dy * dy) || 1
+        const off = Math.min(len * 0.12, 14)
+        const mx = (sx + tx) / 2 - (dy / len) * off
+        const my = (sy + ty) / 2 + (dx / len) * off
+        return `M${sx},${sy}Q${mx},${my} ${tx},${ty}`
+      })
       gNode.attr('transform', d => `translate(${d.x},${d.y})`)
 
       // 1. anchor each cluster label over its category's densest sub-blob
