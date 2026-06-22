@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import ZodiacSphere from './ZodiacSphere.jsx'
 import { ZODIAC } from '../data/zodiac.js'
 
@@ -11,11 +11,11 @@ import { ZODIAC } from '../data/zodiac.js'
    glyph at the bottom to select it; drag the sphere to rotate. The
    caption panel shows the selected sign's myth.
    ════════════════════════════════════════════════════════════════════════ */
-/* soft silver-periwinkle accent used while no sign is selected (the spinning idle state) */
+
 const IDLE_ACCENT = 'oklch(0.74 0.05 250)'
 
 export default function ZodiacSky({ onClose }) {
-  const [selected, setSelected] = useState(-1)   // -1 = nothing selected → sphere spins slowly
+  const [selected, setSelected] = useState(-1)
   const captionRef = useRef(null)
 
   const sign   = selected >= 0 ? ZODIAC[selected] : null
@@ -53,17 +53,23 @@ export default function ZodiacSky({ onClose }) {
       <div className="grade stars" />
       <div className="grade vig" />
 
-      <button className="gs-exit" onClick={onClose} aria-label="Close zodiac view">✕</button>
-
-      {/* top chrome */}
-      <div className="gs-top">
-        <div className="gs-story">
+      {/* header bar */}
+      <div className="zs-header">
+        <button className="gs-exit" onClick={onClose} aria-label="Close zodiac view">✕</button>
+        <div className="zs-header-text">
           <div className="gs-kicker">Twelve Tales Written in Stars</div>
           <div className="gs-storytitle">The Zodiac</div>
         </div>
+        {sign && (
+          <div className="zs-progress">
+            <span className="zs-step">{String(selected + 1).padStart(2, '0')}</span>
+            <span className="zs-slash">/</span>
+            <span className="zs-total">12</span>
+          </div>
+        )}
       </div>
 
-      {/* caption (lower-left) — intro prompt until a sign is chosen */}
+      {/* caption — intro prompt until a sign is chosen */}
       {sign ? (
         <div className="gs-caption zs-caption" ref={captionRef}>
           <div className="gs-cat" style={{ color: accent }}>
@@ -73,7 +79,7 @@ export default function ZodiacSky({ onClose }) {
             <span className="zs-glyph" style={{ color: accent }}>{sign.symbol}</span>
             {sign.name}
           </h1>
-          <div className="gs-epithet">{sign.figure}</div>
+          <div className="gs-epithet" style={{ color: accent }}>{sign.figure}</div>
           <p className="gs-narration">{sign.text}</p>
         </div>
       ) : (
@@ -89,18 +95,22 @@ export default function ZodiacSky({ onClose }) {
 
       {/* glyph strip */}
       <div className="zs-strip">
-        {ZODIAC.map((z, i) => (
-          <button
-            key={z.id}
-            className={`zs-glyph-btn ${i === selected ? 'on' : ''}`}
-            onClick={() => setSelected(i)}
-            aria-label={z.name}
-            style={{ '--sa': z.accent }}
-          >
-            <span className="zs-sym">{z.symbol}</span>
-            <span className="zs-sname">{z.name}</span>
-          </button>
-        ))}
+        {ZODIAC.map((z, i) => {
+          const isOn = i === selected
+          return (
+            <button
+              key={z.id}
+              className={`zs-glyph-btn ${isOn ? 'on' : ''}`}
+              onClick={() => setSelected(i)}
+              aria-label={z.name}
+              style={{ '--sa': z.accent }}
+            >
+              <span className="zs-sym">{z.symbol}</span>
+              <span className="zs-sname">{z.name}</span>
+              <span className="zs-elem-dot" style={{ background: z.accent }} />
+            </button>
+          )
+        })}
       </div>
     </div>
   )

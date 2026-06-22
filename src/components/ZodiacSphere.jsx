@@ -14,11 +14,12 @@ const SVGNS = 'http://www.w3.org/2000/svg'
 const TAU   = Math.PI * 2
 const HALF  = Math.PI / 2
 
-const R         = 220     // sphere radius in SVG units
-const TILT      = 0.38    // ~22° ecliptic tilt for a nice oblique view
-const SPREAD    = 0.17    // radians — how wide each constellation spreads on the sphere
-const BG_STAR   = 160     // number of random background stars on the sphere
-const IDLE_SPIN = 0.06    // radians/sec — gentle default rotation while no sign is selected
+const R             = 220   // sphere radius in SVG units
+const TILT          = 0.38  // ~22° ecliptic tilt for a nice oblique view
+const SPREAD        = 0.17  // radians — how wide each constellation spreads on the sphere
+const BG_STAR       = 200   // background stars on the sphere
+const TWINKLE_COUNT = 40    // how many bg stars twinkle at any time
+const IDLE_SPIN     = 0.06  // radians/sec — gentle default rotation while no sign is selected
 
 /* ── math helpers ────────────────────────────────────────────────────── */
 function rotY(p, a) {
@@ -49,12 +50,13 @@ class SphereEngine {
     this.svg = svg
     this.signs = signs
     this.onSelect = onSelect
-    this.reduced = reduced     // honour prefers-reduced-motion: skip the idle auto-spin
+    this.reduced = reduced     // honour prefers-reduced-motion: skip idle auto-spin + twinkle
     this.destroyed = false
 
     this.va = 0                // current view angle (Y-rotation)
     this.target = null         // target view angle (or null = idle)
     this.selected = -1
+    this.hovered = -1
     this.drag = null           // { startX, startVA }
     this.t0 = performance.now()
 
@@ -81,8 +83,9 @@ class SphereEngine {
   _build() {
     const svg = this.svg
 
-    // sphere body
     const defs = document.createElementNS(SVGNS, 'defs')
+
+    // sphere body gradient
     const grad = document.createElementNS(SVGNS, 'radialGradient')
     grad.id = 'sphere-grad'
     grad.innerHTML = `
@@ -91,13 +94,62 @@ class SphereEngine {
       <stop offset="100%" stop-color="#06090f" stop-opacity="1"/>
     `
     defs.appendChild(grad)
+
+    // feathered edge mask
+    const mask = document.createElementNS(SVGNS, 'mask')
+    mask.id = 'sphere-feather'
+    mask.setAttribute('maskContentUnits', 'userSpaceOnUse')
+    const maskGrad = document.createElementNS(SVGNS, 'radialGradient')
+    maskGrad.id = 'feather-grad'
+    maskGrad.innerHTML = `
+      <stop offset="0%"   stop-color="white" stop-opacity="1"/>
+      <stop offset="68%"  stop-color="white" stop-opacity="1"/>
+      <stop offset="88%"  stop-color="white" stop-opacity=".45"/>
+      <stop offset="100%" stop-color="white" stop-opacity="0"/>
+    `
+    defs.appendChild(maskGrad)
+    const maskCircle = document.createElementNS(SVGNS, 'circle')
+    maskCircle.setAttribute('cx', '0')
+    maskCircle.setAttribute('cy', '0')
+    maskCircle.setAttribute('r', String(R + 20))
+    maskCircle.setAttribute('fill', 'url(#feather-grad)')
+    mask.appendChild(maskCircle)
+    defs.appendChild(mask)
+
+    // soft glow filter for ecliptic
+    const eclGlow = document.createElementNS(SVGNS, 'filter')
+    eclGlow.id = 'ecl-glow'
+    eclGlow.setAttribute('x', '-20%')
+    eclGlow.setAttribute('y', '-20%')
+    eclGlow.setAttribute('width', '140%')
+    eclGlow.setAttribute('height', '140%')
+    eclGlow.innerHTML = `<feGaussianBlur in="SourceGraphic" stdDeviation="3"/>`
+    defs.appendChild(eclGlow)
+
+    // glow filter for selected constellation edges
+    const selGlow = document.createElementNS(SVGNS, 'filter')
+    selGlow.id = 'sel-edge-glow'
+    selGlow.setAttribute('x', '-30%')
+    selGlow.setAttribute('y', '-30%')
+    selGlow.setAttribute('width', '160%')
+    selGlow.setAttribute('height', '160%')
+    selGlow.innerHTML = `<feGaussianBlur in="SourceGraphic" stdDeviation="2.5"/>`
+    defs.appendChild(selGlow)
+
     svg.appendChild(defs)
 
-    this.disc = this._circle(0, 0, R, 'zs-disc')
+    // sphere disc — feathered
+    const discGroup = document.createElementNS(SVGNS, 'g')
+    discGroup.setAttribute('mask', 'url(#sphere-feather)')
+    this.disc = this._circle(0, 0, R + 15, 'zs-disc')
     this.disc.setAttribute('fill', 'url(#sphere-grad)')
-    this.disc.setAttribute('stroke', '#1a2438')
-    this.disc.setAttribute('stroke-width', '1.2')
-    svg.appendChild(this.disc)
+    discGroup.appendChild(this.disc)
+    svg.appendChild(discGroup)
+
+    // all content under feather mask
+    this.contentG = document.createElementNS(SVGNS, 'g')
+    this.contentG.setAttribute('mask', 'url(#sphere-feather)')
+    svg.appendChild(this.contentG)
 
     // background stars
     const rnd = mulberry32(42)
@@ -107,17 +159,27 @@ class SphereEngine {
     for (let i = 0; i < BG_STAR; i++) {
       const lon = rnd() * TAU
       const lat = (rnd() - 0.5) * Math.PI * 0.92
-      const c = this._circle(0, 0, 0.6 + rnd() * 0.7, 'zs-bgstar')
+      const baseR = 0.5 + rnd() * 0.8
+      const c = this._circle(0, 0, baseR, 'zs-bgstar')
       c.style.opacity = '0'
       bgG.appendChild(c)
-      this.bgStars.push({ lon, lat, el: c })
+      this.bgStars.push({
+        lon, lat, el: c, baseR,
+        twinklePhase: rnd() * TAU,
+        twinkleSpeed: 0.8 + rnd() * 2.0,
+        twinkles: i < TWINKLE_COUNT,
+      })
     }
-    svg.appendChild(bgG)
+    this.contentG.appendChild(bgG)
 
-    // ecliptic ring
+    // ecliptic ring — glow layer + crisp layer
+    this.eclipticGlow = document.createElementNS(SVGNS, 'path')
+    this.eclipticGlow.setAttribute('class', 'zs-ecliptic-glow')
+    this.contentG.appendChild(this.eclipticGlow)
+
     this.eclipticPath = document.createElementNS(SVGNS, 'path')
     this.eclipticPath.setAttribute('class', 'zs-ecliptic')
-    svg.appendChild(this.eclipticPath)
+    this.contentG.appendChild(this.eclipticPath)
 
     // constellation groups
     this.consts = this.signs.map((sign, si) => {
@@ -127,6 +189,14 @@ class SphereEngine {
 
       const signLon = (si / 12) * TAU
       const bright = new Set(sign.b || [])
+
+      // edge glow layer (behind crisp edges, visible only for selected)
+      const edgeGlows = sign.e.map(([a, b]) => {
+        const ln = document.createElementNS(SVGNS, 'line')
+        ln.setAttribute('class', 'zs-edge-glow')
+        g.appendChild(ln)
+        return { a, b, el: ln }
+      })
 
       const edges = sign.e.map(([a, b]) => {
         const ln = document.createElementNS(SVGNS, 'line')
@@ -150,11 +220,11 @@ class SphereEngine {
 
       const label = document.createElementNS(SVGNS, 'text')
       label.setAttribute('class', 'zs-label')
-      label.textContent = `${sign.symbol} ${sign.name}`
+      label.textContent = sign.name
       g.appendChild(label)
 
-      svg.appendChild(g)
-      return { g, nodes, edges, label, signLon }
+      this.contentG.appendChild(g)
+      return { g, nodes, edges, edgeGlows, label, signLon }
     })
   }
 
@@ -176,11 +246,14 @@ class SphereEngine {
       this.svg.setPointerCapture(e.pointerId)
     }
     this._pm = (e) => {
-      if (!this.drag) return
-      const dx = e.clientX - this.drag.startX
-      totalDelta = Math.abs(dx)
-      const rect = this.svg.getBoundingClientRect()
-      this.va = this.drag.startVA + (dx / rect.width) * Math.PI * 1.6
+      if (this.drag) {
+        const dx = e.clientX - this.drag.startX
+        totalDelta = Math.abs(dx)
+        const rect = this.svg.getBoundingClientRect()
+        this.va = this.drag.startVA + (dx / rect.width) * Math.PI * 1.6
+      } else {
+        this._handleHover(e)
+      }
     }
     this._pu = (e) => {
       if (!this.drag) return
@@ -191,6 +264,26 @@ class SphereEngine {
     this.svg.addEventListener('pointerdown', this._pd)
     window.addEventListener('pointermove', this._pm)
     window.addEventListener('pointerup', this._pu)
+  }
+
+  _handleHover(e) {
+    const rect = this.svg.getBoundingClientRect()
+    const scaleX = 600 / rect.width, scaleY = 600 / rect.height
+    const mx = (e.clientX - rect.left) * scaleX - 300
+    const my = (e.clientY - rect.top)  * scaleY - 300
+
+    let bestDist = 70, bestIdx = -1
+    this.consts.forEach((c, i) => {
+      const center = this._projectSign(c.signLon, 0)
+      if (center.z < 0.05) return
+      const dx = mx - center.x, dy = my - center.y
+      const d = Math.sqrt(dx*dx + dy*dy)
+      if (d < bestDist) { bestDist = d; bestIdx = i }
+    })
+    if (bestIdx !== this.hovered) {
+      this.hovered = bestIdx
+      this.svg.style.cursor = bestIdx >= 0 ? 'pointer' : 'grab'
+    }
   }
 
   _handleClick(e) {
@@ -241,13 +334,23 @@ class SphereEngine {
     }
 
     const t = (now - this.t0) / 1000
+    const hasSel = this.selected >= 0
 
     // background stars
     this.bgStars.forEach(s => {
       const p = this._projectPoint(s.lon, s.lat)
       s.el.setAttribute('cx', p.x)
       s.el.setAttribute('cy', p.y)
-      s.el.style.opacity = p.z > 0.02 ? (0.15 + 0.2 * p.z).toFixed(3) : '0'
+      if (p.z > 0.02) {
+        let o = 0.12 + 0.25 * p.z
+        if (s.twinkles && !this.reduced) {
+          o *= 0.6 + 0.4 * Math.abs(Math.sin(t * s.twinkleSpeed + s.twinklePhase))
+        }
+        s.el.style.opacity = o.toFixed(3)
+        s.el.setAttribute('r', (s.baseR * (0.85 + 0.3 * p.z)).toFixed(2))
+      } else {
+        s.el.style.opacity = '0'
+      }
     })
 
     // ecliptic ring
@@ -260,55 +363,96 @@ class SphereEngine {
       needMove = false
     }
     this.eclipticPath.setAttribute('d', ecl)
+    this.eclipticGlow.setAttribute('d', ecl)
 
     // constellations
     this.consts.forEach((c, ci) => {
       const isSel = ci === this.selected
+      const isHov = ci === this.hovered && !isSel
       const center = this._projectSign(c.signLon, 0)
       const front = center.z > -0.05
+      const depthZ = Math.max(0, center.z)
 
       const positions = c.nodes.map(nd => this._projectPoint(nd.lon, nd.lat))
 
+      // nodes
       c.nodes.forEach((nd, ni) => {
         const p = positions[ni]
         const vis = p.z > -0.02
         const depthFade = vis ? Math.min(1, 0.3 + 0.7 * Math.max(0, p.z)) : 0
-        const selBoost = isSel ? 1 : 0.55
-        const o = depthFade * selBoost
-        const twinkle = 1 + 0.12 * Math.sin(t * (1.2 + ni * 0.3) + ci * 2.1)
+
+        let selMul
+        if (isSel) selMul = 1
+        else if (isHov) selMul = 0.65
+        else selMul = hasSel ? 0.25 : 0.55
+
+        const o = depthFade * selMul
+
+        let twinkle = 1
+        if (!this.reduced) {
+          twinkle = 1 + 0.12 * Math.sin(t * (1.2 + ni * 0.3) + ci * 2.1)
+        }
+
+        const sizeMul = isSel ? 1.4 : isHov ? 1.15 : 0.9
 
         nd.core.setAttribute('cx', p.x)
         nd.core.setAttribute('cy', p.y)
         nd.core.style.opacity = o.toFixed(3)
-        nd.core.setAttribute('r', ((nd.isB ? 2.2 : 1.4) * twinkle * (isSel ? 1.3 : 1)).toFixed(2))
+        nd.core.setAttribute('r', ((nd.isB ? 2.2 : 1.4) * twinkle * sizeMul).toFixed(2))
 
         nd.halo.setAttribute('cx', p.x)
         nd.halo.setAttribute('cy', p.y)
-        nd.halo.style.opacity = (o * (nd.isB ? 0.5 : 0.3)).toFixed(3)
-        nd.halo.setAttribute('r', ((nd.isB ? 5 : 3) * (isSel ? 1.4 : 1)).toFixed(1))
+        nd.halo.style.opacity = (o * (nd.isB ? 0.55 : 0.32) * (isSel ? 1.5 : 1)).toFixed(3)
+        nd.halo.setAttribute('r', ((nd.isB ? 5 : 3) * sizeMul * 1.1).toFixed(1))
       })
 
-      c.edges.forEach(e => {
+      // edges — crisp + glow layer
+      c.edges.forEach((e, ei) => {
         const a = positions[e.a], b = positions[e.b]
         const eVis = a.z > -0.02 && b.z > -0.02
-        const eo = eVis ? Math.min(1, 0.2 + 0.8 * Math.max(0, Math.min(a.z, b.z))) * (isSel ? 0.7 : 0.3) : 0
+        const edgeDepth = eVis ? Math.min(1, 0.2 + 0.8 * Math.max(0, Math.min(a.z, b.z))) : 0
+
+        let edgeMul
+        if (isSel) edgeMul = 0.85
+        else if (isHov) edgeMul = 0.45
+        else edgeMul = hasSel ? 0.12 : 0.3
+
+        const eo = edgeDepth * edgeMul
+
         e.el.setAttribute('x1', a.x); e.el.setAttribute('y1', a.y)
         e.el.setAttribute('x2', b.x); e.el.setAttribute('y2', b.y)
         e.el.style.opacity = eo.toFixed(3)
+        e.el.style.strokeWidth = isSel ? '1.1' : '0.6'
+
+        // glow duplicate behind selected edges
+        const ge = c.edgeGlows[ei]
+        ge.el.setAttribute('x1', a.x); ge.el.setAttribute('y1', a.y)
+        ge.el.setAttribute('x2', b.x); ge.el.setAttribute('y2', b.y)
+        ge.el.style.opacity = isSel ? (eo * 0.6).toFixed(3) : '0'
       })
 
-      // label
-      if (front) {
-        const labelO = Math.min(1, 0.15 + 0.85 * Math.max(0, center.z)) * (isSel ? 1 : 0.55)
+      // label — hide back-hemisphere, fade by depth
+      if (front && center.z > 0.05) {
+        let labelO
+        if (isSel) {
+          labelO = Math.min(1, 0.4 + 0.6 * depthZ)
+        } else if (isHov) {
+          labelO = Math.min(0.7, 0.15 + 0.55 * depthZ)
+        } else {
+          labelO = Math.min(hasSel ? 0.35 : 0.5, (hasSel ? 0.05 : 0.1) + 0.3 * depthZ)
+        }
+
         c.label.setAttribute('x', center.x)
-        c.label.setAttribute('y', center.y + (isSel ? -32 : -22))
+        c.label.setAttribute('y', center.y + (isSel ? -34 : -24))
         c.label.style.opacity = labelO.toFixed(3)
-        c.label.setAttribute('font-size', isSel ? '14' : '10')
+        c.label.setAttribute('font-size', isSel ? '14' : isHov ? '11' : '9')
+        c.label.setAttribute('font-weight', isSel ? '600' : '400')
       } else {
         c.label.style.opacity = '0'
       }
 
       c.g.classList.toggle('zs-selected', isSel)
+      c.g.classList.toggle('zs-hovered', isHov)
     })
 
     this.raf = requestAnimationFrame(this._tick.bind(this))
