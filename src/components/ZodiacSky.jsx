@@ -11,12 +11,15 @@ import { ZODIAC } from '../data/zodiac.js'
    glyph at the bottom to select it; drag the sphere to rotate. The
    caption panel shows the selected sign's myth.
    ════════════════════════════════════════════════════════════════════════ */
+/* soft silver-periwinkle accent used while no sign is selected (the spinning idle state) */
+const IDLE_ACCENT = 'oklch(0.74 0.05 250)'
+
 export default function ZodiacSky({ onClose }) {
-  const [selected, setSelected] = useState(0)
+  const [selected, setSelected] = useState(-1)   // -1 = nothing selected → sphere spins slowly
   const captionRef = useRef(null)
 
-  const sign   = ZODIAC[selected]
-  const accent = sign.accent
+  const sign   = selected >= 0 ? ZODIAC[selected] : null
+  const accent = sign ? sign.accent : IDLE_ACCENT
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -60,18 +63,29 @@ export default function ZodiacSky({ onClose }) {
         </div>
       </div>
 
-      {/* caption (lower-left) */}
-      <div className="gs-caption zs-caption" ref={captionRef}>
-        <div className="gs-cat" style={{ color: accent }}>
-          {sign.element.toUpperCase()} · {sign.dates}
+      {/* caption (lower-left) — intro prompt until a sign is chosen */}
+      {sign ? (
+        <div className="gs-caption zs-caption" ref={captionRef}>
+          <div className="gs-cat" style={{ color: accent }}>
+            {sign.element.toUpperCase()} · {sign.dates}
+          </div>
+          <h1 className="gs-name">
+            <span className="zs-glyph" style={{ color: accent }}>{sign.symbol}</span>
+            {sign.name}
+          </h1>
+          <div className="gs-epithet">{sign.figure}</div>
+          <p className="gs-narration">{sign.text}</p>
         </div>
-        <h1 className="gs-name">
-          <span className="zs-glyph" style={{ color: accent }}>{sign.symbol}</span>
-          {sign.name}
-        </h1>
-        <div className="gs-epithet">{sign.figure}</div>
-        <p className="gs-narration">{sign.text}</p>
-      </div>
+      ) : (
+        <div className="gs-caption zs-caption" ref={captionRef}>
+          <div className="gs-cat" style={{ color: accent }}>Twelve Tales · One Turning Sky</div>
+          <h1 className="gs-name">The Turning Sky</h1>
+          <p className="gs-narration">
+            The sphere drifts slowly through the heavens. Drag to turn it by hand, or choose a
+            sign below to hear how it was set among the stars.
+          </p>
+        </div>
+      )}
 
       {/* glyph strip */}
       <div className="zs-strip">

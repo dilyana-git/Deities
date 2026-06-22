@@ -14,10 +14,11 @@ const SVGNS = 'http://www.w3.org/2000/svg'
 const TAU   = Math.PI * 2
 const HALF  = Math.PI / 2
 
-const R       = 220       // sphere radius in SVG units
-const TILT    = 0.38      // ~22° ecliptic tilt for a nice oblique view
-const SPREAD  = 0.17      // radians — how wide each constellation spreads on the sphere
-const BG_STAR = 160       // number of random background stars on the sphere
+const R         = 220     // sphere radius in SVG units
+const TILT      = 0.38    // ~22° ecliptic tilt for a nice oblique view
+const SPREAD    = 0.17    // radians — how wide each constellation spreads on the sphere
+const BG_STAR   = 160     // number of random background stars on the sphere
+const IDLE_SPIN = 0.06    // radians/sec — gentle default rotation while no sign is selected
 
 /* ── math helpers ────────────────────────────────────────────────────── */
 function rotY(p, a) {
@@ -44,10 +45,11 @@ function mulberry32(seed) {
 /* ══════════════════════════════════════════════════════════════════════ */
 
 class SphereEngine {
-  constructor(svg, signs, onSelect) {
+  constructor(svg, signs, onSelect, reduced) {
     this.svg = svg
     this.signs = signs
     this.onSelect = onSelect
+    this.reduced = reduced     // honour prefers-reduced-motion: skip the idle auto-spin
     this.destroyed = false
 
     this.va = 0                // current view angle (Y-rotation)
@@ -233,9 +235,9 @@ class SphereEngine {
       this.va += diff * Math.min(1, 5 * dt)
       if (Math.abs(diff) < 0.003) this.va = this.target
     }
-    // idle drift when nothing happening
-    if (this.target == null && !this.drag) {
-      this.va += 0.06 * dt
+    // gentle default spin while no sign is selected (skipped for reduced-motion)
+    if (this.target == null && !this.drag && !this.reduced) {
+      this.va += IDLE_SPIN * dt
     }
 
     const t = (now - this.t0) / 1000
@@ -320,7 +322,8 @@ export default function ZodiacSphere({ signs, selectedIndex, onSelect }) {
   const engineRef = useRef(null)
 
   useEffect(() => {
-    engineRef.current = new SphereEngine(svgRef.current, signs, onSelect)
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    engineRef.current = new SphereEngine(svgRef.current, signs, onSelect, reduced)
     return () => engineRef.current?.destroy()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

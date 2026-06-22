@@ -25,6 +25,16 @@ export const deityStories = {
   },
   gaia: {
     story: "Gaia is the ground beneath the story — the broad and patient Earth, first of the solid things, the sure floor on which gods would later dare to stand. Out of herself alone, without seed or suitor, she brought forth the starry sky to cover her, the long bones of the mountains, and the restless swell of the sea; she is mother and grandmother and great-grandmother to nearly all that breathes.\n\nBut the Earth remembers, and the Earth takes sides. When her husband Uranus crushed their children back into her body, it was Gaia who forged the grey sickle and set it in young Cronus's waiting hand. When the Titans were chained in their turn, it was Gaia, grieving again, who bore the storm-monster Typhon to break the Olympians. She endures every reign and outlasts each one, the patient mother who buries all her kings.",
+    beats: [
+      { label: "The Broad Earth", weight: 1,
+        text: "Gaia is the ground beneath the story — the broad and patient Earth, first of the solid things, the sure floor on which gods would later dare to stand." },
+      { label: "Mother of All", weight: 0.85,
+        text: "Out of herself alone, without seed or suitor, she brought forth the starry sky to cover her, the bones of the mountains, and the swell of the sea — mother and grandmother to nearly all that breathes." },
+      { label: "The Grey Sickle", weight: 0.8, figures: ['uranus', 'cronus'],
+        text: "When her husband Uranus crushed their children back into her body, it was Gaia who forged the grey sickle and set it in young Cronus's waiting hand." },
+      { label: "She Who Buries Her Kings", weight: 0.7, figures: ['typhon'],
+        text: "When the Titans were chained in their turn, she bore the storm-monster Typhon to break the Olympians. She endures every reign and outlasts each one — the patient mother who buries all her kings." },
+    ],
     source: "Hesiod, Theogony."
   },
   uranus: {
@@ -79,6 +89,16 @@ export const deityStories = {
   // ---- TITANS ----
   cronus: {
     story: "Cronus was the youngest and most daring of the twelve Titans, the one bold enough to lift his hand against the sky — and for a long golden age he was lord of all, ruler of the world's first kingdom long before the Olympians were so much as dreamed.\n\nHe had won that crown by ambushing his own father Uranus with a sickle, and the very prophecy that armed him now turned to haunt him: that a child of his would do to him exactly as he had done. So as his sister-wife Rhea bore him god after god, he swallowed each newborn whole — Hestia, Demeter, Hera, Hades, Poseidon — all of them sinking living into his dark. But Rhea hid the last away and gave him a stone in swaddling-bands to gulp down in its place. That child was Zeus, who grew far off, returned, and forced his father to bring up again the brothers and sisters he had eaten. The stone came first, then the living gods — and the war for heaven began.",
+    beats: [
+      { label: "Lord of the Golden Age", weight: 0.85,
+        text: "Cronus was the youngest and most daring of the twelve Titans — and for a long golden age he was lord of all, ruler of the world's first kingdom long before the Olympians were dreamed." },
+      { label: "The Sickle", weight: 0.8, figures: ['uranus'],
+        text: "He had won that crown by ambushing his own father Uranus with a jagged sickle, unmanning him and seizing the cosmos for his own." },
+      { label: "The Devouring Father", weight: 1, figures: ['rhea'],
+        text: "But the prophecy that armed him turned to haunt him — that his own child would do to him as he had done. So as Rhea bore him god after god, he swallowed each newborn whole, sinking them living into his dark." },
+      { label: "The Swallowed Stone", weight: 0.75, figures: ['zeus'],
+        text: "Rhea hid the last away and gave him a stone in swaddling-bands to gulp down in its place. That child was Zeus, who would return, free his siblings, and begin the war for heaven." },
+    ],
     source: "Hesiod, Theogony."
   },
   rhea: {
@@ -141,18 +161,60 @@ export const deityStories = {
   // ---- OLYMPIANS ----
   zeus: {
     story: "Zeus is the lord of the bright sky and the gathered storm, youngest son of Cronus who grew to become the father and king of gods and men. His weapon is the thunderbolt, his word is the binding of every oath, and beneath his hand stand the oldest laws of all — the law of the guest and the host, of the suppliant and the stranger at the door.\n\nHe was the one child his father could not swallow, hidden away in a Cretan cave while a stone went down in his place; and when he came of age he forced Cronus to give up the gods he had eaten, led them through ten years of war against the Titans, and divided the conquered world with his brothers by lot — the sky for himself, the sea for Poseidon, the dead for Hades. Yet the king of all order is also its most restless transgressor: his loves, pursued as bull and swan and shower of gold, father half the heroes of the world, and feed the long, unsleeping jealousy of his queen Hera.",
+    beats: [
+      { label: "King of the Gods", weight: 1,
+        text: "Zeus is the lord of the bright sky and the gathered storm, youngest son of Cronus who grew to become the father and king of gods and men. His weapon is the thunderbolt, his word the binding of every oath." },
+      { label: "The Hidden Child", weight: 0.7, figures: ['rhea', 'cronus'],
+        text: "He was the one child his father could not swallow — hidden away in a Cretan cave while a swaddled stone went down in his place." },
+      { label: "The War in Heaven", weight: 0.9, figures: ['cronus', 'poseidon', 'hades'],
+        text: "Come of age, he forced Cronus to disgorge the swallowed gods, led them through ten years of war against the Titans, and divided the conquered world by lot: the sky for himself, the sea for Poseidon, the dead for Hades." },
+      { label: "Keeper of Law", weight: 0.6,
+        text: "Beneath his hand stand the oldest laws of all — the law of the guest and the host, of the suppliant and the stranger at the door." },
+      { label: "The Restless Lover", weight: 0.8, figures: ['hera'],
+        text: "Yet the king of order is its most restless transgressor: his loves, pursued as bull and swan and shower of gold, father half the heroes of the world — and feed the long, unsleeping jealousy of his queen Hera." },
+    ],
     source: "Hesiod, Theogony."
   },
   hera: {
     story: "Hera is the queen of heaven and the goddess of marriage and the marriage-bond, reigning at Zeus's side with a cold and regal splendor. Daughter of Cronus and Rhea, swallowed and brought up again with the rest of her kind, she is the keeper of the sacred vow — and the one most deeply wronged by the very god who keeps it least.\n\nMuch of her story, and much of her power, is spent in answering her husband's faithlessness. She hounds his lovers across the earth and torments the children they bear him, none more relentlessly than Heracles, on whom she set both madness and a lifetime of impossible labors. She bound hundred-eyed Argus to watch the girl Io, drove gentle Callisto into the shape of a bear, and lured Semele into the demand that burned her to ash. Wronged, magnificent, and unforgiving, Hera is the storm that each of Zeus's betrayals must sooner or later weather.",
+    beats: [
+      { label: "Queen of Heaven", weight: 0.95,
+        text: "Hera is the queen of heaven and the goddess of marriage and the marriage-bond, reigning at Zeus's side with a cold and regal splendor." },
+      { label: "Daughter of Titans", weight: 0.6, figures: ['cronus', 'rhea'],
+        text: "Daughter of Cronus and Rhea, swallowed and brought up again with the rest of her kind, she is the keeper of the sacred vow — and the one most deeply wronged by the very god who keeps it least." },
+      { label: "The Wronged Wife", weight: 0.8, figures: ['zeus', 'heracles'],
+        text: "Much of her story, and much of her power, is spent answering her husband's faithlessness — she hounds his lovers across the earth and torments the children they bear him, none more relentlessly than Heracles." },
+      { label: "The Storm", weight: 1, figures: ['io', 'callisto', 'semele'],
+        text: "She bound hundred-eyed Argus to watch Io, drove gentle Callisto into the shape of a bear, and lured Semele into the demand that burned her to ash — the storm each of Zeus's betrayals must sooner or later weather." },
+    ],
     source: "Hesiod, Theogony; Homer, Iliad."
   },
   poseidon: {
     story: "Poseidon is the lord of the sea, the shaker of the earth, and the maker of horses — a vast and moody god whose trident lifts the storm-wave and splits the dry ground into earthquake. Brother to Zeus and Hades, he drew the wide salt water as his portion when the three sons of Cronus divided the world between them.\n\nHe is a god of long memory and longer grudges. He courted the fleeing sea-nymph Amphitrite and made her his queen; he lost the contest for Athens when Athena's olive outweighed his gift of a salt spring, and never once forgave the city for it. Above all he pursued Odysseus across ten bitter years of sea for blinding his son, the Cyclops Polyphemus, raising every wind and wreck he could against the man — for to wrong what Poseidon loves is to make an enemy of the whole heaving ocean, and the ocean does not tire.",
+    beats: [
+      { label: "Lord of the Sea", weight: 1,
+        text: "Poseidon is the lord of the sea, the shaker of the earth, and the maker of horses — a vast and moody god whose trident lifts the storm-wave and splits the dry ground into earthquake." },
+      { label: "A Brother's Portion", weight: 0.65, figures: ['zeus', 'hades'],
+        text: "Brother to Zeus and Hades, he drew the wide salt water as his share when the three sons of Cronus divided the conquered world between them." },
+      { label: "The Contest for Athens", weight: 0.75, figures: ['athena'],
+        text: "He lost the contest for Athens when Athena's olive outweighed his gift of a salt spring — and never once forgave the city for it." },
+      { label: "Long Memory, Longer Grudge", weight: 0.9, figures: ['odysseus'],
+        text: "Above all he pursued Odysseus across ten bitter years of sea for blinding his son, the Cyclops Polyphemus — for to wrong what Poseidon loves is to make an enemy of the whole heaving ocean." },
+    ],
     source: "Homer, Odyssey; Hesiod, Theogony."
   },
   demeter: {
     story: "Demeter is the goddess of the grain and the gift of the harvest, the gentle power who first taught mortals to break the earth, sow the seed, and reap the standing corn. Where she walks in contentment the fields run gold to the horizon; where she grieves, nothing at all will grow.\n\nAnd once she grieved beyond all bearing. While her daughter Persephone gathered flowers in a meadow, the ground tore open and Hades rose and bore the girl down to be his queen. Demeter searched the whole wide world with a kindled torch in either hand, and when at last she learned the truth she let the soil go barren — a famine that would have ended humankind, had Zeus not forced a bargain. But Persephone had already eaten the seeds of a pomegranate in the dark, and so was bound to descend again for a part of every year. That is why the world goes cold and bare when the daughter goes down, and breaks open into green once more when she climbs back into her mother's arms.",
+    beats: [
+      { label: "Goddess of the Grain", weight: 0.9,
+        text: "Demeter is the goddess of the grain and the gift of the harvest, who first taught mortals to break the earth, sow the seed, and reap the standing corn. Where she walks content, the fields run gold to the horizon." },
+      { label: "The Stolen Daughter", weight: 1, figures: ['persephone', 'hades'],
+        text: "While her daughter Persephone gathered flowers in a meadow, the ground tore open and Hades rose and bore the girl down to be his queen of the dead." },
+      { label: "The Searching Grief", weight: 0.85, figures: ['zeus'],
+        text: "Demeter searched the whole wide world with a kindled torch in either hand; and when she learned the truth, she let the soil go barren — a famine that would have ended humankind, had Zeus not forced a bargain." },
+      { label: "The Turning of the Year", weight: 0.8, figures: ['persephone'],
+        text: "But Persephone had eaten the seeds of a pomegranate in the dark, and so must descend again each year. The world goes cold and bare when the daughter goes down, and breaks into green when she climbs back into her mother's arms." },
+    ],
     source: "Homeric Hymn to Demeter; Ovid, Metamorphoses V."
   },
   hestia: {
@@ -161,6 +223,16 @@ export const deityStories = {
   },
   athena: {
     story: "Athena is the grey-eyed goddess of wisdom, of just war and shrewd strategy, and of every disciplined craft from the loom to the shipwright's adze. Cool, clear, and undeceived, she is the patron of heroes who think — guiding Perseus to Medusa, steadying Odysseus through every trial, and giving the city of Athens both her name and her grey-green olive tree.\n\nHer birth is among the strangest in all heaven. Zeus had swallowed her mother Metis, the Titaness of cunning, for fear of the child she carried; but the child grew within him all the same, until his skull split with an unbearable ache and Athena sprang forth full-grown, in gleaming armor, with a war-cry that rang across Olympus. Born of pure mind and never of a mother's body, she is wisdom that has known no childhood — and she guards her dignity without mercy, loosing the proud mortal Arachne into the shape of the first spider for daring to match her at the loom.",
+    beats: [
+      { label: "Grey-Eyed Wisdom", weight: 1,
+        text: "Athena is the grey-eyed goddess of wisdom, of just war and shrewd strategy, and of every disciplined craft. Cool, clear, and undeceived, she is the patron of heroes who think." },
+      { label: "Born from the Skull of Zeus", weight: 0.95, figures: ['zeus', 'metis'],
+        text: "Zeus had swallowed her mother Metis for fear of the child she carried; but the child grew within him until his skull split and Athena sprang forth full-grown, in gleaming armor, with a war-cry that rang across Olympus." },
+      { label: "Patron of Heroes", weight: 0.75, figures: ['perseus', 'odysseus'],
+        text: "Wisdom that knew no childhood, she guides Perseus to Medusa, steadies Odysseus through every trial, and gave the city of Athens both her name and her grey-green olive tree." },
+      { label: "No Mercy for Pride", weight: 0.7, figures: ['arachne'],
+        text: "She guards her dignity without mercy — loosing the proud mortal Arachne into the shape of the first spider for daring to match her at the loom." },
+    ],
     source: "Hesiod, Theogony; Ovid, Metamorphoses VI. Further reading: Ted Hughes, Tales from Ovid."
   },
   apollo: {
@@ -181,6 +253,16 @@ export const deityStories = {
   },
   aphrodite: {
     story: "Aphrodite is the goddess of love, desire, and beauty — the irresistible power that bends gods and mortals alike, that raises cities up and pulls them down, that no will in heaven or earth can finally refuse. Where she passes, the grass breaks into flower and the doves wheel overhead; what she wants, sooner or later, she has.\n\nShe was born of no mother, out of an act of violence turned somehow to beauty. When Cronus cut the manhood from his father Uranus and flung it into the sea, a white foam gathered about the drifting flesh upon the waves, and out of that foam rose a goddess already full-grown, who stepped ashore on Cyprus with flowers springing wherever her feet touched the sand. So the gentlest of all powers came from the cruelest of deeds — and perhaps that is why her gifts cut both ways, her favor and her spite each able, in a single season, to remake the whole of the world.",
+    beats: [
+      { label: "Goddess of Desire", weight: 1,
+        text: "Aphrodite is the goddess of love, desire, and beauty — the irresistible power that bends gods and mortals alike, that no will in heaven or earth can finally refuse." },
+      { label: "Born of the Foam", weight: 0.95, figures: ['cronus', 'uranus'],
+        text: "She was born of no mother. When Cronus cut the manhood from Uranus and flung it into the sea, a white foam gathered about the drifting flesh, and out of it rose a goddess already full-grown." },
+      { label: "Ashore on Cyprus", weight: 0.7,
+        text: "She stepped ashore on Cyprus with flowers springing wherever her feet touched the sand — the gentlest of all powers, come from the cruelest of deeds." },
+      { label: "A Gift That Cuts Both Ways", weight: 0.8,
+        text: "Perhaps that is why her gifts cut both ways: her favor and her spite are each able, in a single season, to remake the whole of the world." },
+    ],
     source: "Hesiod, Theogony."
   },
   hermes: {
@@ -195,10 +277,30 @@ export const deityStories = {
   // ---- CHTHONIC ----
   hades: {
     story: "Hades is the lord of the dead and the master of the world below, a stern and shadowed god who rules the silent realm that bears his name. He is not wicked, only final — cold and just in the way death itself is just, neither cruel nor kind, simply the end from which there is no road back.\n\nWhen the three sons of Cronus divided the conquered cosmos by lot, the dim underworld fell to Hades, and he went down into it and seldom climbed out again. His one great venture into the upper world was a theft of love: he saw Persephone gathering flowers, opened the earth beneath her feet, and bore her down in his black chariot to be his queen. When her mother's grief began to starve the living world, he let the girl return — but not before she had tasted the pomegranate of the dead, which bound her to come back to him each year. So even the keeper of everything, who never lets go, learned to share what he loved with the world above.",
+    beats: [
+      { label: "Lord of the Dead", weight: 1,
+        text: "Hades is the lord of the dead and master of the world below — not wicked, only final, cold and just in the way death itself is just, the end from which there is no road back." },
+      { label: "The Underworld by Lot", weight: 0.65, figures: ['zeus', 'poseidon'],
+        text: "When the three sons of Cronus divided the cosmos by lot, the dim underworld fell to Hades, and he went down into it and seldom climbed out again." },
+      { label: "A Theft of Love", weight: 0.9, figures: ['persephone'],
+        text: "His one great venture into the upper world was a theft of love: he saw Persephone gathering flowers, opened the earth beneath her feet, and bore her down to be his queen." },
+      { label: "The Bargain", weight: 0.75, figures: ['demeter'],
+        text: "When her mother's grief began to starve the world, he let the girl return — but not before she had tasted the pomegranate of the dead, which bound her back to him each year." },
+    ],
     source: "Homeric Hymn to Demeter; Hesiod, Theogony."
   },
   persephone: {
     story: "Persephone is the maiden of spring who became the queen of the dead — two goddesses in a single body, the girl gathering flowers in the sun and the dread sovereign of the world below. Daughter of Demeter and Zeus, she is the green shoot and the grave at once, and the turning between them is the turning of the year.\n\nShe was a girl in a meadow, reaching for a strange and beautiful narcissus, when the ground tore open beneath her and Hades surged up in his dark chariot and seized her, dragging her down before she could so much as cry out. In the world below, in her grief, she ate six small seeds of a pomegranate — and that taste of the food of the dead bound her to the shadows forever after. So a bargain was struck: she rises each year to walk the earth at her mother's side, and the world breaks into flower at her coming; and each year she must go back down to her cold throne, and the world withers behind her. Spring is her ascent, and winter is the long descent into the dark.",
+    beats: [
+      { label: "Maiden of Spring", weight: 0.85,
+        text: "Persephone is the maiden of spring who became the queen of the dead — two goddesses in one body, the girl gathering flowers in the sun and the dread sovereign of the world below." },
+      { label: "The Opening Earth", weight: 1, figures: ['hades'],
+        text: "She was reaching for a strange and beautiful narcissus when the ground tore open beneath her and Hades surged up in his dark chariot and seized her, dragging her down before she could cry out." },
+      { label: "The Pomegranate Seeds", weight: 0.95,
+        text: "In the world below, in her grief, she ate six small seeds of a pomegranate — and that taste of the food of the dead bound her to the shadows forever after." },
+      { label: "Spring and Winter", weight: 0.8, figures: ['demeter'],
+        text: "So a bargain was struck: she rises each year and the world breaks into flower at her coming, then descends again to her cold throne. Her ascent is spring; her descent, the long winter dark." },
+    ],
     source: "Homeric Hymn to Demeter; Ovid, Metamorphoses V."
   },
   hecate: {

@@ -55,7 +55,7 @@ const W = 1200, H = 740
 
 /* perpetual "warm" sim energy — the antagonistic cluster/collide/charge forces
    never fully settle, so the graph keeps drifting gently. Higher = more motion. */
-const WARM_ALPHA = 0.065
+const WARM_ALPHA = 0.045
 
 /* ════════════════════════════════════════════════════════════════════════
    SkyGraph — D3 celestial-atlas graph, exposed as an imperative React ref

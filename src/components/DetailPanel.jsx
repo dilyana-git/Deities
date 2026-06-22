@@ -162,6 +162,59 @@ export default function DetailPanel({ nodeId, onClose, onNavigate }) {
   )
 }
 
+const GOLD = '#cdb88a'
+
+/* ── Constellation spine: the "Origins" story told as a vertical sequence of
+   star-marked beats on a dashed thread in the left margin — a little vertical
+   constellation. Each beat's star core scales and brightens with `weight`, so the
+   pivotal turns read as the brightest stars. Beats carrying `figures` become
+   clickable, flying the graph to the beat's central figure via onNavigate. The
+   panel falls back to plain prose for any figure whose entry has no `beats`. */
+function StorySpine({ beats, catColor, source, onNavigate }) {
+  return (
+    <div style={{ position:'relative' }}>
+      {/* the thread */}
+      <div style={{ position:'absolute', left:6, top:8, bottom: source ? 34 : 8, width:0,
+        borderLeft:`1px dashed ${catColor}66` }}/>
+      {beats.map((b, i) => {
+        const w = b.weight ?? 0.7
+        const core = 4 + w * 6
+        const nav = (b.figures?.length && onNavigate) ? () => onNavigate(b.figures[0]) : null
+        return (
+          <div key={i}
+            onClick={nav || undefined}
+            onKeyDown={nav ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nav() } } : undefined}
+            onMouseEnter={nav ? e => { e.currentTarget.style.transform = 'translateX(3px)' } : undefined}
+            onMouseLeave={nav ? e => { e.currentTarget.style.transform = 'translateX(0)' } : undefined}
+            role={nav ? 'button' : undefined}
+            tabIndex={nav ? 0 : undefined}
+            title={nav ? `Fly to ${_nodeMap[b.figures[0]]?.name || b.figures[0]}` : undefined}
+            style={{ position:'relative', paddingLeft:30,
+              paddingBottom: i < beats.length - 1 ? 22 : 0,
+              cursor: nav ? 'pointer' : 'default', transition:'transform .15s', outline:'none' }}>
+            {/* star node */}
+            <div style={{ position:'absolute', left:0, top:3, width:13, height:13 }}>
+              <div style={{ position:'absolute', inset:0, borderRadius:'50%', background:catColor,
+                opacity:.16, transform:'scale(2)', filter:'blur(2px)' }}/>
+              <div style={{ position:'absolute', inset:`${(13 - core) / 2}px`, borderRadius:'50%',
+                background:'#ece6d6', boxShadow:`0 0 ${4 + w * 6}px ${GOLD}${w > .8 ? 'aa' : '77'}` }}/>
+              <div style={{ position:'absolute', inset:0, borderRadius:'50%',
+                border:`1px solid ${catColor}`, opacity:.5 }}/>
+            </div>
+            <div style={{ fontFamily:'Cinzel, serif', fontSize:9.5, letterSpacing:'.16em',
+              textTransform:'uppercase', color:GOLD, marginBottom:5, marginTop:1 }}>{b.label}</div>
+            <p style={{ margin:0, fontSize:14.5, lineHeight:1.58, color:'#c2cad8' }}>{b.text}</p>
+          </div>
+        )
+      })}
+      {source && (
+        <p style={{ margin:'20px 0 0', paddingLeft:30, fontStyle:'italic', fontSize:12,
+          color:'#3a4354' }}>— {source}</p>
+      )}
+    </div>
+  )
+}
+
 /* ── main panel body ─────────────────────────────────────────────────── */
 function PanelContent({ node, connections, onClose, onNavigate }) {
   const catCfg   = categoryConfig[node.category] || {}
@@ -339,21 +392,27 @@ function PanelContent({ node, connections, onClose, onNavigate }) {
           </Section>
         )}
 
-        {storyText && (
-          <Section label="Origins" index={sectionIdx++}>
-            {storyText.split(/\n\s*\n/).map((para, i) => (
-              <p
-                key={i}
-                className={i === 0 ? 'story-text' : undefined}
-                style={{ margin: i === 0 ? 0 : `${SP.tight}px 0 0`, fontSize:15.5, lineHeight:1.65, color:'#bcc4d2' }}
-              >
-                {para}
-              </p>
-            ))}
-            {storySource && (
-              <p style={{ margin:`${SP.tight}px 0 0`, fontStyle:'italic', fontSize:12, color:'#3a4354', letterSpacing:'.02em' }}>
-                — {storySource}
-              </p>
+        {(story?.beats?.length || storyText) && (
+          <Section label={story?.beats?.length ? 'The Story in Stars' : 'Origins'} index={sectionIdx++}>
+            {story?.beats?.length ? (
+              <StorySpine beats={story.beats} catColor={catColor} source={storySource} onNavigate={onNavigate}/>
+            ) : (
+              <>
+                {storyText.split(/\n\s*\n/).map((para, i) => (
+                  <p
+                    key={i}
+                    className={i === 0 ? 'story-text' : undefined}
+                    style={{ margin: i === 0 ? 0 : `${SP.tight}px 0 0`, fontSize:15.5, lineHeight:1.65, color:'#bcc4d2' }}
+                  >
+                    {para}
+                  </p>
+                ))}
+                {storySource && (
+                  <p style={{ margin:`${SP.tight}px 0 0`, fontStyle:'italic', fontSize:12, color:'#3a4354', letterSpacing:'.02em' }}>
+                    — {storySource}
+                  </p>
+                )}
+              </>
             )}
           </Section>
         )}
