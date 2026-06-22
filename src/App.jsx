@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import SkyGraph, { CAT, LCOL } from './components/SkyGraph.jsx'
 import DetailPanel from './components/DetailPanel.jsx'
 import GuidedSky from './components/GuidedSky.jsx'
+import ZodiacSky from './components/ZodiacSky.jsx'
 import { nodes as allNodes, links as allLinks } from './data/mythology.js'
 import { categoryConfig, categoryOrder } from './data/categoryConfig.js'
 import { linkTypeConfig, linkTypeOrder } from './data/linkTypeConfig.js'
@@ -488,6 +489,7 @@ export default function App() {
   const [hintFaded,       setHintFaded]       = useState(false)
   const [storyOpen,       setStoryOpen]       = useState(false)
   const [storyTourId,     setStoryTourId]     = useState(null)
+  const [zodiacOpen,      setZodiacOpen]      = useState(false)
 
   const prevBeatFigRef = useRef(null)
 
@@ -643,6 +645,10 @@ export default function App() {
             <span style={{ width:6, height:6, borderRadius:'50%', background:'currentColor', opacity:.7 }}/>
             STORY
           </button>
+          <button style={hbtn(zodiacOpen)} onClick={() => setZodiacOpen(true)}>
+            <span style={{ fontSize:12, lineHeight:1, opacity:.8 }}>✦</span>
+            ZODIAC
+          </button>
         </div>
       </header>
 
@@ -765,6 +771,9 @@ export default function App() {
           onBeatChange={handleStoryBeat}
         />
       )}
+
+      {/* zodiac sky — standalone cinematic zodiac view */}
+      {zodiacOpen && <ZodiacSky onClose={() => setZodiacOpen(false)} />}
     </div>
   )
 }
