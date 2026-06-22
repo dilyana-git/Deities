@@ -130,6 +130,21 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('r', d => radius(d))
 
     const zoomLayer    = svg.append('g').attr('class','zoom')
+
+    /* ── depth haze: a faint nebula gradient that drifts behind everything ── */
+    const hazeLayer = zoomLayer.append('g').attr('class','haze-layer')
+    const hazeGrad = defs.append('radialGradient').attr('id', 'haze-grad')
+      .attr('cx', '50%').attr('cy', '50%').attr('r', '50%')
+    hazeGrad.append('stop').attr('offset', '0%').attr('stop-color', '#2a1a3a').attr('stop-opacity', 0.35)
+    hazeGrad.append('stop').attr('offset', '55%').attr('stop-color', '#1a2436').attr('stop-opacity', 0.15)
+    hazeGrad.append('stop').attr('offset', '100%').attr('stop-color', '#06080e').attr('stop-opacity', 0)
+    hazeLayer.append('ellipse')
+      .attr('class', 'depth-haze')
+      .attr('cx', W * 0.55).attr('cy', H * 0.45)
+      .attr('rx', W * 0.7).attr('ry', H * 0.6)
+      .attr('fill', 'url(#haze-grad)')
+      .attr('opacity', 0.4)
+
     /* background stars sit inside their own slow-drift wrapper so they
        move at a different speed from the constellation field — parallax depth */
     const bgDrift      = zoomLayer.append('g').attr('class','bg-drift')
@@ -190,6 +205,55 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .style('--shimmer-base', d => d.o.toFixed(3))
       .style('--shimmer-dur', () => `${(3 + rnd() * 4).toFixed(2)}s`)
       .style('--shimmer-delay', () => `-${(rnd() * 7).toFixed(2)}s`)
+
+    /* ── shooting stars: a rare meteor every 20-40s ─────────────── */
+    const meteorLayer = bgDrift.append('g').attr('class', 'meteors')
+    let _meteorTimer = null
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    function spawnMeteor() {
+      if (document.hidden || reduced) {
+        _meteorTimer = setTimeout(spawnMeteor, 5000)
+        return
+      }
+      const delay = 20000 + Math.random() * 20000
+      _meteorTimer = setTimeout(() => {
+        const edge = Math.floor(Math.random() * 4)
+        let sx, sy, angle
+        if (edge === 0) { sx = Math.random() * big; sy = -big * 0.2; angle = 0.3 + Math.random() * 0.5 }
+        else if (edge === 1) { sx = big; sy = Math.random() * big * 0.5; angle = Math.PI * 0.55 + Math.random() * 0.4 }
+        else if (edge === 2) { sx = Math.random() * big; sy = big * 0.8; angle = -0.5 + Math.random() * 0.3 }
+        else { sx = -big * 0.15; sy = Math.random() * big * 0.4; angle = -0.2 + Math.random() * 0.4 }
+        const len = 80 + Math.random() * 160
+        const ex = sx + Math.cos(angle) * len
+        const ey = sy + Math.sin(angle) * len
+        const grad = defs.append('linearGradient')
+          .attr('id', 'mg-' + Date.now())
+          .attr('gradientUnits', 'userSpaceOnUse')
+          .attr('x1', sx).attr('y1', sy).attr('x2', ex).attr('y2', ey)
+        grad.append('stop').attr('offset', '0%').attr('stop-color', '#fff').attr('stop-opacity', 0)
+        grad.append('stop').attr('offset', '40%').attr('stop-color', '#e8dcc8').attr('stop-opacity', 0.7)
+        grad.append('stop').attr('offset', '100%').attr('stop-color', '#fff').attr('stop-opacity', 0.9)
+        const gId = grad.attr('id')
+        const line = meteorLayer.append('line')
+          .attr('x1', sx).attr('y1', sy).attr('x2', sx).attr('y2', sy)
+          .attr('stroke', `url(#${gId})`)
+          .attr('stroke-width', 1.2 + Math.random() * 0.8)
+          .attr('stroke-linecap', 'round')
+          .attr('opacity', 0)
+        const dur = 350 + Math.random() * 250
+        line.transition().duration(dur * 0.15).attr('opacity', 0.8)
+          .transition().duration(dur)
+          .attr('x1', ex).attr('y1', ey)
+          .attr('x2', ex + Math.cos(angle) * len * 0.4)
+          .attr('y2', ey + Math.sin(angle) * len * 0.4)
+          .transition().duration(dur * 0.3)
+          .attr('opacity', 0)
+          .on('end', () => { line.remove(); grad.remove() })
+        spawnMeteor()
+      }, delay)
+    }
+    spawnMeteor()
 
     /* initial positions — cluster anchors + jitter */
     nodes.forEach(n => {
@@ -1068,6 +1132,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     return () => {
       clearTimeout(ignitionTimer)
+      clearTimeout(_meteorTimer)
       teardownSkip()
       state._traceActive = false
       cancelAnimationFrame(state._traceRaf)
