@@ -18,8 +18,11 @@ const R             = 220   // sphere radius in SVG units
 const TILT          = 0.38  // ~22° ecliptic tilt for a nice oblique view
 const SPREAD        = 0.17  // radians — how wide each constellation spreads on the sphere
 const BG_STAR       = 200   // background stars on the sphere
-const TWINKLE_COUNT = 40    // how many bg stars twinkle at any time
-const IDLE_SPIN     = 0.06  // radians/sec — gentle default rotation while no sign is selected
+const TWINKLE_COUNT = 30    // ~15% of bg stars flicker — asynchronous, never in unison
+const DRIFT         = 0.03  // radians/sec — perpetual slow drift, ~one full turn in 3.5 min
+const LABEL_Z       = 0.3   // only label signs this far onto the front face (no back-of-dome ghosts)
+const VIEW_DX       = 46    // shift whole dome right, into the right two-thirds (clears the text column)
+const VIEW_DY       = -54   // lift whole dome up, raising the low arc toward vertical center
 
 /* ── math helpers ────────────────────────────────────────────────────── */
 function rotY(p, a) {
@@ -138,18 +141,30 @@ class SphereEngine {
 
     svg.appendChild(defs)
 
+    // world group — translates the whole dome so the band sits higher and toward
+    // the right two-thirds (keeping the left-hand text column clear). All hit-testing
+    // subtracts this offset so projection math stays centred on the origin.
+    const worldG = document.createElementNS(SVGNS, 'g')
+    worldG.setAttribute('transform', `translate(${VIEW_DX} ${VIEW_DY})`)
+    svg.appendChild(worldG)
+
     // sphere disc — feathered
     const discGroup = document.createElementNS(SVGNS, 'g')
     discGroup.setAttribute('mask', 'url(#sphere-feather)')
     this.disc = this._circle(0, 0, R + 15, 'zs-disc')
     this.disc.setAttribute('fill', 'url(#sphere-grad)')
     discGroup.appendChild(this.disc)
-    svg.appendChild(discGroup)
+    worldG.appendChild(discGroup)
 
-    // all content under feather mask
+    // stars + ecliptic + constellations live under the feather mask (soft limb)
     this.contentG = document.createElementNS(SVGNS, 'g')
     this.contentG.setAttribute('mask', 'url(#sphere-feather)')
-    svg.appendChild(this.contentG)
+    worldG.appendChild(this.contentG)
+
+    // labels ride ABOVE the mask — so edge signs' names are never feathered or
+    // clipped; their visibility is governed purely by depth in the tick.
+    this.labelG = document.createElementNS(SVGNS, 'g')
+    worldG.appendChild(this.labelG)
 
     // background stars
     const rnd = mulberry32(42)
@@ -221,7 +236,7 @@ class SphereEngine {
       const label = document.createElementNS(SVGNS, 'text')
       label.setAttribute('class', 'zs-label')
       label.textContent = sign.name
-      g.appendChild(label)
+      this.labelG.appendChild(label)
 
       this.contentG.appendChild(g)
       return { g, nodes, edges, edgeGlows, label, signLon }
@@ -269,8 +284,8 @@ class SphereEngine {
   _handleHover(e) {
     const rect = this.svg.getBoundingClientRect()
     const scaleX = 600 / rect.width, scaleY = 600 / rect.height
-    const mx = (e.clientX - rect.left) * scaleX - 300
-    const my = (e.clientY - rect.top)  * scaleY - 300
+    const mx = (e.clientX - rect.left) * scaleX - 300 - VIEW_DX
+    const my = (e.clientY - rect.top)  * scaleY - 300 - VIEW_DY
 
     let bestDist = 70, bestIdx = -1
     this.consts.forEach((c, i) => {
@@ -289,8 +304,8 @@ class SphereEngine {
   _handleClick(e) {
     const rect = this.svg.getBoundingClientRect()
     const scaleX = 600 / rect.width, scaleY = 600 / rect.height
-    const mx = (e.clientX - rect.left) * scaleX - 300
-    const my = (e.clientY - rect.top)  * scaleY - 300
+    const mx = (e.clientX - rect.left) * scaleX - 300 - VIEW_DX
+    const my = (e.clientY - rect.top)  * scaleY - 300 - VIEW_DY
 
     let bestDist = 80, bestIdx = -1
     this.consts.forEach((c, i) => {
@@ -370,8 +385,6 @@ class SphereEngine {
       const isSel = ci === this.selected
       const isHov = ci === this.hovered && !isSel
       const center = this._projectSign(c.signLon, 0)
-      const front = center.z > -0.05
-      const depthZ = Math.max(0, center.z)
 
       const positions = c.nodes.map(nd => this._projectPoint(nd.lon, nd.lat))
 
@@ -384,7 +397,7 @@ class SphereEngine {
         let selMul
         if (isSel) selMul = 1
         else if (isHov) selMul = 0.65
-        else selMul = hasSel ? 0.25 : 0.55
+        else selMul = hasSel ? 0.35 : 0.55
 
         const o = depthFade * selMul
 
@@ -415,7 +428,7 @@ class SphereEngine {
         let edgeMul
         if (isSel) edgeMul = 0.85
         else if (isHov) edgeMul = 0.45
-        else edgeMul = hasSel ? 0.12 : 0.3
+        else edgeMul = hasSel ? 0.18 : 0.3
 
         const eo = edgeDepth * edgeMul
 
@@ -431,20 +444,19 @@ class SphereEngine {
         ge.el.style.opacity = isSel ? (eo * 0.6).toFixed(3) : '0'
       })
 
-      // label — hide back-hemisphere, fade by depth
-      if (front && center.z > 0.05) {
-        let labelO
-        if (isSel) {
-          labelO = Math.min(1, 0.4 + 0.6 * depthZ)
-        } else if (isHov) {
-          labelO = Math.min(0.7, 0.15 + 0.55 * depthZ)
-        } else {
-          labelO = Math.min(hasSel ? 0.35 : 0.5, (hasSel ? 0.05 : 0.1) + 0.3 * depthZ)
-        }
+      // label (unmasked layer) — only for signs well onto the front face, so no
+      // name ever floats over the back of the dome; opacity ramps in with depth.
+      if (center.z > LABEL_Z) {
+        const d = (center.z - LABEL_Z) / (1 - LABEL_Z)   // 0 at the gate → 1 at front-centre
+        let labelO, fill
+        if (isSel)      { labelO = 0.5 + 0.5 * d;  fill = '#f6f1e3' }
+        else if (isHov) { labelO = 0.25 + 0.45 * d; fill = '#cfd5e2' }
+        else            { labelO = 0.32 * d;        fill = '#7e879c' }
 
         c.label.setAttribute('x', center.x)
         c.label.setAttribute('y', center.y + (isSel ? -34 : -24))
         c.label.style.opacity = labelO.toFixed(3)
+        c.label.style.fill = fill
         c.label.setAttribute('font-size', isSel ? '14' : isHov ? '11' : '9')
         c.label.setAttribute('font-weight', isSel ? '600' : '400')
       } else {

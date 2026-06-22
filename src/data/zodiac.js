@@ -91,4 +91,6 @@ export const ZODIAC = [
     text:'Fleeing Typhon, Aphrodite and her son Eros took the form of fish and bound their tails with a cord, so the current could never separate them — two fish forever joined.',
     b:[3], n:[[-64,-20],[-40,-14],[-16,-8],[6,2],[24,16],[40,34],[58,48],[-76,-34],[70,62]],
     e:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[0,7],[6,8]] },
-].map(s => ({ ...s, accent: ELEMENT_ACCENT[s.element] }))
+// Append U+FE0E (text-presentation selector) so the zodiac glyphs render as
+// monochrome text we can colour — not the OS's purple emoji tiles.
+].map(s => ({ ...s, symbol: s.symbol + String.fromCharCode(0xFE0E), accent: ELEMENT_ACCENT[s.element] }))

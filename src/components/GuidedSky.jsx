@@ -106,23 +106,18 @@ export default function GuidedSky({ initialTourId, onClose, onBeatChange }) {
 
       <button className="gs-exit" onClick={onClose} aria-label="Close story mode">✕</button>
 
-      {/* top chrome */}
+      {/* top chrome — the rail (bottom) owns position; no competing counter here */}
       <div className="gs-top">
         <div className="gs-story">
           <div className="gs-kicker">{tour.kicker}</div>
           <div className="gs-storytitle">{tour.title}</div>
         </div>
-        <div className="gs-counter">
-          <span className="gs-stepnum">{String(step + 1).padStart(2, '0')}</span>
-          <span className="sl">/</span>
-          <span className="gs-steptotal">{String(tour.beats.length).padStart(2, '0')}</span>
-        </div>
       </div>
 
-      {/* tale picker */}
+      {/* story switcher (between tours — distinct from the rail's chapter nav) */}
       <div className={`gs-tales ${talesOpen ? 'open' : ''}`} ref={talesRef}>
         <button className="gs-tales-btn" onClick={() => setTalesOpen(o => !o)}>
-          <span>{tour.title}</span><span className="car">▾</span>
+          <span>Stories</span><span className="car">▾</span>
         </button>
         <div className="gs-tales-list">
           {TOURS.map((t, i) => (

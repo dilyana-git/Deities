@@ -12,14 +12,14 @@ import { ZODIAC } from '../data/zodiac.js'
    caption panel shows the selected sign's myth.
    ════════════════════════════════════════════════════════════════════════ */
 
-const IDLE_ACCENT = 'oklch(0.74 0.05 250)'
-
 export default function ZodiacSky({ onClose }) {
-  const [selected, setSelected] = useState(-1)
+  const [selected, setSelected] = useState(0)   // Aries leads on open — sign 01 of the zodiac year
   const captionRef = useRef(null)
 
   const sign   = selected >= 0 ? ZODIAC[selected] : null
-  const accent = sign ? sign.accent : IDLE_ACCENT
+  // the Zodiac view speaks in one accent — gold. Element identity is carried by
+  // the caption text ("AIR · …"), never colour, so no sign tints the UI purple.
+  const accent = 'var(--gold)'
 
   useEffect(() => {
     const prev = document.body.style.overflow
@@ -93,8 +93,13 @@ export default function ZodiacSky({ onClose }) {
         </div>
       )}
 
-      {/* glyph strip */}
+      {/* glyph strip — a quiet index; prev/next at the ends mark it navigable */}
       <div className="zs-strip">
+        <button
+          className="zs-rail-nav"
+          onClick={() => setSelected(s => (s + 11) % 12)}
+          aria-label="Previous sign"
+        >‹</button>
         {ZODIAC.map((z, i) => {
           const isOn = i === selected
           return (
@@ -103,14 +108,17 @@ export default function ZodiacSky({ onClose }) {
               className={`zs-glyph-btn ${isOn ? 'on' : ''}`}
               onClick={() => setSelected(i)}
               aria-label={z.name}
-              style={{ '--sa': z.accent }}
             >
               <span className="zs-sym">{z.symbol}</span>
               <span className="zs-sname">{z.name}</span>
-              <span className="zs-elem-dot" style={{ background: z.accent }} />
             </button>
           )
         })}
+        <button
+          className="zs-rail-nav"
+          onClick={() => setSelected(s => (s + 1) % 12)}
+          aria-label="Next sign"
+        >›</button>
       </div>
     </div>
   )
