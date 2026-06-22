@@ -214,30 +214,39 @@ body {
 
 /* node interaction states */
 .node .core { transition: opacity .2s; }
-.node .ring { transition: stroke .2s, stroke-width .2s; }
-.node { transition: opacity .22s; }
+.node .ring { transition: stroke .2s, stroke-width .2s, opacity .2s; }
+.node { transition: opacity .22s, filter .35s; }
 
 .nodes.focusing .node.faded   { opacity: .16; }
 .nodes.focusing .node.lit     .node-label { opacity: 1; fill: #e7ebf2; }
 .nodes.focusing .node.faded   .node-label { opacity: 0 !important; }
 #sky.zoomed-in                .node-label { opacity: .72; }
 
+/* constellation focus — unrelated nodes desaturate and shrink slightly,
+   pushing them back in visual z while the lineage rises forward */
+.node.receded {
+  opacity: .10 !important;
+  filter: saturate(0.25) brightness(0.6);
+}
+.node.receded .node-label { opacity: 0 !important; }
+
 .node.lit    .ring { stroke-width: 1.6px; opacity: .9; }
 .node.selected .ring  { stroke: #cdb88a !important; stroke-width: 2.2px; opacity: 1; }
 .node.selected .core  { opacity: 1; }
 .node.selected .node-label { opacity: 1 !important; fill: #cdb88a !important; }
 .node.route   .ring  { stroke: #cdb88a !important; stroke-width: 2px; opacity: 1; }
+.node.route   .core  { opacity: 1; }
 .node.route   .node-label { opacity: 1 !important; fill: #cdb88a !important; }
 .node.nolabel .node-label { opacity: 0 !important; }
 
 /* link interaction states */
-.link { transition: opacity .22s; }
-.links .link.faded { opacity: .045 !important; }
+.link { transition: opacity .22s, stroke-width .18s, stroke .18s; }
+.links .link.faded { opacity: .03 !important; }
 .links .link.lit   { opacity: .8  !important; stroke-width: 1.6px; }
 .link.route {
   stroke: #cdb88a !important;
   opacity: 1 !important;
-  stroke-width: 2.4px !important;
+  stroke-width: 2.2px !important;
   stroke-dasharray: none !important;
 }
 

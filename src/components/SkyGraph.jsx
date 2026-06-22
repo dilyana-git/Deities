@@ -113,6 +113,13 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     fm.append('feMergeNode').attr('in','b')
     fm.append('feMergeNode').attr('in','SourceGraphic')
 
+    /* trace-dot glow — tighter blur for the lineage-trace traveling dots */
+    const tFlt = defs.append('filter').attr('id','trace-glow').attr('x','-200%').attr('y','-200%').attr('width','500%').attr('height','500%')
+    tFlt.append('feGaussianBlur').attr('stdDeviation', 4).attr('result','b')
+    const tFm = tFlt.append('feMerge')
+    tFm.append('feMergeNode').attr('in','b')
+    tFm.append('feMergeNode').attr('in','SourceGraphic')
+
     /* circular clip path per node for portrait images */
     defs.selectAll('.node-clip')
       .data(nodes)
@@ -136,6 +143,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const floatXLayer  = floatYLayer.append('g').attr('class','float-x')
     const clusterLayer = floatXLayer.append('g').attr('class','clusters')
     const linkLayer    = floatXLayer.append('g').attr('class','links')
+    const traceLayer   = floatXLayer.append('g').attr('class','traces')
     const linkLabelLayer = floatXLayer.append('g').attr('class','link-labels')
     const nodeLayer    = floatXLayer.append('g').attr('class','nodes')
 
@@ -771,17 +779,21 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       })
     }
 
+    /* constellation focus: on select, unrelated nodes desaturate and recede,
+       the selected lineage rises forward, edges illuminate with type colour,
+       and the camera eases to re-centre (via frameSelection). */
     function applySelectVisual(id) {
       gNode.classed('selected', n => n.id === id)
       if (id) {
         const near = adj[id] || new Set()
-        gNode.classed('faded', n => n.id !== id && !near.has(n.id))
-             .classed('lit',   n => n.id === id || near.has(n.id))
+        gNode.classed('faded',    n => n.id !== id && !near.has(n.id))
+             .classed('receded',  n => n.id !== id && !near.has(n.id))
+             .classed('lit',      n => n.id === id || near.has(n.id))
         linkSel.classed('faded', l => srcId(l) !== id && tgtId(l) !== id)
                .classed('lit',   l => srcId(l) === id || tgtId(l) === id)
         nodeLayer.classed('focusing', true)
       } else {
-        gNode.classed('faded', false).classed('lit', false)
+        gNode.classed('faded', false).classed('lit', false).classed('receded', false)
         linkSel.classed('faded', false).classed('lit', false)
         nodeLayer.classed('focusing', false)
       }
@@ -790,21 +802,72 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       enlargeSelected(id)
     }
 
+    /* ── magnetic hover ───────────────────────────────────────────
+       On hover, neighbors lean slightly toward the hovered node (a
+       temporary spring nudge) and connecting edges brighten/thicken
+       in a staggered ripple outward — relationships flow OUT rather
+       than snapping on uniformly. */
+    let _hoverNudges = null
+
     function hoverOn(d) {
       if (state.pathLock || state.tourLock || !_ignitionDone) return
       const near = adj[d.id]
       nodeLayer.classed('focusing', true)
       gNode.classed('faded', n => n.id !== d.id && !near.has(n.id))
            .classed('lit',   n => n.id === d.id || near.has(n.id))
-      linkSel.classed('faded', l => srcId(l) !== d.id && tgtId(l) !== d.id)
-             .classed('lit',   l => srcId(l) === d.id || tgtId(l) === d.id)
-      styleEdgesByState()
+
+      /* magnetic lean: temporarily nudge neighbors toward the hovered node */
+      _hoverNudges = []
+      const LEAN = 0.12
+      near.forEach(nid => {
+        const nb = byId[nid]; if (!nb) return
+        const dx = d.x - nb.x, dy = d.y - nb.y
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1
+        const nudge = Math.min(dist * LEAN, 12)
+        const ox = nb.x, oy = nb.y
+        nb.x += (dx / dist) * nudge
+        nb.y += (dy / dist) * nudge
+        _hoverNudges.push({ node: nb, ox, oy })
+      })
+      ticked()
+
+      /* ripple: stagger edge transitions outward from the hovered node */
+      linkSel.each(function(l) {
+        const el = d3.select(this)
+        const s = srcId(l), t = tgtId(l)
+        const touches = s === d.id || t === d.id
+        el.classed('faded', !touches).classed('lit', touches)
+        if (touches) {
+          const nbId = s === d.id ? t : s
+          const nb = byId[nbId]
+          const dist = nb ? Math.sqrt((d.x - nb.x) ** 2 + (d.y - nb.y) ** 2) : 0
+          const delay = Math.min(dist * 0.6, 120)
+          el.transition('ripple').duration(180).delay(delay)
+            .attr('opacity', 0.8)
+            .attr('stroke-width', 1.6)
+            .attr('stroke', el.attr('data-type-color'))
+        }
+      })
+
       if (tip) { tip.textContent = d.name; tip.style.opacity = '1' }
     }
 
     function hoverOff() {
       if (state.pathLock || state.tourLock) return
       if (tip) tip.style.opacity = '0'
+
+      /* release magnetic lean — spring nodes back */
+      if (_hoverNudges) {
+        for (const { node, ox, oy } of _hoverNudges) {
+          node.x = ox; node.y = oy
+        }
+        _hoverNudges = null
+        ticked()
+      }
+
+      /* cancel any in-flight ripple transitions */
+      linkSel.interrupt('ripple')
+
       if (state.selected) {
         applySelectVisual(state.selected)
       } else {
@@ -901,6 +964,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         const edgeSet = new Set()
         for (let i = 0; i < ids.length - 1; i++) edgeSet.add(ids[i] + '|' + ids[i + 1])
         gNode.classed('faded',    n => !set.has(n.id))
+             .classed('receded',  n => !set.has(n.id))
              .classed('lit',      n => set.has(n.id))
              .classed('selected', false)
              .classed('route',    n => set.has(n.id))
@@ -912,10 +976,81 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         styleEdgesByState()
         nodeLayer.classed('focusing', true)
         frameNodes(ids)
+
+        /* ── lineage trace: animate glowing dots along the path edges ── */
+        traceLayer.selectAll('*').remove()
+        cancelAnimationFrame(state._traceRaf)
+
+        /* collect the actual <path> elements in path order */
+        const routePaths = []
+        for (let i = 0; i < ids.length - 1; i++) {
+          const a = ids[i], b = ids[i + 1]
+          linkSel.each(function(l) {
+            const s = srcId(l), t = tgtId(l)
+            if ((s === a && t === b) || (s === b && t === a)) {
+              routePaths.push({ el: this, reversed: s !== a, hop: i })
+            }
+          })
+        }
+
+        /* create trace dots — one per hop, staggered */
+        const TRACE_DUR = 900
+        const TRACE_GAP = 350
+        const dots = routePaths.map((rp, i) => {
+          const dot = traceLayer.append('circle')
+            .attr('r', 3.5)
+            .attr('fill', '#cdb88a')
+            .attr('filter', 'url(#trace-glow)')
+            .attr('opacity', 0)
+          const tail = traceLayer.append('circle')
+            .attr('r', 7)
+            .attr('fill', '#cdb88a')
+            .attr('opacity', 0)
+            .attr('filter', 'url(#trace-glow)')
+          return { dot, tail, path: rp.el, reversed: rp.reversed, hop: i,
+                   startT: i * TRACE_GAP, dur: TRACE_DUR }
+        })
+
+        const totalT = (dots.length - 1) * TRACE_GAP + TRACE_DUR
+        let t0 = null
+        state._traceActive = true
+
+        function animateTrace(ts) {
+          if (!state._traceActive) return
+          if (!t0) t0 = ts
+          const elapsed = ts - t0
+
+          for (const d of dots) {
+            const local = elapsed - d.startT
+            if (local < 0 || local > d.dur) {
+              d.dot.attr('opacity', 0)
+              d.tail.attr('opacity', 0)
+              continue
+            }
+            let frac = local / d.dur
+            if (d.reversed) frac = 1 - frac
+            const pathEl = d.path
+            const len = pathEl.getTotalLength()
+            const pt = pathEl.getPointAtLength(frac * len)
+            const fade = frac < 0.1 ? frac / 0.1 : frac > 0.9 ? (1 - frac) / 0.1 : 1
+            d.dot.attr('cx', pt.x).attr('cy', pt.y).attr('opacity', fade * 0.95)
+            d.tail.attr('cx', pt.x).attr('cy', pt.y).attr('opacity', fade * 0.25)
+          }
+
+          /* loop: restart after a pause */
+          if (elapsed > totalT + 600) {
+            t0 = ts
+          }
+          state._traceRaf = requestAnimationFrame(animateTrace)
+        }
+        state._traceRaf = requestAnimationFrame(animateTrace)
       },
       clearPathHighlight() {
         state.pathLock = false
-        gNode.classed('route', false)
+        state._traceActive = false
+        cancelAnimationFrame(state._traceRaf)
+        traceLayer.selectAll('*').remove()
+        gNode.classed('route', false).classed('receded', false)
         linkSel.classed('route', false).classed('faded', false)
         applySelectVisual(state.selected)
       },
@@ -934,6 +1069,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     return () => {
       clearTimeout(ignitionTimer)
       teardownSkip()
+      state._traceActive = false
+      cancelAnimationFrame(state._traceRaf)
       document.removeEventListener('visibilitychange', handleVisibility)
       sim.stop()
       svg.selectAll('*').remove()
