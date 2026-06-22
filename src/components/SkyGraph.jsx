@@ -123,15 +123,16 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('r', d => radius(d))
 
     const zoomLayer    = svg.append('g').attr('class','zoom')
-    const bgLayer      = zoomLayer.append('g').attr('class','bg')
-    /* float-y/float-x: two nested groups, each animating one transform axis on
-       its own period — the same layered technique the cloud strata use
-       (sway wrapper + drift track). Composed, they trace a slow organic
-       loop rather than a mechanical back-and-forth: a faint vertical bob
-       (float-y, ~14s) plus a slower, smaller horizontal drift (float-x,
-       ~70s) reads as gentle floating, not scrolling. Pure transform → GPU
-       compositor; physics-driven node positions underneath are untouched. */
-    const floatYLayer  = zoomLayer.append('g').attr('class','float-y')
+    /* background stars sit inside their own slow-drift wrapper so they
+       move at a different speed from the constellation field — parallax depth */
+    const bgDrift      = zoomLayer.append('g').attr('class','bg-drift')
+    const bgLayer      = bgDrift.append('g').attr('class','bg')
+    /* celestial-rotate wraps the entire constellation field in a very slow
+       rotation (~3° over 2 min) so the sky feels alive even untouched.
+       The bg stars drift on a DIFFERENT period (bg-drift), creating a
+       two-layer parallax: background lags behind foreground. */
+    const celestialRotate = zoomLayer.append('g').attr('class','celestial-rotate')
+    const floatYLayer  = celestialRotate.append('g').attr('class','float-y')
     const floatXLayer  = floatYLayer.append('g').attr('class','float-x')
     const clusterLayer = floatXLayer.append('g').attr('class','clusters')
     const linkLayer    = floatXLayer.append('g').attr('class','links')
@@ -174,9 +175,13 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     bgLayer.selectAll('circle.star')
       .data(starData)
       .join('circle')
-      .attr('class', 'star')
+      .attr('class', d => 'star' + (rnd() < 0.15 ? ' star-shimmer' : ''))
       .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', d => d.r)
       .attr('fill', d => d.tint).attr('opacity', d => d.o)
+      .filter('.star-shimmer')
+      .style('--shimmer-base', d => d.o.toFixed(3))
+      .style('--shimmer-dur', () => `${(3 + rnd() * 4).toFixed(2)}s`)
+      .style('--shimmer-delay', () => `-${(rnd() * 7).toFixed(2)}s`)
 
     /* initial positions — cluster anchors + jitter */
     nodes.forEach(n => {
@@ -264,17 +269,24 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; d.x = e.x; d.y = e.y; ticked() })
         .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(WARM_ALPHA); d.fx = null; d.fy = null }))
 
+    /* hub breathing — the top ~5 nodes are gravitational centers; they get a
+       dedicated slow pulse (radius + opacity over ~4s) that reads as a beacon
+       even before any interaction. Separate from the general twinkle. */
+    const hubBreathThreshold = promValues[Math.min(5, promValues.length - 1)] || 0.6
+
     gNode.append('circle').attr('class','glow')
       .attr('r',        d => radius(d) * 1.6)
       .attr('fill',     d => CAT[d.category])
       .attr('opacity',  d => 0.03 + d.prom * 0.08)
       .attr('filter',   d => d.prom > 0.5 ? 'url(#glow)' : null)
-      /* per-node twinkle: the glow halo breathes around its base opacity, out
-         of phase from neighbour (mirrors the background --flare-* vars). The
-         crisp core (next) stays put so figures shimmer without pulsing in size. */
+      .classed('hub-breath', d => d.prom >= hubBreathThreshold)
       .style('--glow-base',     d => (0.03 + d.prom * 0.08).toFixed(3))
+      .style('--glow-r',        d => (radius(d) * 1.6).toFixed(1))
+      .style('--glow-r-peak',   d => (radius(d) * 2.1).toFixed(1))
       .style('--twinkle-dur',   () => `${(4.5 + rnd() * 4.5).toFixed(2)}s`)
       .style('--twinkle-delay', () => `-${(rnd() * 7).toFixed(2)}s`)
+      .style('--breath-dur',    () => `${(3.5 + rnd() * 1.5).toFixed(2)}s`)
+      .style('--breath-delay',  () => `-${(rnd() * 5).toFixed(2)}s`)
 
     gNode.append('circle').attr('class','core')
       .attr('r',       d => radius(d))

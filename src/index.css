@@ -74,15 +74,56 @@ body {
   .flare { animation: none; opacity: calc(var(--flare-peak, 0.35) * 0.5); }
 }
 
+/* ── Asynchronous star shimmer ──────────────────────────────────────────────
+   ~15% of background star dots shimmer on randomized long loops (3–7s).
+   Opacity dips and recovers, plus a subtle scale breath. Randomized phase
+   (--shimmer-delay) means they never pulse in unison. */
+@keyframes star-shimmer {
+  0%, 100% { opacity: var(--shimmer-base, 0.2); transform: scale(1); }
+  40%      { opacity: calc(var(--shimmer-base, 0.2) * 0.35); transform: scale(0.7); }
+  60%      { opacity: calc(var(--shimmer-base, 0.2) * 1.6);  transform: scale(1.25); }
+}
+.star-shimmer {
+  animation: star-shimmer var(--shimmer-dur, 5s) ease-in-out infinite;
+  animation-delay: var(--shimmer-delay, 0s);
+  transform-origin: center;
+  transform-box: fill-box;
+}
+@media (prefers-reduced-motion: reduce) {
+  .star-shimmer { animation: none; }
+}
+
+/* ── Slow celestial drift ──────────────────────────────────────────────────
+   The constellation field rotates ~3° over 2 minutes around the viewBox
+   centre. Background stars drift at a slower, different cadence via
+   bg-drift — creating two-layer parallax depth.
+   transform-origin centres on the 1200×740 viewBox. */
+@keyframes celestial-rotate {
+  0%   { transform: rotate(0deg); }
+  50%  { transform: rotate(2.8deg); }
+  100% { transform: rotate(0deg); }
+}
+.celestial-rotate {
+  animation: celestial-rotate 130s ease-in-out infinite;
+  transform-origin: 600px 370px;
+}
+@keyframes bg-parallax-drift {
+  0%   { transform: rotate(0deg) translate(0, 0); }
+  33%  { transform: rotate(-1.2deg) translate(3px, -2px); }
+  66%  { transform: rotate(0.6deg) translate(-2px, 1px); }
+  100% { transform: rotate(0deg) translate(0, 0); }
+}
+.bg-drift {
+  animation: bg-parallax-drift 180s ease-in-out infinite;
+  transform-origin: 600px 370px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .celestial-rotate, .bg-drift { animation: none; }
+}
+
 /* ── Floating graph ────────────────────────────────────────────────────────
-   The settled force layout used to feel frozen. Two nested groups each
-   animate one transform axis on its own period — float-y bobs vertically
-   (~14s, the dominant "floating" cue), float-x drifts sideways more slowly
-   and faintly (~70s). Composed, they trace a slow organic loop instead of a
-   mechanical diagonal sway — like something resting on calm water, not
-   scrolling. Same layered technique as .cloud-sway-far/.cloud-far-track;
-   transform-only → GPU compositor; physics-driven node positions underneath
-   are untouched. */
+   Nested bob + drift compose into a slow organic loop. Pure transform →
+   GPU compositor; physics-driven node positions are untouched. */
 @keyframes float-bob {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-5px); }
@@ -103,13 +144,8 @@ body {
 }
 
 /* ── Twinkling deity-stars ──────────────────────────────────────────────────
-   The background starfield flares, but the deity nodes themselves sat frozen
-   until hovered. Each node's blurred glow halo (the #glow circle, 2.4x the
-   core radius) gently breathes around its own base opacity — a real change in
-   lit halo area, the same reasoning as .flare — while the crisp core stays put
-   so the figure never looks like it's pulsing in size. --glow-base/
-   --twinkle-dur/--twinkle-delay are set per node in SkyGraph so they shimmer
-   out of phase. */
+   Each node's glow halo breathes around its base opacity. Randomised phase
+   (--twinkle-delay) keeps them asynchronous. */
 @keyframes node-twinkle {
   0%, 100% { opacity: calc(var(--glow-base, 0.1) * 0.5);  }
   50%      { opacity: calc(var(--glow-base, 0.1) * 1.55); }
@@ -118,15 +154,40 @@ body {
   animation: node-twinkle var(--twinkle-dur, 6s) ease-in-out infinite;
   animation-delay: var(--twinkle-delay, 0s);
 }
+
+/* ── Hub breathing ─────────────────────────────────────────────────────────
+   The major gods (Zeus, Gaia, Chaos…) get a dedicated slow pulse that
+   cycles BOTH radius and opacity over ~4s — marking them as gravitational
+   centres before any interaction. Layered on top of the general twinkle
+   via a separate animation name so both run. */
+@keyframes hub-breath {
+  0%, 100% {
+    r: var(--glow-r);
+    opacity: calc(var(--glow-base, 0.1) * 0.6);
+  }
+  50% {
+    r: var(--glow-r-peak);
+    opacity: calc(var(--glow-base, 0.1) * 2.2);
+  }
+}
+.node .glow.hub-breath {
+  animation:
+    node-twinkle var(--twinkle-dur, 6s) ease-in-out infinite var(--twinkle-delay, 0s),
+    hub-breath var(--breath-dur, 4s) ease-in-out infinite var(--breath-delay, 0s);
+}
 @media (prefers-reduced-motion: reduce) {
-  .node .glow { animation: none; }
+  .node .glow, .node .glow.hub-breath { animation: none; }
 }
 
-/* Pause sky-layer CSS animations when the tab is hidden (mirrors .bg-clouds.paused) */
+/* Pause sky-layer CSS animations when the tab is hidden */
 #sky.paused .flare,
+#sky.paused .star-shimmer,
+#sky.paused .celestial-rotate,
+#sky.paused .bg-drift,
 #sky.paused .float-y,
 #sky.paused .float-x,
 #sky.paused .node .glow,
+#sky.paused .node .glow.hub-breath,
 #sky.paused .link-transformed,
 #sky.paused .link-cursed {
   animation-play-state: paused;
