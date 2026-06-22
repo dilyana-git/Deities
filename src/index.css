@@ -145,7 +145,11 @@ body {
   stroke-width: 3px;
   stroke-linejoin: round;
 }
-.node.prominent .node-label { opacity: .62; }
+/* hub labels always visible; mid-tier on zoom; rest on deep zoom */
+.node.prominent .node-label { opacity: .68; }
+.node.mid-label .node-label { opacity: 0; transition: opacity .4s; }
+#sky.zoomed-mid .node.mid-label .node-label { opacity: .52; }
+#sky.zoomed-in  .node.mid-label .node-label { opacity: .68; }
 
 /* node interaction states */
 .node .core { transition: opacity .2s; }

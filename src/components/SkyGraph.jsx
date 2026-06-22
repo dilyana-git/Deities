@@ -138,37 +138,45 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const linkLabelLayer = floatXLayer.append('g').attr('class','link-labels')
     const nodeLayer    = floatXLayer.append('g').attr('class','nodes')
 
-    /* faint background stars, plus soft glow-bloom flares behind the brightest ones.
-       A 1px dot's opacity shifting by hundredths is imperceptible — but a much
-       larger blurred halo (same #glow filter the nodes use) blooming from
-       near-invisible to a soft glow reads clearly at this scale. */
+    /* enriched background starfield — three tiers:
+       1. faint dust (many tiny dots, low opacity) for depth
+       2. mid-field stars (varied sizes, warm/cool tint)
+       3. bright flares (large blurred halos that twinkle)
+       More stars toward the center via a mild radial density gradient. */
     let _s = 7
     const rnd = () => { _s = (_s * 1103515245 + 12345) & 0x7fffffff; return _s / 0x7fffffff }
     const big = Math.max(W, H) * 2.2
-    const starData = d3.range(420).map(() => ({
-      x: -big * 0.3 + rnd() * big, y: -big * 0.3 + rnd() * big,
-      r: 0.4 + rnd() * 1.1, o: 0.12 + rnd() * 0.4,
-    }))
-    const flareStars = starData.filter(d => d.o > 0.46)
+    const TINTS = ['#d6dce8', '#c8c0b8', '#b8c4d8', '#e0d8c8', '#c0c8d6', '#d8ccc0']
+    const starData = d3.range(680).map(() => {
+      const x = -big * 0.3 + rnd() * big
+      const y = -big * 0.3 + rnd() * big
+      const distFromCenter = Math.sqrt((x - W/2)**2 + (y - H/2)**2) / (big * 0.5)
+      const depthBias = Math.max(0, 1 - distFromCenter * 0.6)
+      const r = 0.25 + rnd() * 0.6 + depthBias * rnd() * 0.9
+      const o = 0.06 + rnd() * 0.22 + depthBias * rnd() * 0.25
+      const tint = TINTS[Math.floor(rnd() * TINTS.length)]
+      return { x, y, r, o, tint }
+    })
+    const flareStars = starData.filter(d => d.o > 0.38)
 
     bgLayer.selectAll('circle.flare')
       .data(flareStars)
       .join('circle')
       .attr('class', 'flare')
       .attr('cx', d => d.x).attr('cy', d => d.y)
-      .attr('r',    d => d.r * 5)
-      .attr('fill', '#cdd2dc')
+      .attr('r',    d => d.r * 5.5)
+      .attr('fill', d => d.tint)
       .attr('filter', 'url(#glow)')
-      .style('--flare-peak',  d => (0.32 + d.o * 0.5).toFixed(2))
-      .style('--flare-dur',   () => `${(1.5 + rnd() * 1.7).toFixed(2)}s`)
-      .style('--flare-delay', () => `-${(rnd() * 5).toFixed(2)}s`)
+      .style('--flare-peak',  d => (0.28 + d.o * 0.55).toFixed(2))
+      .style('--flare-dur',   () => `${(1.5 + rnd() * 2.0).toFixed(2)}s`)
+      .style('--flare-delay', () => `-${(rnd() * 6).toFixed(2)}s`)
 
     bgLayer.selectAll('circle.star')
       .data(starData)
       .join('circle')
       .attr('class', 'star')
       .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', d => d.r)
-      .attr('fill', '#cdd2dc').attr('opacity', d => d.o)
+      .attr('fill', d => d.tint).attr('opacity', d => d.o)
 
     /* initial positions — cluster anchors + jitter */
     nodes.forEach(n => {
@@ -235,9 +243,17 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const catNodes  = new Map(cats.map(c => [c, nodes.filter(n => n.category === c)]))
 
     /* ── nodes ──────────────────────────────────────────────────── */
+    /* hub-only labels at default zoom: only the top ~10 most-connected figures
+       get visible labels initially. The rest appear on zoom-in (CSS rule on
+       #sky.zoomed-in) or on hover/selection. The threshold is set dynamically
+       so it always picks roughly 10-12 hubs regardless of data changes. */
+    const promValues = nodes.map(n => n.prom).sort((a, b) => b - a)
+    const hubThreshold = promValues[Math.min(11, promValues.length - 1)] || 0.4
+
     const gNode = nodeLayer.selectAll('g').data(nodes).join('g')
       .attr('class', 'node')
-      .classed('prominent', d => d.prom > 0.55)
+      .classed('prominent', d => d.prom >= hubThreshold)
+      .classed('mid-label', d => d.prom > 0.3 && d.prom < hubThreshold)
       .classed('nolabel',   d => d.degree === 0)
       .style('cursor', 'pointer')
       .on('click',      (e, d) => { e.stopPropagation(); api.select(d.id, true) })
@@ -397,6 +413,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const zoom = d3.zoom().scaleExtent([0.35, 4.5])
       .on('zoom', e => {
         zoomLayer.attr('transform', e.transform)
+        svg.classed('zoomed-mid', e.transform.k > 1.0)
         svg.classed('zoomed-in', e.transform.k > 1.7)
       })
     svg.call(zoom).on('dblclick.zoom', null)
@@ -411,21 +428,37 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     }
     document.addEventListener('visibilitychange', handleVisibility)
 
-    /* fit view */
-    function fitView() {
-      const pad = 80
+    /* fit view — fill ~80% of the viewport (tight padding) */
+    function fitView(animate = true) {
+      const pad = 36
       const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y)
       const x0 = Math.min(...xs), x1 = Math.max(...xs)
       const y0 = Math.min(...ys), y1 = Math.max(...ys)
       const bw = x1 - x0, bh = y1 - y0
       if (!(bw > 0 && bh > 0)) return
-      const k = Math.min((W - pad * 2) / bw, (H - pad * 2) / bh, 1.1)
+      const k = Math.min((W - pad * 2) / bw, (H - pad * 2) / bh, 1.3)
       if (!isFinite(k) || k <= 0) return
       const tx = W / 2 - k * (x0 + bw / 2), ty = H / 2 - k * (y0 + bh / 2)
-      svg.transition().duration(900).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
+      if (animate) {
+        svg.transition().duration(900).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
+      } else {
+        svg.call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
+      }
     }
-    fitView()
-    requestAnimationFrame(fitView)
+
+    /* entry animation — staged fade-in: starfield → edges → nodes */
+    bgLayer.attr('opacity', 0)
+    linkLayer.attr('opacity', 0)
+    nodeLayer.attr('opacity', 0)
+    clusterLayer.attr('opacity', 0)
+
+    fitView(false)
+    requestAnimationFrame(() => fitView(false))
+
+    bgLayer.transition().duration(900).delay(100).attr('opacity', 1)
+    linkLayer.transition().duration(800).delay(500).attr('opacity', 1)
+    clusterLayer.transition().duration(800).delay(600).attr('opacity', 1)
+    nodeLayer.transition().duration(900).delay(700).attr('opacity', 1)
 
     /* ── tooltip positioning ────────────────────────────────────── */
     const tip = document.getElementById('tip')
