@@ -2,6 +2,7 @@ import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import * as d3 from 'd3'
 import { nodes as rawNodes, links as rawLinks } from '../data/mythology.js'
 import { linkTypeConfig } from '../data/linkTypeConfig.js'
+import { categoryConfig } from '../data/categoryConfig.js'
 
 /* ── muted OKLCH palettes (matching atlas-core.js) ────────────────────── */
 const CAT = {
@@ -396,6 +397,15 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('stroke-width', 1.1)
       .attr('opacity',      0.55)
 
+    /* gold pulse ring — invisible until the node has `.selected`, then the
+       CSS animation kicks in. The ring sits outside the category ring. */
+    gNode.append('circle').attr('class','sel-ring')
+      .attr('r',            d => radius(d) + 5)
+      .attr('fill',         'none')
+      .attr('stroke',       '#cdb88a')
+      .attr('stroke-width', 1.5)
+      .attr('opacity',      0)
+
     gNode.append('text').attr('class','node-label')
       .attr('x', d => radius(d) + 6).attr('y', 4)
       .text(d => d.name)
@@ -499,6 +509,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         zoomLayer.attr('transform', e.transform)
         svg.classed('zoomed-mid', e.transform.k > 1.0)
         svg.classed('zoomed-in', e.transform.k > 1.7)
+        /* cluster labels dim as you zoom in (individual names take over) */
+        const clOp = e.transform.k > 1.7 ? 0.12 : e.transform.k > 1.0 ? 0.28 : 0.45
+        clusterSel.attr('opacity', clOp)
       })
     svg.call(zoom).on('dblclick.zoom', null)
     svg.on('click', () => api.clearSelection())
@@ -813,6 +826,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       g.select('image').transition(t)
         .attr('x', -r).attr('y', -r).attr('width', r * 2).attr('height', r * 2)
       g.select('.ring').transition(t).attr('r', r + 1.6)
+      g.select('.sel-ring').transition(t).attr('r', r + 5)
       g.select('.node-label').transition(t).attr('x', r + 6)
       defs.select(`#clip-${d.id} circle`).transition(t).attr('r', r)
     }
@@ -844,19 +858,47 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     }
 
     /* constellation focus: on select, unrelated nodes desaturate and recede,
-       the selected lineage rises forward, edges illuminate with type colour,
-       and the camera eases to re-centre (via frameSelection). */
+       the selected lineage rises forward, edges illuminate with type colour
+       in a staggered ripple outward, and the camera eases to re-centre. */
     function applySelectVisual(id) {
       gNode.classed('selected', n => n.id === id)
       if (id) {
+        const center = byId[id]
         const near = adj[id] || new Set()
         gNode.classed('faded',    n => n.id !== id && !near.has(n.id))
              .classed('receded',  n => n.id !== id && !near.has(n.id))
              .classed('lit',      n => n.id === id || near.has(n.id))
-        linkSel.classed('faded', l => srcId(l) !== id && tgtId(l) !== id)
-               .classed('lit',   l => srcId(l) === id || tgtId(l) === id)
+
+        /* stagger edge illumination outward from the selected node */
+        linkSel.each(function(l) {
+          const el = d3.select(this)
+          const s = srcId(l), t = tgtId(l)
+          const touches = s === id || t === id
+          el.classed('faded', !touches).classed('lit', touches)
+          if (touches && center) {
+            const nb = byId[s === id ? t : s]
+            const dist = nb ? Math.sqrt((center.x - nb.x) ** 2 + (center.y - nb.y) ** 2) : 0
+            const delay = Math.min(dist * 0.5, 100)
+            el.attr('stroke', NEUTRAL_EDGE).attr('opacity', 0.08)
+            el.transition('sel-ripple').duration(200).delay(delay)
+              .attr('opacity', 0.8)
+              .attr('stroke-width', 1.6)
+              .attr('stroke', el.attr('data-type-color'))
+          }
+        })
+
         nodeLayer.classed('focusing', true)
       } else {
+        linkSel.interrupt('sel-ripple')
+        /* smooth de-focus: edges fade back via a brief transition instead
+           of snapping; the CSS transition on .node handles nodes already */
+        linkSel.each(function() {
+          d3.select(this)
+            .transition('defocus').duration(300).ease(d3.easeCubicOut)
+            .attr('opacity', 0.08)
+            .attr('stroke-width', 0.7)
+            .attr('stroke', NEUTRAL_EDGE)
+        })
         gNode.classed('faded', false).classed('lit', false).classed('receded', false)
         linkSel.classed('faded', false).classed('lit', false)
         nodeLayer.classed('focusing', false)
@@ -864,6 +906,21 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       styleEdgesByState()
       renderEdgeLabels(id)
       enlargeSelected(id)
+
+      /* selection glow nova — brief radius/opacity burst on the selected
+         node's glow circle, settling back to rest. Reads as a star flaring
+         on activation before dimming to its steady state. */
+      if (id) {
+        const g = gNode.filter(n => n.id === id)
+        const d = g.datum()
+        const r = radius(d)
+        const baseOp = 0.03 + d.prom * 0.08
+        g.select('.glow')
+          .transition('nova').duration(180).ease(d3.easeCubicOut)
+          .attr('r', r * 2.8).attr('opacity', Math.min(baseOp * 3.5, 0.45))
+          .transition('nova').duration(600).ease(d3.easeCubicOut)
+          .attr('r', r * 1.6).attr('opacity', baseOp)
+      }
     }
 
     /* ── magnetic hover ───────────────────────────────────────────
@@ -879,6 +936,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       nodeLayer.classed('focusing', true)
       gNode.classed('faded', n => n.id !== d.id && !near.has(n.id))
            .classed('lit',   n => n.id === d.id || near.has(n.id))
+
+      /* ring shimmer: the hovered node's ring briefly flares brighter */
+      const hg = gNode.filter(n => n.id === d.id)
+      hg.select('.ring')
+        .transition('ring-shimmer').duration(140).ease(d3.easeCubicOut)
+        .attr('opacity', 1).attr('stroke-width', 2)
 
       /* magnetic lean: temporarily nudge neighbors toward the hovered node */
       _hoverNudges = []
@@ -913,12 +976,23 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         }
       })
 
-      if (tip) { tip.textContent = d.name; tip.style.opacity = '1' }
+      if (tip) {
+        const catLabel = categoryConfig[d.category]?.label || d.category
+        tip.innerHTML = `<span class="tip-cat" style="background:${CAT[d.category]}"></span>`
+          + `<span class="tip-name">${d.name}</span>`
+          + (d.epithet ? `<span class="tip-epi">${d.epithet}</span>` : '')
+        tip.style.opacity = '1'
+      }
     }
 
     function hoverOff() {
       if (state.pathLock || state.tourLock) return
       if (tip) tip.style.opacity = '0'
+
+      /* restore ring from hover shimmer */
+      gNode.selectAll('.ring').interrupt('ring-shimmer')
+        .transition('ring-restore').duration(220).ease(d3.easeCubicOut)
+        .attr('opacity', 0.55).attr('stroke-width', 1.1)
 
       /* release magnetic lean — spring nodes back */
       if (_hoverNudges) {
