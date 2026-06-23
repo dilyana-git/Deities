@@ -362,6 +362,25 @@ export default function App() {
   const fadeHint = useCallback(() => setHintFaded(true), [])
   useEffect(() => { const t = setTimeout(fadeHint, 9000); return () => clearTimeout(t) }, [fadeHint])
 
+  /* reset to clean home state when returning from another tab/page */
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState !== 'visible') return
+      setSelectedId(null)
+      setLegendOpen(false)
+      setPathOpen(false)
+      setStoryOpen(false)
+      setZodiacOpen(false)
+      graphRef.current?.clearSelection()
+      graphRef.current?.clearPathHighlight()
+      graphRef.current?.clearLitEdge()
+      graphRef.current?.setTourLock(false)
+      graphRef.current?.resetView()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
   /* path panel: when it opens, clear selection; when closed, restore */
   function openPath() {
     setPathOpen(true)
