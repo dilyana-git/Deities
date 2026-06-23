@@ -181,7 +181,7 @@ class SphereEngine {
       this.bgStars.push({
         lon, lat, el: c, baseR,
         twinklePhase: rnd() * TAU,
-        twinkleSpeed: 0.8 + rnd() * 2.0,
+        twinkleSpeed: 0.9 + rnd() * 1.2,   // ~3–7s loops, each star on its own phase
         twinkles: i < TWINKLE_COUNT,
       })
     }
@@ -336,16 +336,17 @@ class SphereEngine {
     const dt = (now - (this._lastT || now)) / 1000
     this._lastT = now
 
-    // smooth rotation toward target
-    if (this.target != null && !this.drag) {
-      let diff = this.target - this.va
-      diff = ((diff % TAU) + TAU + Math.PI) % TAU - Math.PI
-      this.va += diff * Math.min(1, 5 * dt)
-      if (Math.abs(diff) < 0.003) this.va = this.target
-    }
-    // gentle default spin while no sign is selected (skipped for reduced-motion)
-    if (this.target == null && !this.drag && !this.reduced) {
-      this.va += IDLE_SPIN * dt
+    // rotation: ease toward a just-selected sign, then release into a perpetual
+    // slow drift — the ecliptic band turns through the heavens forever at rest
+    if (!this.drag) {
+      if (this.target != null) {
+        let diff = this.target - this.va
+        diff = ((diff % TAU) + TAU + Math.PI) % TAU - Math.PI
+        this.va += diff * Math.min(1, 5 * dt)
+        if (Math.abs(diff) < 0.01) this.target = null   // centred → hand back to the drift
+      } else if (!this.reduced) {
+        this.va += DRIFT * dt
+      }
     }
 
     const t = (now - this.t0) / 1000
@@ -358,11 +359,15 @@ class SphereEngine {
       s.el.setAttribute('cy', p.y)
       if (p.z > 0.02) {
         let o = 0.12 + 0.25 * p.z
+        let tw = 1
         if (s.twinkles && !this.reduced) {
-          o *= 0.6 + 0.4 * Math.abs(Math.sin(t * s.twinkleSpeed + s.twinklePhase))
+          // smooth, gentle breathing — NOT Math.abs(sin): its cusp made stars
+          // blink sharply at double speed, which read as a glitchy screen
+          tw = 0.85 + 0.15 * Math.sin(t * s.twinkleSpeed + s.twinklePhase)
+          o *= tw
         }
         s.el.style.opacity = o.toFixed(3)
-        s.el.setAttribute('r', (s.baseR * (0.85 + 0.3 * p.z)).toFixed(2))
+        s.el.setAttribute('r', (s.baseR * (0.85 + 0.3 * p.z) * (0.94 + 0.06 * tw)).toFixed(2))
       } else {
         s.el.style.opacity = '0'
       }
@@ -386,6 +391,11 @@ class SphereEngine {
       const isHov = ci === this.hovered && !isSel
       const center = this._projectSign(c.signLon, 0)
 
+      // depth: a sign grows toward front-centre and shrinks toward the limb,
+      // so the band reads as a 3D dome rather than a flat strip sliding by
+      const centerDepth = Math.max(0, center.z)        // 0 at the limb → 1 at front-centre
+      const depthScale  = 0.78 + 0.4 * centerDepth
+
       const positions = c.nodes.map(nd => this._projectPoint(nd.lon, nd.lat))
 
       // nodes
@@ -406,7 +416,7 @@ class SphereEngine {
           twinkle = 1 + 0.12 * Math.sin(t * (1.2 + ni * 0.3) + ci * 2.1)
         }
 
-        const sizeMul = isSel ? 1.4 : isHov ? 1.15 : 0.9
+        const sizeMul = (isSel ? 1.4 : isHov ? 1.15 : 0.9) * depthScale
 
         nd.core.setAttribute('cx', p.x)
         nd.core.setAttribute('cy', p.y)
@@ -435,7 +445,7 @@ class SphereEngine {
         e.el.setAttribute('x1', a.x); e.el.setAttribute('y1', a.y)
         e.el.setAttribute('x2', b.x); e.el.setAttribute('y2', b.y)
         e.el.style.opacity = eo.toFixed(3)
-        e.el.style.strokeWidth = isSel ? '1.1' : '0.6'
+        e.el.style.strokeWidth = ((isSel ? 1.1 : 0.6) * depthScale).toFixed(2)
 
         // glow duplicate behind selected edges
         const ge = c.edgeGlows[ei]
