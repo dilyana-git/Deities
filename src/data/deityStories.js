@@ -21,6 +21,16 @@ export const deityStories = {
   // ---- PRIMORDIALS ----
   chaos: {
     story: "Before name, before number, before the first edge of anything stood against anything else — there was Chaos: not ruin and not riot, but a vast and yawning openness, the original gap in which nothing yet leaned upon nothing. It is less a god than a held breath, the dark unmeasured mouth out of which all distance would one day be drawn.\n\nFrom that emptiness, with no mother and no mate, the first powers simply happened — broad-breasted Gaia the Earth, dim Tartarus in the pit below, and Eros who would teach the world to reach for itself. Chaos shaped nothing and ruled nothing; it only opened, and having opened, let everything else begin to fall into its place.",
+    beats: [
+      { label: "The Yawning Openness", weight: 1,
+        text: "Before name, before number, before the first edge of anything stood against anything else — there was Chaos: not ruin and not riot, but a vast and yawning openness, the original gap in which nothing yet leaned upon nothing." },
+      { label: "A Held Breath", weight: 0.75,
+        text: "It is less a god than a held breath, the dark unmeasured mouth out of which all distance would one day be drawn." },
+      { label: "The First Powers", weight: 0.9, figures: ['gaia', 'tartarus', 'eros'],
+        text: "From that emptiness, with no mother and no mate, the first powers simply happened — broad-breasted Gaia the Earth, dim Tartarus in the pit below, and Eros who would teach the world to reach for itself." },
+      { label: "The Opening", weight: 0.6,
+        text: "Chaos shaped nothing and ruled nothing; it only opened, and having opened, let everything else begin to fall into its place." },
+    ],
     source: "Hesiod, Theogony."
   },
   gaia: {
@@ -39,26 +49,86 @@ export const deityStories = {
   },
   uranus: {
     story: "Uranus is the Sky — the great star-sown dome that Gaia bore out of herself so that she would never lie uncovered, and who then stretched upon her as her mate, pressing close over the whole width of the world. He was the first king of all things, and the first to learn that a throne, once made, can be taken.\n\nHe hated the children Gaia gave him and would not suffer them to be born, stuffing each one back into the dark of her body until the Earth herself ached with the weight of them. So Gaia forged a jagged sickle, and her youngest, Cronus, lay in ambush in the folds of the coming night; when Uranus descended upon her once more, the son reached up and unmanned his father, and flung the severed flesh into the sea. Where the foam gathered, Aphrodite rose; where the blood fell upon the Earth, the Furies were born. Sky recoiled from Earth and never came down again — and the gap between them, the open air, is the world we live in.",
+    beats: [
+      { label: "The Star-Sown Dome", weight: 0.85, figures: ['gaia'],
+        text: "Uranus is the Sky — the great star-sown dome that Gaia bore out of herself so that she would never lie uncovered, and who then stretched upon her as her mate. He was the first king of all things, and the first to learn that a throne, once made, can be taken." },
+      { label: "Children Denied", weight: 0.8,
+        text: "He hated the children Gaia gave him and would not suffer them to be born, stuffing each one back into the dark of her body until the Earth herself ached with the weight of them." },
+      { label: "The Sickle in the Dark", weight: 1, figures: ['cronus', 'gaia'],
+        text: "Gaia forged a jagged sickle, and her youngest, Cronus, lay in ambush in the folds of the coming night; when Uranus descended upon her once more, the son reached up and unmanned his father, and flung the severed flesh into the sea." },
+      { label: "Beauty from Violence", weight: 0.7, figures: ['aphrodite'],
+        text: "Where the foam gathered, Aphrodite rose; where the blood fell upon the Earth, the Furies were born. Sky recoiled from Earth and never came down again — and the gap between them, the open air, is the world we live in." },
+    ],
     source: "Hesiod, Theogony."
   },
   nyx: {
     story: "Nyx is Night itself, one of the eldest powers to come unbidden out of Chaos, and among the few beings before whom Zeus himself lowers his eyes. She keeps her house at the very rim of the world, where Day and Dark cross on the threshold at dusk and dawn and never once sit down together.\n\nFrom her own darkness, needing no father, she gave birth to the whole solemn company that rules the ends of mortal life — Sleep and his iron brother Death, the swarming tribe of Dreams, the three Fates with their thread, and blame and aching Misery and Doom. Yet the same womb that loosed these shadows also bore shining Day and the bright upper Air. The mother of every terror is also the mother of the morning; there is nothing the night gives us that it did not first carry in the dark.",
+    beats: [
+      { label: "The Eldest Dark", weight: 0.9, figures: ['chaos'],
+        text: "Nyx is Night itself, one of the eldest powers to come unbidden out of Chaos, and among the few beings before whom Zeus himself lowers his eyes." },
+      { label: "The Threshold House", weight: 0.6,
+        text: "She keeps her house at the very rim of the world, where Day and Dark cross on the threshold at dusk and dawn and never once sit down together." },
+      { label: "Mother of Shadows", weight: 1, figures: ['hypnos', 'thanatos', 'moirai'],
+        text: "From her own darkness, needing no father, she gave birth to the whole solemn company that rules the ends of mortal life — Sleep and his iron brother Death, the swarming tribe of Dreams, the three Fates with their thread, and blame and aching Misery and Doom." },
+      { label: "Mother of Morning", weight: 0.75, figures: ['hemera', 'aether'],
+        text: "Yet the same womb that loosed these shadows also bore shining Day and the bright upper Air. The mother of every terror is also the mother of the morning; there is nothing the night gives us that it did not first carry in the dark." },
+    ],
     source: "Hesiod, Theogony."
   },
   erebus: {
     story: "Erebus is the primordial dark — not the night sky overhead but the deeper gloom beneath the world, the shadow that pools in the hollow places of the earth and lines the long road the dead must walk on their way down. He is among the first powers to emerge from Chaos, older than any god with a face or a name.\n\nYet darkness, in the oldest stories, is fertile. Erebus lay with his sister Nyx, the Night, and from that mingling of two shadows came their own bright opposites: Hemera the Day and Aether the shining upper air. So the deepest dark fathered the clearest light — as though the world could only arrive at its morning by first passing through the gloom that came before it.",
+    beats: [
+      { label: "The Deeper Gloom", weight: 0.85, figures: ['chaos'],
+        text: "Erebus is the primordial dark — not the night sky overhead but the deeper gloom beneath the world, the shadow that pools in the hollow places of the earth and lines the long road the dead must walk on their way down." },
+      { label: "Older Than Names", weight: 0.6,
+        text: "He is among the first powers to emerge from Chaos, older than any god with a face or a name." },
+      { label: "Two Shadows Mingled", weight: 1, figures: ['nyx'],
+        text: "Yet darkness, in the oldest stories, is fertile. Erebus lay with his sister Nyx, the Night, and from that mingling of two shadows came their own bright opposites." },
+      { label: "Light from the Dark", weight: 0.8, figures: ['hemera', 'aether'],
+        text: "From that mingling came Hemera the Day and Aether the shining upper air. So the deepest dark fathered the clearest light — as though the world could only arrive at its morning by first passing through the gloom that came before it." },
+    ],
     source: "Hesiod, Theogony."
   },
   tartarus: {
     story: "Tartarus is less a god than a hunger with a floor — the bottomless pit that gapes beneath the underworld, lying as far below the realm of Hades as the earth lies below the sky. A bronze anvil, the old poets said, would fall nine days and nine nights through the dark before it struck the bottom. He is the deep that even the dead do not enter.\n\nBorn of Chaos beside Gaia at the very beginning of things, Tartarus is the prison at the bottom of the world. Into him the defeated Titans were hurled when the Olympians won their war, sealed behind gates of bronze with the hundred-handed giants set to guard them; and there the worst are kept forever. He is also, with Gaia, the father of Typhon — the abyss itself reaching up, just once, to breed a monster terrible enough to threaten heaven.",
+    beats: [
+      { label: "A Hunger with a Floor", weight: 0.9,
+        text: "Tartarus is less a god than a hunger with a floor — the bottomless pit that gapes beneath the underworld, lying as far below the realm of Hades as the earth lies below the sky." },
+      { label: "The Nine-Day Fall", weight: 0.7, figures: ['chaos', 'gaia'],
+        text: "A bronze anvil, the old poets said, would fall nine days and nine nights through the dark before it struck the bottom. Born of Chaos beside Gaia at the very beginning of things, he is the deep that even the dead do not enter." },
+      { label: "Prison of the Titans", weight: 1, figures: ['cronus'],
+        text: "Into him the defeated Titans were hurled when the Olympians won their war, sealed behind gates of bronze with the hundred-handed giants set to guard them; and there the worst are kept forever." },
+      { label: "Father of Typhon", weight: 0.8, figures: ['gaia', 'typhon'],
+        text: "He is also, with Gaia, the father of Typhon — the abyss itself reaching up, just once, to breed a monster terrible enough to threaten heaven." },
+    ],
     source: "Hesiod, Theogony."
   },
   eros: {
     story: "Eros is desire itself — not the winged boy with his arrows of the later tales, but one of the first and oldest powers, the force that stirred at the very beginning when there was almost nothing yet to want. He is the pull at the heart of things, the reaching of one thing toward another out of which all joining, and so all making, is born.\n\nHe rose out of Chaos among the earliest powers, alongside the broad Earth and the abyss, and without him they would have stayed forever apart, cold and separate in the dark. It is Eros who taught Sky to lie upon Earth and Sea to mingle with the shore, who set the gods themselves to loving and so to bearing the generations that crowd the world. The younger gods of love are only his late children; the desire that runs through everything is far older than any of them.",
+    beats: [
+      { label: "The Oldest Want", weight: 1, figures: ['chaos'],
+        text: "Eros is desire itself — not the winged boy with his arrows of the later tales, but one of the first and oldest powers, the force that stirred at the very beginning when there was almost nothing yet to want." },
+      { label: "The Pull at the Heart", weight: 0.8,
+        text: "He is the pull at the heart of things, the reaching of one thing toward another out of which all joining, and so all making, is born." },
+      { label: "Sky Upon Earth", weight: 0.9, figures: ['gaia', 'uranus', 'pontus'],
+        text: "He rose out of Chaos among the earliest powers, alongside the broad Earth and the abyss, and without him they would have stayed forever apart, cold and separate in the dark. It is Eros who taught Sky to lie upon Earth and Sea to mingle with the shore." },
+      { label: "Older Than His Children", weight: 0.6,
+        text: "The younger gods of love are only his late children; the desire that runs through everything is far older than any of them." },
+    ],
     source: "Hesiod, Theogony."
   },
   pontus: {
     story: "Pontus is the Sea itself — not a god who rules the water but the water given a will, the salt deep as it was before any keel had ever crossed it, before Poseidon lifted a trident over it. He is the grey horizon and the unlit fathoms, the oldest face of the ocean.\n\nGaia bore him out of herself alone, without a father, as she bore the sky and the mountains — the first sea poured from the first earth. And when Earth and Sea came together, they seeded the elder line of ocean powers: Nereus the truthful old man of the waves, and dangerous Phorcys with his sister Ceto, from whom the great sea-monsters would one day descend. Long before the Olympians divided the world among themselves, Pontus was already the whole of the deep.",
+    beats: [
+      { label: "The Water Given a Will", weight: 0.9,
+        text: "Pontus is the Sea itself — not a god who rules the water but the water given a will, the salt deep as it was before any keel had ever crossed it, before Poseidon lifted a trident over it." },
+      { label: "Born of Earth Alone", weight: 0.7, figures: ['gaia'],
+        text: "Gaia bore him out of herself alone, without a father, as she bore the sky and the mountains — the first sea poured from the first earth." },
+      { label: "Elder Ocean Powers", weight: 1, figures: ['nereus', 'phorcys', 'ceto'],
+        text: "When Earth and Sea came together, they seeded the elder line of ocean powers: Nereus the truthful old man of the waves, and dangerous Phorcys with his sister Ceto, from whom the great sea-monsters would one day descend." },
+      { label: "The Whole of the Deep", weight: 0.6,
+        text: "Long before the Olympians divided the world among themselves, Pontus was already the whole of the deep." },
+    ],
     source: "Hesiod, Theogony."
   },
   thanatos: {
@@ -103,34 +173,102 @@ export const deityStories = {
   },
   rhea: {
     story: "Rhea is the Titaness of the flowing generations, the great mother who stands between two ages of the world — wife to Cronus, and mother of the first six Olympians. Hers is the oldest grief in heaven: to give birth again and again, and each time to watch the cradle emptied.\n\nFor Cronus, in terror of his own children, swallowed each one the moment she bore it. When her sixth child quickened within her, Rhea could endure no more. She fled by night to Crete, brought the infant Zeus to birth in a hidden cave on the mountainside, and carried back to her husband a stone dressed in an infant's clothes. He swallowed it whole without once looking down. So by nothing more than a mother's cunning the youngest god was saved — and grew strong enough, at last, to make his father give back all the rest.",
+    beats: [
+      { label: "Mother Between Ages", weight: 0.85, figures: ['cronus'],
+        text: "Rhea is the Titaness of the flowing generations, the great mother who stands between two ages of the world — wife to Cronus, and mother of the first six Olympians." },
+      { label: "The Oldest Grief", weight: 0.9, figures: ['hestia', 'demeter', 'hera', 'hades', 'poseidon'],
+        text: "Hers is the oldest grief in heaven: Cronus, in terror of his own children, swallowed each one the moment she bore it — and each time she watched the cradle emptied." },
+      { label: "The Cave on Crete", weight: 1, figures: ['zeus'],
+        text: "When her sixth child quickened within her, Rhea could endure no more. She fled by night to Crete and brought the infant Zeus to birth in a hidden cave on the mountainside." },
+      { label: "A Stone in Swaddling", weight: 0.75,
+        text: "She carried back to her husband a stone dressed in an infant's clothes. He swallowed it whole without once looking down — and by nothing more than a mother's cunning the youngest god was saved." },
+    ],
     source: "Hesiod, Theogony."
   },
   oceanus: {
     story: "Oceanus is the great world-river — the vast, ever-circling stream that the ancients believed ran round the rim of the whole earth, the boundary of the known world and the source from which every river, spring, and well draws its water. Eldest of the Titans, he is less a person than a horizon, immense and untroubled.\n\nWith his sister and wife Tethys he fathered the three thousand river-gods and the three thousand Oceanid nymphs, so that nearly every flowing water in the world is one of his children. Yet when the Titans rose in war against the young Olympians, Oceanus alone would not raise his hand; he kept to his endless circling at the edge of things and let the others fall — too old and too vast to be stirred by a quarrel over a throne.",
+    beats: [
+      { label: "The World-River", weight: 0.9,
+        text: "Oceanus is the great world-river — the vast, ever-circling stream that ran round the rim of the whole earth, the boundary of the known world and the source from which every river, spring, and well draws its water." },
+      { label: "Father of All Waters", weight: 1, figures: ['tethys'],
+        text: "With his sister and wife Tethys he fathered the three thousand river-gods and the three thousand Oceanid nymphs, so that nearly every flowing water in the world is one of his children." },
+      { label: "The Titan Who Would Not Fight", weight: 0.75, figures: ['zeus'],
+        text: "When the Titans rose in war against the young Olympians, Oceanus alone would not raise his hand; he kept to his endless circling at the edge of things and let the others fall — too old and too vast to be stirred by a quarrel over a throne." },
+    ],
     source: "Hesiod, Theogony."
   },
   tethys: {
     story: "Tethys is the Titaness of the nursing waters, the gentle mother from whom the world's fresh streams flow — wife to Oceanus the world-river, and the source that feeds the rivers, the rain-clouds, and the springs that keep the living earth alive.\n\nFrom her came the three thousand Oceanids and all the rivers of the world, drawn up through the earth and poured back into the sea in an endless round; she is the hidden circulation that turns the salt deep into the sweet water of every brook. In the oldest tales she even nursed the goddess Hera while the war in heaven raged, fostering her at the world's far edge — the great nurse of waters who was, for a time, the nurse of a future queen.",
+    beats: [
+      { label: "Nurse of the World", weight: 0.85, figures: ['oceanus'],
+        text: "Tethys is the Titaness of the nursing waters — wife to Oceanus the world-river, and the source that feeds the rivers, the rain-clouds, and the springs that keep the living earth alive." },
+      { label: "The Hidden Circulation", weight: 1,
+        text: "From her came the three thousand Oceanids and all the rivers of the world, drawn up through the earth and poured back into the sea in an endless round — the hidden circulation that turns the salt deep into the sweet water of every brook." },
+      { label: "Foster-Mother of Hera", weight: 0.7, figures: ['hera'],
+        text: "In the oldest tales she even nursed the goddess Hera while the war in heaven raged, fostering her at the world's far edge — the great nurse of waters who was, for a time, the nurse of a future queen." },
+    ],
     source: "Hesiod, Theogony."
   },
   hyperion: {
     story: "Hyperion is the Titan of heavenly light, the watcher from on high — his very name means 'the one who goes above.' He is light not as a single lamp but as a principle, the pure radiance of the upper sky out of which the measured lights of day and night were drawn.\n\nWith his sister Theia, goddess of shining, he fathered the three great lights of the world: Helios the Sun, Selene the Moon, and Eos the Dawn. Through his children the heavens are lit and the hours are counted — sunrise, high noon, and the silver crossing of the night. Hyperion himself stands behind them all, the older and dimmer source, the father-light from which every visible brightness in the sky was first kindled.",
+    beats: [
+      { label: "The One Who Goes Above", weight: 0.85,
+        text: "Hyperion is the Titan of heavenly light, the watcher from on high — his very name means 'the one who goes above.' He is light not as a single lamp but as a principle, the pure radiance of the upper sky." },
+      { label: "Three Lights of the World", weight: 1, figures: ['theia', 'helios', 'selene', 'eos'],
+        text: "With his sister Theia he fathered the three great lights of the world: Helios the Sun, Selene the Moon, and Eos the Dawn. Through his children the heavens are lit and the hours are counted." },
+      { label: "The Father-Light", weight: 0.65,
+        text: "Hyperion himself stands behind them all, the older and dimmer source, the father-light from which every visible brightness in the sky was first kindled." },
+    ],
     source: "Hesiod, Theogony."
   },
   theia: {
     story: "Theia is the Titaness of sight and shining — the power that lends light its splendor and the eye its ability to see by it. The Greeks believed it was she who gave gold and silver and bright gems their gleam, so that everything precious in the world borrows a little of her radiance.\n\nHer name means simply 'divine,' and she is brightness in its purest form, before it is parceled out into particular fires. With her brother Hyperion she gave birth to the three lights that order the sky — the Sun, the Moon, and the Dawn — pouring her own shining into each of her children. To look upon anything that glitters, the old poets said, is to catch a far-off glimpse of Theia herself.",
+    beats: [
+      { label: "Goddess of Shining", weight: 0.85,
+        text: "Theia is the Titaness of sight and shining — the power that lends light its splendor and the eye its ability to see by it. Everything precious in the world borrows a little of her radiance." },
+      { label: "Mother of the Lights", weight: 1, figures: ['hyperion', 'helios', 'selene', 'eos'],
+        text: "With her brother Hyperion she gave birth to the three lights that order the sky — the Sun, the Moon, and the Dawn — pouring her own shining into each of her children." },
+      { label: "A Glimpse of the Divine", weight: 0.6,
+        text: "To look upon anything that glitters, the old poets said, is to catch a far-off glimpse of Theia herself." },
+    ],
     source: "Hesiod, Theogony."
   },
   iapetus: {
     story: "Iapetus is one of the four great Titans who, in the oldest reckoning, stood at the corners of the world and held the sky apart from the earth — a pillar-god of the western edge, linked by the Greeks with mortal life and its short, striving span.\n\nHis true importance lies in his sons, for through them the whole condition of humankind entered the world. He fathered Atlas, condemned to bear the heavens on his shoulders; Prometheus, who stole fire and suffered for loving men; and Epimetheus, the afterthought who took Pandora into his house. Endurance and foresight, cleverness and folly — the best and the worst of the mortal lot all trace back, in the end, through the line of Iapetus.",
+    beats: [
+      { label: "Pillar of the West", weight: 0.75,
+        text: "Iapetus is one of the four great Titans who stood at the corners of the world and held the sky apart from the earth — a pillar-god of the western edge, linked by the Greeks with mortal life and its short, striving span." },
+      { label: "Father of Man's Condition", weight: 1, figures: ['atlas', 'prometheus', 'epimetheus'],
+        text: "Through his sons the whole condition of humankind entered the world: Atlas, condemned to bear the heavens; Prometheus, who stole fire and suffered for loving men; and Epimetheus, the afterthought who took Pandora into his house." },
+      { label: "The Mortal Lot", weight: 0.7,
+        text: "Endurance and foresight, cleverness and folly — the best and the worst of the mortal lot all trace back, in the end, through the line of Iapetus." },
+    ],
     source: "Hesiod, Theogony."
   },
   mnemosyne: {
     story: "Mnemosyne is Memory itself given a face — the Titaness who holds the whole of the past, and without whom there could be no knowledge, no story, no name that outlasts the moment it is spoken. In an age before writing, she was the most necessary power of all: the keeper of everything that must not be lost.\n\nZeus came to her and lay with her for nine nights running, and from those nights she bore the nine Muses — so that out of Memory came song, history, and all the arts that carry a people's past forward into its future. It is no accident that the poets begin by calling on her daughters: every poem is an act of remembering, and behind every Muse stands their mother, the deep still well of Memory from which all of it is drawn.",
+    beats: [
+      { label: "Memory Given a Face", weight: 0.85,
+        text: "Mnemosyne is Memory itself given a face — the Titaness who holds the whole of the past. In an age before writing, she was the most necessary power of all: the keeper of everything that must not be lost." },
+      { label: "Nine Nights with Zeus", weight: 1, figures: ['zeus', 'muses'],
+        text: "Zeus came to her and lay with her for nine nights running, and from those nights she bore the nine Muses — so that out of Memory came song, history, and all the arts that carry a people's past forward into its future." },
+      { label: "The Well of All Song", weight: 0.7,
+        text: "Every poem is an act of remembering, and behind every Muse stands their mother, the deep still well of Memory from which all of it is drawn." },
+    ],
     source: "Hesiod, Theogony."
   },
   themis: {
     story: "Themis is the Titaness of divine law and right order — not the written statutes of cities but the older, deeper rule beneath them: custom, fairness, the way things are properly done between gods and men. She is the steady sense of what is fitting, and she sits closer to the throne of Zeus than almost anyone.\n\nBefore Apollo ever held it, it was Themis who spoke the oracles at Delphi, breathing the future from the navel of the world. As Zeus's trusted counselor she became his second consort and bore the Seasons and, in some tellings, the Fates themselves — so that order, timeliness, and destiny are all her daughters. When the gods gather in assembly, it is Themis who calls them to order: the quiet keeper of the rules that even heaven agrees to keep.",
+    beats: [
+      { label: "The Deeper Rule", weight: 0.85,
+        text: "Themis is the Titaness of divine law and right order — not the written statutes of cities but the older, deeper rule beneath them: custom, fairness, the way things are properly done between gods and men." },
+      { label: "Oracle Before Apollo", weight: 0.9, figures: ['apollo'],
+        text: "Before Apollo ever held it, it was Themis who spoke the oracles at Delphi, breathing the future from the navel of the world." },
+      { label: "Mother of Order", weight: 1, figures: ['zeus', 'moirai'],
+        text: "As Zeus's trusted counselor she became his second consort and bore the Seasons and, in some tellings, the Fates themselves — so that order, timeliness, and destiny are all her daughters." },
+      { label: "Keeper of the Assembly", weight: 0.6,
+        text: "When the gods gather in assembly, it is Themis who calls them to order: the quiet keeper of the rules that even heaven agrees to keep." },
+    ],
     source: "Hesiod, Theogony."
   },
   metis: {
@@ -219,6 +357,16 @@ export const deityStories = {
   },
   hestia: {
     story: "Hestia is the goddess of the hearth and its quiet, unfailing fire — eldest of the children of Cronus, and so both the first he swallowed and the last he gave back up, the eldest and the youngest of the gods at once. Hers is the still center of every house and every city, the flame that must never be allowed to go out.\n\nWhen both Apollo and Poseidon desired her, Hestia swore by the head of Zeus to remain unwed forever, and asked in return only to tend the fire at the heart of the gods' own home. Gentlest and least quarrelsome of the Olympians, she is said to have given up her very throne to keep the peace when Dionysus came late to heaven, choosing the warmth of the hearth over the splendor of a seat. She has almost no myths of her own — and that is precisely her nature: she is the one who stays at home and keeps the fire while the others go out to make the stories.",
+    beats: [
+      { label: "The Undying Flame", weight: 0.9,
+        text: "Hestia is the goddess of the hearth and its quiet, unfailing fire — eldest of the children of Cronus, the first he swallowed and the last he gave back up. Hers is the still center of every house and every city." },
+      { label: "The Unwed Oath", weight: 1, figures: ['apollo', 'poseidon', 'zeus'],
+        text: "When both Apollo and Poseidon desired her, Hestia swore by the head of Zeus to remain unwed forever, and asked in return only to tend the fire at the heart of the gods' own home." },
+      { label: "The Yielded Throne", weight: 0.75, figures: ['dionysus'],
+        text: "She is said to have given up her very throne to keep the peace when Dionysus came late to heaven, choosing the warmth of the hearth over the splendor of a seat." },
+      { label: "Keeper of the Fire", weight: 0.65,
+        text: "She has almost no myths of her own — and that is precisely her nature: she is the one who stays at home and keeps the fire while the others go out to make the stories." },
+    ],
     source: "Homeric Hymn to Hestia."
   },
   athena: {
@@ -237,10 +385,30 @@ export const deityStories = {
   },
   apollo: {
     story: "Apollo is the radiant god of light, music, healing, archery, and prophecy — the most luminous of the Olympians, whose lyre sets the order of the heavens and whose far-shooting bow brings both the plague and its cure. Twin of Artemis, son of Zeus and Leto, he is beauty and clarity made divine.\n\nNewborn and scarcely grown, he came to Delphi and slew the great earth-serpent Python that coiled about the oracle, claiming the navel of the world for his own voice; ever after, his priestess breathed the future from that place. Yet for all his brilliance the god is strangely luckless in love. Having mocked little Eros, he was struck with an arrow of helpless longing and pursued the nymph Daphne through the woods until, at the very edge of her strength, she begged the earth to save her and turned to laurel in his arms — bark closing over her heart as he embraced it. He could only break a branch to crown himself, holding forever the one thing he could not have.",
+    beats: [
+      { label: "The Radiant Twin", weight: 0.85, figures: ['artemis', 'zeus', 'leto'],
+        text: "Apollo is the most luminous of the Olympians — twin of Artemis, son of Zeus and Leto, beauty and clarity made divine, whose lyre sets the order of the heavens and whose far-shooting bow brings both the plague and its cure." },
+      { label: "The Serpent at Delphi", weight: 0.9,
+        text: "Newborn and scarcely grown, he came to Delphi and slew the great earth-serpent Python that coiled about the oracle, claiming the navel of the world for his own voice; ever after, his priestess breathed the future from that place." },
+      { label: "Laurel in His Arms", weight: 1, figures: ['eros', 'daphne'],
+        text: "Having mocked little Eros, he was struck with an arrow of helpless longing and pursued the nymph Daphne through the woods until she begged the earth to save her and turned to laurel in his arms — bark closing over her heart as he embraced it." },
+      { label: "The Crown He Keeps", weight: 0.6,
+        text: "He could only break a branch to crown himself, holding forever the one thing he could not have." },
+    ],
     source: "Homeric Hymn to Apollo; Ovid, Metamorphoses I. Further reading: Ted Hughes, Tales from Ovid."
   },
   artemis: {
     story: "Artemis is the goddess of the hunt, the wild wood, the untrodden places, and the silver moon — twin sister of Apollo, born first and said to have helped her own mother bring her brother into the light. Swift, chaste, and free, she runs the mountains with her band of nymphs and her hounds, and guards her solitude with a deadly silver bow.\n\nWoe to any who trespass upon it. When the hunter Actaeon, lost in the forest, stumbled by pure chance upon the goddess bathing naked in a pool, she would suffer no man who had seen her so to live to speak of it; she flung the cold water in his face, and he felt antlers branch from his brow, his neck lengthen, his cry break into a stag's. His own hounds, no longer knowing their master, ran him down and tore him apart upon the leaves. Such is Artemis — tender to the young and the wild, and utterly without mercy toward whatever lays a hand on what is hers.",
+    beats: [
+      { label: "Goddess of the Wild", weight: 0.85, figures: ['apollo', 'leto'],
+        text: "Artemis is the goddess of the hunt, the wild wood, and the silver moon — twin sister of Apollo, born first and said to have helped her own mother bring her brother into the light. Swift, chaste, and free, she guards her solitude with a deadly silver bow." },
+      { label: "The Hunter Trespasses", weight: 0.9, figures: ['actaeon'],
+        text: "When the hunter Actaeon, lost in the forest, stumbled by pure chance upon the goddess bathing naked in a pool, she would suffer no man who had seen her so to live to speak of it; she flung the cold water in his face." },
+      { label: "The Stag's Cry", weight: 1,
+        text: "He felt antlers branch from his brow, his neck lengthen, his cry break into a stag's. His own hounds, no longer knowing their master, ran him down and tore him apart upon the leaves." },
+      { label: "Tender and Merciless", weight: 0.65,
+        text: "Such is Artemis — tender to the young and the wild, and utterly without mercy toward whatever lays a hand on what is hers." },
+    ],
     source: "Homeric Hymn to Artemis; Ovid, Metamorphoses III. Further reading: Ted Hughes, Tales from Ovid."
   },
   hephaestus: {
