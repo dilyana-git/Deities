@@ -308,7 +308,7 @@ export const deityStories = {
     source: "Hesiod, Theogony."
   },
   erinyes: {
-    story: "The Furies were born from the blood of castrated Uranus — ancient spirits who hound those who spill kindred blood or break sacred oaths. Serpent-haired and tireless, they pursue the guilty into madness.",
+    story: "The Erinyes — the Furies — were born from blood and violence before the world had any law to answer them. When Cronus took up the jagged sickle and unmanned his father Uranus, the dark drops that fell upon the Earth quickened into three terrible daughters: Alecto the unceasing, Tisiphone the avenger of murder, and Megaera the jealous one. They are older than the Olympians, older than mercy, and they answer to no throne.\n\nSerpent-haired, black-winged, and weeping tears of blood, they rise from the dark whenever kindred blood is spilled or a sacred oath is broken. They do not judge — they pursue, with a patience that outlasts the turning of the world. Orestes, who slew his own mother Clytemnestra to avenge his murdered father, was hunted across Greece by their shrieking, sleepless wrath until Athena herself convened the first court of law in Athens to try his case. There the Furies were persuaded — barely — to accept the verdict, and were given a new name: the Eumenides, the Kindly Ones, housed in a cavern beneath the Areopagus. But kindness is only the mask they agreed to wear. Beneath it they are still the oldest anger in the world, and what they hunt, they never stop hunting.",
     source: "Hesiod, Theogony; Aeschylus, Eumenides."
   },
 
@@ -412,7 +412,7 @@ export const deityStories = {
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
   proteus: {
-    story: "Proteus, another old sea-god and herdsman of seals, knows all things but answers only those who can hold him as he shifts into flame, beast, and water. Menelaus pinned him to learn the way home.",
+    story: "Proteus is the Old Man of the Sea, a shape-shifter who herds the grey seals of Poseidon across the shallows of the Egyptian isle of Pharos. He knows all things — past, present, and the paths that are still to come — but he will not speak unless forced, and forcing him is the trial.\n\nEach noon he rises from the surf, counts his seals like a shepherd counting sheep, and lies down among them to sleep. That is the only moment he can be caught, and whoever seizes him must hold fast through every horror he becomes: a bearded lion, a sinuous serpent, a leopard, a great boar, running water, a towering tree roaring with wind. Only if the grip never loosens will Proteus at last return to his own aged shape and, with a sigh, answer what is asked. It was Menelaus, stranded on his long voyage home from Troy, who wrestled the old god down on the advice of Proteus's own daughter Eidothea — and learned at last which winds to court and which gods to appease. Proteus is knowledge that does not want to be known, truth that fights to stay hidden, the sea itself refusing to hold one shape long enough to be read.",
     source: "Homer, Odyssey IV."
   },
   thetis: {
