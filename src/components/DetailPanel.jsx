@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import { nodes as allNodes, links as allLinks } from '../data/mythology.js'
 import { archetypeMap } from '../data/archetypeMap.js'
 import { CAT, LCOL } from './SkyGraph.jsx'
@@ -128,6 +128,11 @@ function Section({ label, children, index = 0 }) {
    ════════════════════════════════════════════════════════════════════════ */
 export default function DetailPanel({ nodeId, onClose, onNavigate }) {
   const node = nodeId ? _nodeMap[nodeId] : null
+  const asideRef = useRef(null)
+
+  useEffect(() => {
+    if (node && asideRef.current) asideRef.current.scrollTop = 0
+  }, [nodeId])
 
   const connections = useMemo(() => {
     if (!node) return []
@@ -148,7 +153,7 @@ export default function DetailPanel({ nodeId, onClose, onNavigate }) {
   }, [node])
 
   return (
-    <aside className={`detail-panel ${node ? 'open' : ''}`}>
+    <aside ref={asideRef} className={`detail-panel ${node ? 'open' : ''}`}>
       {node && (
         <PanelContent
           key={node.id}
