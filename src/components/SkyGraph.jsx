@@ -102,6 +102,31 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        opacity, label prominence, renown bars). */
     const radius = n => 2.4 + Math.pow(n.prom, 1.3) * 17
 
+    /* ── birth-order generation (BFS along parent_of / birthed edges) ── */
+    const childAdj = {}
+    nodes.forEach(n => (childAdj[n.id] = []))
+    links.forEach(l => {
+      if (l.type === 'parent_of' || l.type === 'birthed')
+        childAdj[l.source].push(l.target)
+    })
+    const gen = {}
+    const roots = nodes.filter(n => n.category === 'primordial').map(n => n.id)
+    const queue = roots.map(id => ({ id, g: 0 }))
+    roots.forEach(id => (gen[id] = 0))
+    while (queue.length) {
+      const { id, g } = queue.shift()
+      for (const cid of childAdj[id]) {
+        if (gen[cid] == null) { gen[cid] = g + 1; queue.push({ id: cid, g: g + 1 }) }
+      }
+    }
+    const maxGen = Math.max(...Object.values(gen), 1)
+    nodes.forEach(n => {
+      if (gen[n.id] == null) gen[n.id] = maxGen + 1
+    })
+    const genOrder = nodes.slice().sort((a, b) => gen[a.id] - gen[b.id] || a.id.localeCompare(b.id))
+    const birthRank = {}
+    genOrder.forEach((n, i) => (birthRank[n.id] = i))
+
     /* ── svg scaffold ───────────────────────────────────────────── */
     const svg = d3.select(el)
     svg.selectAll('*').remove()
@@ -291,7 +316,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('stroke-width', 0.7)
       .attr('stroke-linecap', 'round')
       .attr('fill', 'none')
-      .attr('opacity', 0.08)
+      .attr('opacity', 0)
       .attr('data-type-color', d => LCOL[d.type] || '#555')
       .attr('data-type-dash', d => LINK_DASH[d.type] || '')
 
@@ -300,6 +325,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const clusterSel = clusterLayer.selectAll('text').data(cats).join('text')
       .attr('class', 'cluster-label')
       .attr('text-anchor', 'middle')
+      .attr('opacity', 0)
       .text(c => CAT_LABEL[c] || c)
 
     /* Densest-sub-blob anchoring + mutual de-collision (computed every tick,
@@ -334,6 +360,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .classed('mid-label', d => d.prom > 0.3 && d.prom < hubThreshold)
       .classed('nolabel',   d => d.degree === 0)
       .style('cursor', 'pointer')
+      .style('opacity', 0)
       .on('click',      (e, d) => { e.stopPropagation(); api.select(d.id, true) })
       .on('mouseenter', (e, d) => hoverOn(d))
       .on('mouseleave', ()     => hoverOff())
@@ -502,6 +529,37 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     ticked()
     sim.on('tick', ticked)
     sim.alphaTarget(WARM_ALPHA).alpha(WARM_ALPHA).restart()
+
+    /* ── birth-order entrance: nodes ignite in mythological order ── */
+    const ENTRANCE_MS  = 3200
+    const perNode      = ENTRANCE_MS / nodes.length
+    gNode.transition('birth')
+      .delay(d => birthRank[d.id] * perNode)
+      .duration(600)
+      .ease(d3.easeCubicOut)
+      .style('opacity', 1)
+
+    linkSel.transition('birth')
+      .delay(d => {
+        const sId = typeof d.source === 'object' ? d.source.id : d.source
+        const tId = typeof d.target === 'object' ? d.target.id : d.target
+        return Math.max(birthRank[sId], birthRank[tId]) * perNode + 200
+      })
+      .duration(500)
+      .ease(d3.easeCubicOut)
+      .attr('opacity', 0.08)
+
+    const firstCatAppear = {}
+    nodes.forEach(n => {
+      const t = birthRank[n.id] * perNode
+      if (firstCatAppear[n.category] == null || t < firstCatAppear[n.category])
+        firstCatAppear[n.category] = t
+    })
+    clusterSel.transition('birth')
+      .delay(c => (firstCatAppear[c] || 0) + 300)
+      .duration(800)
+      .ease(d3.easeCubicOut)
+      .attr('opacity', 0.45)
 
     /* ── zoom / pan ─────────────────────────────────────────────── */
     const zoom = d3.zoom().scaleExtent([0.35, 4.5])
