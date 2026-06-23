@@ -1063,7 +1063,7 @@ export const links = [
 { source: "theseus",   target: "ariadne",  type: "lover_of",  label: "whom he abandoned on Naxos" },
 { source: "dionysus",  target: "ariadne",  type: "lover_of",  label: "found and wed her on Naxos" },
 { source: "jason",     target: "medea",    type: "lover_of",  label: "aided then betrayed her" },
-{ source: "helios",    target: "medea",    type: "parent_of", label: "her grandsire, the Sun" },
+{ source: "helios",    target: "medea",    type: "created_by", label: "granddaughter of the Sun — her sorcery descends from his fire" },
 { source: "daedalus", target: "icarus",   type: "parent_of",  label: "his son, lost in the flight" },
 { source: "daedalus", target: "minotaur", type: "created_by", label: "devised both its making and its prison" },
 { source: "daedalus", target: "perdix",   type: "enemy_of",   label: "cast him from the height in envy" },
@@ -1079,7 +1079,7 @@ export const links = [
   // ── NYX & EREBUS BIRTHS ───────────────────────────────────────────────────
   { source:"nyx",      target:"thanatos",  type:"parent_of",  label:"bore Death alone" },
   { source:"nyx",      target:"hypnos",    type:"parent_of",  label:"bore Sleep alone" },
-  { source:"nyx",      target:"morpheus",  type:"parent_of",  label:"bore the Dream-Shaper" },
+  { source:"hypnos",   target:"morpheus",  type:"parent_of",  label:"son of Sleep — the Dream-Shaper" },
   { source:"nyx",      target:"nemesis",   type:"parent_of",  label:"bore Divine Retribution" },
   { source:"nyx",      target:"eris",      type:"parent_of",  label:"bore Discord alone" },
   { source:"nyx",      target:"moirai",    type:"parent_of",  label:"bore the three Fates" },
@@ -1109,6 +1109,8 @@ export const links = [
   { source:"uranus",   target:"tethys",    type:"parent_of",  label:"with Gaia" },
   { source:"gaia",     target:"iapetus",   type:"parent_of",  label:"with Uranus" },
   { source:"uranus",   target:"iapetus",   type:"parent_of",  label:"with Gaia" },
+  { source:"gaia",     target:"theia",     type:"parent_of",  label:"with Uranus" },
+  { source:"uranus",   target:"theia",     type:"parent_of",  label:"with Gaia" },
   { source:"cronus",   target:"uranus",    type:"enemy_of",   label:"castrated his father" },
 
   // ── GAIA + PONTUS → SEA DEITIES ───────────────────────────────────────────
@@ -1138,6 +1140,7 @@ export const links = [
   { source:"theia",    target:"selene",    type:"parent_of",  label:"with Hyperion" },
   { source:"hyperion", target:"eos",       type:"parent_of",  label:"with Theia" },
   { source:"theia",    target:"eos",       type:"parent_of",  label:"with Hyperion" },
+  { source:"helios",   target:"circe",     type:"parent_of",  label:"with the Oceanid Perse" },
 
   // ── IAPETUS → TITAN CHILDREN ──────────────────────────────────────────────
   { source:"iapetus",  target:"prometheus",type:"parent_of",  label:"with the Oceanid Clymene" },
@@ -1169,7 +1172,7 @@ export const links = [
   { source:"zeus",     target:"metis",     type:"merged_with",label:"swallowed her whole to prevent prophecy" },
   { source:"zeus",     target:"athena",    type:"parent_of",  label:"born from his head in full armor" },
   { source:"metis",    target:"athena",    type:"parent_of",  label:"counseled from within Zeus's mind" },
-  { source:"zeus",     target:"hera",      type:"parent_of",  label:"fathered Ares with queen" },
+  { source:"zeus",     target:"ares",      type:"parent_of",  label:"with Hera" },
   { source:"hera",     target:"ares",      type:"parent_of",  label:"with Zeus" },
   { source:"hera",     target:"hephaestus",type:"birthed",    label:"bore alone in fury against Zeus" },
   { source:"zeus",     target:"mnemosyne", type:"lover_of",   label:"nine nights together" },
@@ -1229,7 +1232,8 @@ export const links = [
   { source:"ceto",     target:"ladon",     type:"parent_of",  label:"with Phorcys" },
   { source:"phorcys",  target:"echidna",   type:"parent_of",  label:"with Ceto — in Hesiod's account" },
   { source:"ceto",     target:"echidna",   type:"parent_of",  label:"with Phorcys" },
-  { source:"phorcys",  target:"scylla",    type:"parent_of",  label:"Hesiod's account of her origin" },
+  { source:"phorcys",  target:"scylla",    type:"parent_of",  label:"with Ceto — Hesiod's account" },
+  { source:"ceto",     target:"scylla",    type:"parent_of",  label:"with Phorcys" },
 
   // ── GLAUCUS LOVE TRIANGLE ─────────────────────────────────────────────────
   { source:"glaucus",  target:"scylla",    type:"lover_of",   label:"his unrequited love triggered her transformation" },
@@ -1256,10 +1260,11 @@ export const links = [
 
   // ── MEDUSA BRANCH ─────────────────────────────────────────────────────────
   { source:"medusa",   target:"pegasus",   type:"birthed",    label:"born from her severed neck" },
+  { source:"poseidon", target:"pegasus",   type:"parent_of",  label:"sired in Medusa's temple" },
   { source:"medusa",   target:"chrysaor",  type:"birthed",    label:"born from her severed neck" },
+  { source:"poseidon", target:"chrysaor",  type:"parent_of",  label:"sired in Medusa's temple" },
   { source:"chrysaor", target:"geryon",    type:"parent_of",  label:"with the Oceanid Callirrhoe" },
   { source:"callirrhoe",target:"geryon",   type:"parent_of",  label:"with Chrysaor" },
-  { source:"asclepius",target:"asclepius", type:"created_by", label:"dummy self-ref removed — see Athena below" },
   { source:"apollo",   target:"asclepius", type:"parent_of",  label:"with the mortal Coronis" },
   { source:"athena",   target:"asclepius", type:"created_by", label:"gave him Medusa's healing blood" },
 
@@ -1282,19 +1287,18 @@ export const links = [
   { source:"odysseus", target:"scylla",    type:"enemy_of",   label:"lost six men passing her cave" },
   { source:"odysseus", target:"charybdis", type:"enemy_of",   label:"clung to a fig tree to survive the whirlpool" },
   { source:"odysseus", target:"circe",     type:"lover_of",   label:"a year on her island" },
+  { source:"odysseus", target:"calypso",   type:"lover_of",   label:"held seven years on Ogygia" },
+  { source:"atlas",    target:"calypso",   type:"parent_of",  label:"daughter of Atlas" },
   { source:"odysseus", target:"polyphemus",type:"enemy_of",   label:"blinded him with a burning stake" },
   { source:"bellerophon",target:"chimera", type:"enemy_of",   label:"killed her from above on Pegasus" },
   { source:"bellerophon",target:"pegasus", type:"lover_of",   label:"tamed with Athena's golden bridle" },
   { source:"oedipus",  target:"sphinx",    type:"enemy_of",   label:"solved her riddle; she destroyed herself" },
   { source:"jason",    target:"colchian_dragon",type:"enemy_of",label:"Medea drugged the dragon to steal the Fleece" },
-  { source: "zeus",      target: "semele",          type: "lover_of",      label: "loved her" },
   { source: "hera",      target: "semele",          type: "enemy_of",      label: "tricked her to her death" },
-  { source: "semele",    target: "dionysus",        type: "parent_of",     label: "mother of Dionysus" },
   { source: "helios",    target: "phaethon",        type: "parent_of",     label: "his father, the Sun" },
   { source: "nemesis",   target: "narcissus",       type: "cursed_into",   label: "punished his cruelty" },
   { source: "echo",      target: "narcissus",       type: "lover_of",      label: "loved him unanswered" },
   { source: "hera",      target: "echo",            type: "cursed_into",   label: "cursed her to only echo" },
-  { source: "artemis",   target: "actaeon",         type: "cursed_into",   label: "turned him to a stag" },
   { source: "hera",      target: "tiresias",        type: "cursed_into",   label: "blinded him" },
   { source: "zeus",      target: "tiresias",        type: "created_by",    label: "gave him prophecy" },
   { source: "aphrodite", target: "adonis",          type: "lover_of",      label: "loved him" },
