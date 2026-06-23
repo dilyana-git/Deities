@@ -340,7 +340,7 @@ class SphereEngine {
     if (this.target != null && !this.drag) {
       let diff = this.target - this.va
       diff = ((diff % TAU) + TAU + Math.PI) % TAU - Math.PI
-      this.va += diff * Math.min(1, 5 * dt)
+      this.va += diff * Math.min(1, 8 * dt)
       if (Math.abs(diff) < 0.003) this.va = this.target
     }
     // gentle default spin while no sign is selected (skipped for reduced-motion)
@@ -396,8 +396,8 @@ class SphereEngine {
 
         let selMul
         if (isSel) selMul = 1
-        else if (isHov) selMul = 0.65
-        else selMul = hasSel ? 0.35 : 0.55
+        else if (isHov) selMul = 0.6
+        else selMul = hasSel ? 0.25 : 0.5
 
         const o = depthFade * selMul
 
@@ -406,7 +406,7 @@ class SphereEngine {
           twinkle = 1 + 0.12 * Math.sin(t * (1.2 + ni * 0.3) + ci * 2.1)
         }
 
-        const sizeMul = isSel ? 1.4 : isHov ? 1.15 : 0.9
+        const sizeMul = isSel ? 1.8 : isHov ? 1.15 : 0.85
 
         nd.core.setAttribute('cx', p.x)
         nd.core.setAttribute('cy', p.y)
@@ -415,8 +415,8 @@ class SphereEngine {
 
         nd.halo.setAttribute('cx', p.x)
         nd.halo.setAttribute('cy', p.y)
-        nd.halo.style.opacity = (o * (nd.isB ? 0.55 : 0.32) * (isSel ? 1.5 : 1)).toFixed(3)
-        nd.halo.setAttribute('r', ((nd.isB ? 5 : 3) * sizeMul * 1.1).toFixed(1))
+        nd.halo.style.opacity = (o * (nd.isB ? 0.55 : 0.32) * (isSel ? 2.0 : 1)).toFixed(3)
+        nd.halo.setAttribute('r', ((nd.isB ? 5 : 3) * sizeMul * (isSel ? 1.5 : 1.1)).toFixed(1))
       })
 
       // edges — crisp + glow layer
@@ -426,22 +426,23 @@ class SphereEngine {
         const edgeDepth = eVis ? Math.min(1, 0.2 + 0.8 * Math.max(0, Math.min(a.z, b.z))) : 0
 
         let edgeMul
-        if (isSel) edgeMul = 0.85
-        else if (isHov) edgeMul = 0.45
-        else edgeMul = hasSel ? 0.18 : 0.3
+        if (isSel) edgeMul = 0.95
+        else if (isHov) edgeMul = 0.4
+        else edgeMul = hasSel ? 0.12 : 0.25
 
         const eo = edgeDepth * edgeMul
 
         e.el.setAttribute('x1', a.x); e.el.setAttribute('y1', a.y)
         e.el.setAttribute('x2', b.x); e.el.setAttribute('y2', b.y)
         e.el.style.opacity = eo.toFixed(3)
-        e.el.style.strokeWidth = isSel ? '1.1' : '0.6'
+        e.el.style.strokeWidth = isSel ? '1.5' : '0.6'
 
         // glow duplicate behind selected edges
         const ge = c.edgeGlows[ei]
         ge.el.setAttribute('x1', a.x); ge.el.setAttribute('y1', a.y)
         ge.el.setAttribute('x2', b.x); ge.el.setAttribute('y2', b.y)
-        ge.el.style.opacity = isSel ? (eo * 0.6).toFixed(3) : '0'
+        ge.el.style.opacity = isSel ? (eo * 0.85).toFixed(3) : '0'
+        ge.el.style.strokeWidth = isSel ? '3' : '2'
       })
 
       // label (unmasked layer) — only for signs well onto the front face, so no
@@ -454,11 +455,11 @@ class SphereEngine {
         else            { labelO = 0.32 * d;        fill = '#7e879c' }
 
         c.label.setAttribute('x', center.x)
-        c.label.setAttribute('y', center.y + (isSel ? -34 : -24))
+        c.label.setAttribute('y', center.y + (isSel ? -40 : -24))
         c.label.style.opacity = labelO.toFixed(3)
         c.label.style.fill = fill
-        c.label.setAttribute('font-size', isSel ? '14' : isHov ? '11' : '9')
-        c.label.setAttribute('font-weight', isSel ? '600' : '400')
+        c.label.setAttribute('font-size', isSel ? '17' : isHov ? '11' : '9')
+        c.label.setAttribute('font-weight', isSel ? '700' : '400')
       } else {
         c.label.style.opacity = '0'
       }
