@@ -2,6 +2,7 @@ import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import * as d3 from 'd3'
 import { nodes as rawNodes, links as rawLinks } from '../data/mythology.js'
 import { linkTypeConfig } from '../data/linkTypeConfig.js'
+import { categoryConfig } from '../data/categoryConfig.js'
 
 /* ── muted OKLCH palettes (matching atlas-core.js) ────────────────────── */
 const CAT = {
@@ -395,6 +396,15 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('stroke',       d => CAT[d.category])
       .attr('stroke-width', 1.1)
       .attr('opacity',      0.55)
+
+    /* gold pulse ring — invisible until the node has `.selected`, then the
+       CSS animation kicks in. The ring sits outside the category ring. */
+    gNode.append('circle').attr('class','sel-ring')
+      .attr('r',            d => radius(d) + 5)
+      .attr('fill',         'none')
+      .attr('stroke',       '#cdb88a')
+      .attr('stroke-width', 1.5)
+      .attr('opacity',      0)
 
     gNode.append('text').attr('class','node-label')
       .attr('x', d => radius(d) + 6).attr('y', 4)
@@ -813,6 +823,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       g.select('image').transition(t)
         .attr('x', -r).attr('y', -r).attr('width', r * 2).attr('height', r * 2)
       g.select('.ring').transition(t).attr('r', r + 1.6)
+      g.select('.sel-ring').transition(t).attr('r', r + 5)
       g.select('.node-label').transition(t).attr('x', r + 6)
       defs.select(`#clip-${d.id} circle`).transition(t).attr('r', r)
     }
@@ -844,19 +855,38 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     }
 
     /* constellation focus: on select, unrelated nodes desaturate and recede,
-       the selected lineage rises forward, edges illuminate with type colour,
-       and the camera eases to re-centre (via frameSelection). */
+       the selected lineage rises forward, edges illuminate with type colour
+       in a staggered ripple outward, and the camera eases to re-centre. */
     function applySelectVisual(id) {
       gNode.classed('selected', n => n.id === id)
       if (id) {
+        const center = byId[id]
         const near = adj[id] || new Set()
         gNode.classed('faded',    n => n.id !== id && !near.has(n.id))
              .classed('receded',  n => n.id !== id && !near.has(n.id))
              .classed('lit',      n => n.id === id || near.has(n.id))
-        linkSel.classed('faded', l => srcId(l) !== id && tgtId(l) !== id)
-               .classed('lit',   l => srcId(l) === id || tgtId(l) === id)
+
+        /* stagger edge illumination outward from the selected node */
+        linkSel.each(function(l) {
+          const el = d3.select(this)
+          const s = srcId(l), t = tgtId(l)
+          const touches = s === id || t === id
+          el.classed('faded', !touches).classed('lit', touches)
+          if (touches && center) {
+            const nb = byId[s === id ? t : s]
+            const dist = nb ? Math.sqrt((center.x - nb.x) ** 2 + (center.y - nb.y) ** 2) : 0
+            const delay = Math.min(dist * 0.5, 100)
+            el.attr('stroke', NEUTRAL_EDGE).attr('opacity', 0.08)
+            el.transition('sel-ripple').duration(200).delay(delay)
+              .attr('opacity', 0.8)
+              .attr('stroke-width', 1.6)
+              .attr('stroke', el.attr('data-type-color'))
+          }
+        })
+
         nodeLayer.classed('focusing', true)
       } else {
+        linkSel.interrupt('sel-ripple')
         gNode.classed('faded', false).classed('lit', false).classed('receded', false)
         linkSel.classed('faded', false).classed('lit', false)
         nodeLayer.classed('focusing', false)
@@ -913,7 +943,13 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         }
       })
 
-      if (tip) { tip.textContent = d.name; tip.style.opacity = '1' }
+      if (tip) {
+        const catLabel = categoryConfig[d.category]?.label || d.category
+        tip.innerHTML = `<span class="tip-cat" style="background:${CAT[d.category]}"></span>`
+          + `<span class="tip-name">${d.name}</span>`
+          + (d.epithet ? `<span class="tip-epi">${d.epithet}</span>` : '')
+        tip.style.opacity = '1'
+      }
     }
 
     function hoverOff() {

@@ -248,8 +248,12 @@ body {
 .node.receded .node-label { opacity: 0 !important; }
 
 .node.lit    .ring { stroke-width: 1.6px; opacity: .9; }
+/* subtle scale on hover for immediate feedback */
+.node:hover .core { transform: scale(1.08); transform-origin: center; transform-box: fill-box; }
+
 .node.selected .ring  { stroke: #cdb88a !important; stroke-width: 2.2px; opacity: 1; }
 .node.selected .core  { opacity: 1; }
+.node.selected .sel-ring { opacity: 1; animation: gold-pulse 2s ease-in-out infinite; }
 .node.selected .node-label { opacity: 1 !important; fill: #cdb88a !important; }
 .node.route   .ring  { stroke: #cdb88a !important; stroke-width: 2px; opacity: 1; }
 .node.route   .core  { opacity: 1; }
@@ -349,13 +353,27 @@ body {
   text-shadow: 0 0 18px rgba(205,184,138,.22);
 }
 
-/* ── Tip tooltip ───────────────────────────────────────────────────────────── */
+/* ── Tip tooltip — micro-card with category dot + name + epithet ────────── */
 #tip {
   position: fixed; z-index: 50; pointer-events: none; opacity: 0;
   transition: opacity .12s;
-  font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: .08em; color: #e7ebf2;
-  background: rgba(6,8,14,.9); border: 1px solid #262e3c; border-radius: 6px;
-  padding: 4px 9px; transform: translateY(-50%);
+  background: rgba(6,8,14,.92); border: 1px solid #262e3c; border-radius: 7px;
+  padding: 6px 11px; transform: translateY(-50%);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 20px rgba(0,0,0,.45);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: 240px;
+}
+#tip .tip-cat {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  display: inline-block;
+}
+#tip .tip-name {
+  font-family: 'Cinzel', serif; font-size: 12.5px; letter-spacing: .06em;
+  color: #e7ebf2; white-space: nowrap;
+}
+#tip .tip-epi {
+  font-family: 'Crimson Pro', serif; font-style: italic; font-size: 11px;
+  color: #5c6678; width: 100%; padding-left: 15px; margin-top: -2px;
 }
 
 
