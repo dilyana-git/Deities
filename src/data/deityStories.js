@@ -659,104 +659,304 @@ export const deityStories = {
   },
   echidna: {
     story: "Echidna is the Mother of Monsters — half a fair-cheeked woman with bright unblinking eyes, and half an enormous speckled serpent, coiling and glittering in a cavern deep beneath the earth. Deathless and ageless, she is the dark womb out of which nearly every great horror of the Greek world came crawling.\n\nIn her cave at the edge of things she took the storm-giant Typhon for her mate, and from that union came the whole brood the heroes were born to slay: the hound Cerberus that guards the gates of the dead, the many-headed Hydra of the marsh, the fire-breathing Chimera, the lion of Nemea, the riddling Sphinx, and the sleepless dragons that coil about the world's hidden treasures. She herself outlived them all in her lair, the patient source of the monsters — for however many of her children the heroes cut down, Echidna remained, waiting in the dark to bear more.",
+    beats: [
+      { label: "Woman and Serpent", weight: 0.8,
+        text: "Echidna is the Mother of Monsters — half a fair-cheeked woman with bright unblinking eyes, and half an enormous speckled serpent, coiling and glittering in a cavern deep beneath the earth." },
+      { label: "The Brood of Horrors", weight: 1.0, figures: ['typhon', 'cerberus', 'chimera', 'nemean_lion'],
+        text: "She took the storm-giant Typhon for her mate, and from that union came the whole brood the heroes were born to slay: the hound Cerberus, the many-headed Hydra, the fire-breathing Chimera, the lion of Nemea, the riddling Sphinx." },
+      { label: "The Patient Source", weight: 0.7,
+        text: "She herself outlived them all in her lair, the patient source of the monsters — for however many of her children the heroes cut down, Echidna remained, waiting in the dark to bear more." },
+    ],
     source: "Hesiod, Theogony."
   },
   medusa: {
     story: "Medusa is the most famous of monsters and the most pitiable — a creature whose gaze turns the living to cold stone, whose head writhes with serpents, and who was not always a thing of horror at all. Of the three Gorgon sisters she alone was mortal, and she alone had once been beautiful.\n\nFor Medusa began as a lovely maiden, so fair that the sea-god Poseidon desired her and took her by force in the very temple of Athena. The goddess, unwilling to strike at a god, turned her anger upon the girl instead: she changed Medusa's glorious hair into hissing snakes and made her face so terrible that whoever met her eyes was frozen into rock. Banished to the world's edge among gardens of petrified men, she was at last beheaded in her sleep by Perseus, who dared look only at her reflection in his polished shield — and from the blood of her severed neck sprang the winged horse Pegasus and the golden warrior Chrysaor: beauty and valor leaping free of her ruin at the very last.",
+    beats: [
+      { label: "The Punished Maiden", weight: 0.85, figures: ['poseidon', 'athena'],
+        text: "Medusa began as a lovely maiden, so fair that Poseidon desired her and took her by force in Athena's own temple. The goddess turned her anger upon the girl instead — changing her glorious hair into hissing snakes and her face into a thing that turned the living to stone." },
+      { label: "The Mirror Shield", weight: 1.0, figures: ['perseus'],
+        text: "Banished to the world's edge among gardens of petrified men, she was at last beheaded in her sleep by Perseus, who dared look only at her reflection in his polished shield." },
+      { label: "Beauty from Ruin", weight: 0.75, figures: ['pegasus', 'chrysaor'],
+        text: "From the blood of her severed neck sprang the winged horse Pegasus and the golden warrior Chrysaor: beauty and valor leaping free of her ruin at the very last." },
+    ],
     source: "Ovid, Metamorphoses IV. Further reading: Ted Hughes, Tales from Ovid."
   },
   scylla: {
     story: "Scylla is the six-headed terror of the narrow strait — a monster who haunts one cliff of a deadly channel and snatches sailors from the decks of passing ships, with six heads on long writhing necks, each mouth set with three rows of teeth, and a girdle of baying dogs about her waist. To pass beneath her is to lose six men and count yourself fortunate.\n\nBut she was not always so. Once Scylla was a lovely sea-nymph who bathed in a quiet cove, and her undoing came not from any fault of her own but from another's jealousy. The sea-god Glaucus loved her and was refused, and went to the sorceress Circe for a charm to win her — but Circe wanted Glaucus for herself, and turned her spite upon the girl instead. She poisoned the pool where Scylla bathed, and where the tainted water touched her the snarling dog-heads burst howling from her thighs. Maddened by the horror of her own body, the nymph became the monster of the rocks, devouring whatever the current carried close.",
+    beats: [
+      { label: "The Lovely Nymph", weight: 0.7, figures: ['glaucus'],
+        text: "Once Scylla was a lovely sea-nymph who bathed in a quiet cove. The sea-god Glaucus loved her and was refused, and went to the sorceress Circe for a charm to win her." },
+      { label: "Circe's Poison", weight: 1.0, figures: ['circe'],
+        text: "Circe wanted Glaucus for herself, and turned her spite upon the girl instead. She poisoned the pool where Scylla bathed, and where the tainted water touched her the snarling dog-heads burst howling from her thighs." },
+      { label: "The Terror of the Strait", weight: 0.8, figures: ['charybdis'],
+        text: "Maddened by the horror of her own body, the nymph became the monster of the rocks — six heads on long writhing necks, devouring whatever the current carried close, with the whirlpool Charybdis waiting across the narrow water." },
+    ],
     source: "Ovid, Metamorphoses XIII–XIV; Homer, Odyssey XII. Further reading: Ted Hughes, Tales from Ovid."
   },
   charybdis: {
     story: "Charybdis is the great devouring whirlpool that lurks across the narrow strait from Scylla — three times each day she swallows down the whole of the sea in a roaring black funnel, and three times she heaves it back up, and any ship caught above her throat is dragged down with it past all hope of saving.\n\nShe is appetite without restraint, given a permanent form. Some said she was once a daughter of Poseidon and Earth, so greedy that she stole the cattle of Heracles, and was struck by Zeus's thunderbolt into the sea to swallow and spew forever. Her especial terror is that she shares her strait with Scylla, so that the sailor who steers wide of the six-headed monster is swept toward the whirlpool, and there is no clean water between them. Odysseus survived her only by leaping for a wild fig-tree that overhung the vortex and clinging there while she sucked his raft down — then dropping back onto the timbers the moment she belched them up again.",
+    beats: [
+      { label: "Appetite Made Permanent", weight: 0.8, figures: ['zeus', 'poseidon'],
+        text: "Some said she was once a daughter of Poseidon and Earth, so greedy that she stole the cattle of Heracles, and was struck by Zeus's thunderbolt into the sea to swallow and spew forever." },
+      { label: "No Clean Water", weight: 0.7, figures: ['scylla'],
+        text: "Her especial terror is that she shares her strait with Scylla, so that the sailor who steers wide of the six-headed monster is swept toward the whirlpool, and there is no clean water between them." },
+      { label: "The Fig-Tree Above the Vortex", weight: 1.0, figures: ['odysseus'],
+        text: "Odysseus survived her only by leaping for a wild fig-tree that overhung the vortex and clinging there while she sucked his raft down — then dropping back onto the timbers the moment she belched them up again." },
+    ],
     source: "Homer, Odyssey XII."
   },
   cerberus: {
     story: "Cerberus is the hound of Hades, the three-headed dog with a mane of serpents and a dragon's tail who keeps the gate of the underworld. He is the threshold turned monstrous — fawning and gentle upon the souls who come down to the dead, but tearing apart any who would climb back out toward the light.\n\nA child of Echidna and Typhon, he was set to guard the one door that should only ever open inward. To drag him up alive into the daylight was the last and most dreadful of the twelve labors laid upon Heracles. The hero went down into the country of the dead and found the beast, and Hades granted him the hound on one condition: that he master it with his bare hands and no weapon. So Heracles seized the three-throated dog and wrestled it into submission, hauled it up the long dark road for the living to see — and then, the labor done, led the bewildered guardian back down to its post at the gate of the dead.",
+    beats: [
+      { label: "Guardian of the Gate", weight: 0.85, figures: ['echidna', 'typhon'],
+        text: "A child of Echidna and Typhon, Cerberus is the three-headed hound with a mane of serpents who keeps the gate of the underworld — fawning upon the souls who come down, but tearing apart any who would climb back toward the light." },
+      { label: "Bare Hands Only", weight: 1.0, figures: ['heracles', 'hades'],
+        text: "Hades granted Heracles the hound on one condition: that he master it with his bare hands and no weapon. So the hero seized the three-throated dog and wrestled it into submission." },
+      { label: "Returned to His Post", weight: 0.6,
+        text: "The labor done, Heracles led the bewildered guardian back down the long dark road to its post at the gate of the dead." },
+    ],
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
   lernaean_hydra: {
     story: "The Lernaean Hydra was a many-headed water-serpent that lurked in the bottomless swamps of Lerna, its body a nest of writhing necks with one head among them immortal — and its breath and blood so venomous that even its scent could kill. Worst of all was its terrible gift: for every head a sword struck off, two more grew at once from the stump, so that to fight it in the ordinary way was only to multiply it.\n\nA child of Typhon and Echidna, raised by Hera for the express purpose of destroying Heracles, it was the hero's second labor. He learned its secret the hard way, watching the heads double back under his blade — until his nephew Iolaus caught up a torch, and the two worked as one: Heracles severing each neck, Iolaus searing the raw stump with fire before it could sprout anew. The single immortal head he buried, still hissing, beneath a great rock; and in the Hydra's gall he dipped his arrows, making a poison so deadly that it would one day, by a long and winding fate, become the death of Heracles himself.",
+    beats: [
+      { label: "The Multiplying Horror", weight: 0.85, figures: ['typhon', 'echidna'],
+        text: "A child of Typhon and Echidna, the Hydra lurked in the bottomless swamps of Lerna — for every head a sword struck off, two more grew at once from the stump, so that to fight it was only to multiply it." },
+      { label: "Sword and Torch", weight: 1.0, figures: ['heracles'],
+        text: "Heracles learned its secret the hard way, watching the heads double under his blade — until his nephew Iolaus caught up a torch, and the two worked as one: severing each neck and searing the stump with fire before it could sprout anew." },
+      { label: "The Poisoned Arrows", weight: 0.75,
+        text: "The immortal head he buried still hissing beneath a rock; and in the Hydra's gall he dipped his arrows, making a poison so deadly it would one day, by a long and winding fate, become the death of Heracles himself." },
+    ],
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
   chimera: {
     story: "The Chimera is an impossibility given breath — a single beast made of three, with the head and forequarters of a lion, a second head of a goat rising from the middle of its back, and a serpent for a tail. From its lion's jaws it breathed living fire, and it ravaged the land of Lycia until nothing could stand against it.\n\nIt was one of the dread children of Echidna and Typhon, kin to the Hydra and the hound of hell. No man on foot could come near its flames and live — until the hero Bellerophon was sent against it on the winged horse Pegasus. Riding high above the fire, he drove a lump of lead fixed to his spear-point into the creature's open mouth; the monster's own burning breath melted the metal, and the molten lead poured down its throat and put out its life from within. So the unkillable beast was undone at the last by the very fire that had made it terrible.",
+    beats: [
+      { label: "Three Beasts in One", weight: 0.8, figures: ['echidna', 'typhon'],
+        text: "A child of Echidna and Typhon, the Chimera was an impossibility given breath — lion, goat, and serpent fused into a single beast that breathed living fire and ravaged the land of Lycia until nothing could stand against it." },
+      { label: "The Rider Above the Flames", weight: 1.0, figures: ['bellerophon', 'pegasus'],
+        text: "No man on foot could come near its flames — until Bellerophon rode the winged horse Pegasus high above the fire and drove a lump of lead fixed to his spear-point into the creature's open mouth." },
+      { label: "Undone by Its Own Fire", weight: 0.7,
+        text: "The monster's own burning breath melted the metal, and the molten lead poured down its throat and put out its life from within — the unkillable beast undone by the very fire that had made it terrible." },
+    ],
     source: "Homer, Iliad VI; Hesiod, Theogony."
   },
   sphinx: {
     story: "The Sphinx is a riddling terror with the face and breast of a woman, the body of a lion, and the broad wings of an eagle — a monster of the threshold, who sits at the edge of the city and lets no traveler pass who cannot answer her. She is the question that kills.\n\nSent to plague Thebes, she crouched upon a rock outside the gates and set to every passer-by the same riddle: what walks on four legs in the morning, two at noon, and three in the evening? All who failed she seized and devoured, until the road lay strewn with bones and the city starved behind its walls. Then came Oedipus, who answered without faltering — it is man, who crawls as an infant, walks upright in his strength, and leans on a staff in his age. At the sound of the truth the Sphinx flung herself from her rock and was destroyed; and Oedipus walked on through the open gate, into a doom far darker than any monster could have devised.",
+    beats: [
+      { label: "The Question That Kills", weight: 0.85,
+        text: "The Sphinx crouched upon a rock outside the gates of Thebes and set to every passer-by the same riddle: what walks on four legs in the morning, two at noon, and three in the evening? All who failed she seized and devoured." },
+      { label: "The Answer", weight: 1.0, figures: ['oedipus'],
+        text: "Then came Oedipus, who answered without faltering — it is man, who crawls as an infant, walks upright in his strength, and leans on a staff in his age. At the sound of the truth the Sphinx flung herself from her rock and was destroyed." },
+      { label: "Through the Open Gate", weight: 0.7,
+        text: "Oedipus walked on through the open gate, into a doom far darker than any monster could have devised." },
+    ],
     source: "Apollodorus, Library; Sophocles."
   },
   gorgons: {
     story: "The Gorgons are three sisters who dwell at the very edge of the world, near the cold borders of Night — winged women with living serpents for hair, tusks like a boar's, and a glare so terrible that any creature which meets their eyes is turned upon the instant to stone. Stheno and Euryale, the elder two, are deathless; only Medusa, the youngest, could ever be slain.\n\nDaughters of the ancient sea-gods Phorcys and Ceto, they are the dread face of the deep made flesh, kin to the Grey Sisters and to the serpents that guard the world's hidden things. When the hero Perseus came for Medusa's head, he could strike at all only because she alone was mortal — and the moment the deed was done, her immortal sisters woke and rose shrieking into the air behind him. But he wore the cap of darkness and the winged sandals, and they could only wail across the sky as he vanished, robbed forever of vengeance for a sister who could not be brought back.",
+    beats: [
+      { label: "The Dread Sisters", weight: 0.85, figures: ['phorcys', 'ceto'],
+        text: "Daughters of Phorcys and Ceto, the three Gorgons dwell at the very edge of the world — winged women with living serpents for hair and a glare so terrible that any creature which meets their eyes is turned to stone." },
+      { label: "The Mortal One", weight: 1.0, figures: ['medusa', 'perseus'],
+        text: "Only Medusa, the youngest, could ever be slain. When Perseus came for her head, he could strike only because she alone was mortal — and the moment the deed was done, her immortal sisters woke and rose shrieking into the air." },
+      { label: "Robbed of Vengeance", weight: 0.7, figures: ['stheno', 'euryale'],
+        text: "Stheno and Euryale could only wail across the sky as Perseus vanished in the cap of darkness and the winged sandals — robbed forever of vengeance for a sister who could not be brought back." },
+    ],
     source: "Hesiod, Theogony."
   },
   graeae: {
     story: "The Graeae are the three Grey Sisters — Deino, Enyo, and Pemphredo — who were never young: they came into the world already old, grey-haired and withered from their very first moment, the ancient watchwomen of the road that leads to the Gorgons' lair. Between the three of them they possess but a single eye and a single tooth, passed from hand to hand as each takes her turn to see and to eat.\n\nDaughters of Phorcys and Ceto and sisters to the Gorgons, they alone keep the secret of where their monstrous kin can be found. When Perseus needed that secret, he watched and waited until the very moment the eye was being handed along — and snatched it out of the air between their groping fingers. Blind and helpless and able to do nothing but bargain, the old sisters were forced to tell him the way to Medusa before he would return their one eye. So the greatest of the hero-quests turned upon a single stolen instant of sight.",
+    beats: [
+      { label: "Born Already Old", weight: 0.75, figures: ['phorcys', 'ceto'],
+        text: "Daughters of Phorcys and Ceto, the Graeae came into the world already old — grey-haired and withered from their very first moment, sharing between them a single eye and a single tooth, passed from hand to hand." },
+      { label: "The Stolen Eye", weight: 1.0, figures: ['perseus'],
+        text: "Perseus watched and waited until the very moment the eye was being handed along — and snatched it out of the air between their groping fingers. Blind and helpless, the old sisters could do nothing but bargain." },
+      { label: "A Stolen Instant of Sight", weight: 0.65, figures: ['medusa'],
+        text: "They were forced to tell him the way to Medusa before he would return their one eye. So the greatest of the hero-quests turned upon a single stolen instant of sight." },
+    ],
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
   ladon: {
     story: "Ladon is the sleepless dragon of the world's far west — a serpent of a hundred heads, the old stories say, each speaking in a different voice, coiled forever about the tree of golden apples in the garden of the Hesperides at the edge of the sunset. He never closed all his eyes at once, and so the precious fruit was never for an instant unguarded.\n\nA child of the ancient sea-powers, he was set to keep the golden apples that Earth had given Hera as a wedding gift. When the labors of Heracles brought the hero to the garden wall, that endless watch came to its end: by one account Heracles loosed a single arrow over the wall and felled the dragon, by another he sent Atlas to gather the apples while the beast slept its first and final sleep. In sorrow for so faithful a guardian, the goddess set Ladon's coils among the stars, where he winds to this day as the constellation of the Dragon.",
+    beats: [
+      { label: "The Hundred-Headed Watch", weight: 0.85, figures: ['hera'],
+        text: "Ladon was a serpent of a hundred heads, each speaking in a different voice, coiled forever about the tree of golden apples that Earth had given Hera as a wedding gift. He never closed all his eyes at once." },
+      { label: "The End of the Vigil", weight: 1.0, figures: ['heracles', 'atlas'],
+        text: "When the labors of Heracles brought the hero to the garden wall, that endless watch came to its end — by one account a single arrow felled the dragon, by another Atlas gathered the apples while the beast slept its first and final sleep." },
+      { label: "Set Among the Stars", weight: 0.65,
+        text: "In sorrow for so faithful a guardian, the goddess set Ladon's coils among the stars, where he winds to this day as the constellation of the Dragon." },
+    ],
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
   orthrus: {
     story: "Orthrus is the two-headed hound of the far west, a child of the storm-giant Typhon and the serpent Echidna, and the lesser, earthbound brother of Cerberus who keeps the gate of the dead. Where his brother guards the threshold of the underworld, Orthrus guards only a herd of cattle — but he guards it with the same monstrous devotion.\n\nHe was set to watch over the red cattle of the three-bodied giant Geryon, on the island of Erytheia at the edge of the world where the sun goes down. When Heracles came on his tenth labor to drive that herd back to Greece, Orthrus was the first to rush him, both heads snarling at once — and the first to fall, beaten down by a single blow of the hero's great club before the giant himself had even reached the field. A short life, and a faithful one, spent guarding another's wealth at the end of the world.",
+    beats: [
+      { label: "Brother of Cerberus", weight: 0.7, figures: ['typhon', 'echidna', 'cerberus'],
+        text: "A child of Typhon and Echidna, Orthrus is the two-headed hound of the far west and the lesser, earthbound brother of Cerberus — guarding not the gate of the dead but a herd of cattle with the same monstrous devotion." },
+      { label: "The Red Cattle", weight: 0.8, figures: ['geryon'],
+        text: "He was set to watch over the red cattle of the three-bodied giant Geryon, on the island of Erytheia at the edge of the world where the sun goes down." },
+      { label: "A Single Blow", weight: 1.0, figures: ['heracles'],
+        text: "When Heracles came on his tenth labor, Orthrus was the first to rush him, both heads snarling — and the first to fall, beaten down by a single blow of the hero's great club. A short life, and a faithful one." },
+    ],
     source: "Hesiod, Theogony."
   },
   nemean_lion: {
     story: "The Nemean Lion was a beast no weapon could wound — an enormous lion whose tawny golden hide turned aside every arrow, spear, and blade, so that it ravaged the hills around Nemea wholly unafraid, and no hunter who went up against it ever came home to tell of it.\n\nA monstrous child of Typhon and Echidna, dropped (some said) to earth from the moon, it was set as the first of the twelve labors of Heracles. When the hero found that his arrows simply glanced from its skin, he cast down his useless weapons, cornered the lion in the dark of its double-mouthed cave, and throttled it to death in the crook of his bare arm. Then, finding that no knife on earth could cut the pelt, he skinned the beast with its own razor claws — and wore that impenetrable hide ever after as cloak and helm, so that the terror of Nemea became the armor of the man who killed it.",
+    beats: [
+      { label: "The Invulnerable Hide", weight: 0.85, figures: ['typhon', 'echidna'],
+        text: "A child of Typhon and Echidna, the Nemean Lion was a beast no weapon could wound — its tawny golden hide turned aside every arrow, spear, and blade, and no hunter who went against it ever came home." },
+      { label: "Throttled in the Dark", weight: 1.0, figures: ['heracles'],
+        text: "When his arrows simply glanced from its skin, Heracles cast down his useless weapons, cornered the lion in its double-mouthed cave, and throttled it to death in the crook of his bare arm." },
+      { label: "The Monster Becomes Armor", weight: 0.7,
+        text: "Finding that no knife on earth could cut the pelt, he skinned the beast with its own razor claws — and wore that impenetrable hide ever after, so that the terror of Nemea became the armor of the man who killed it." },
+    ],
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
   colchian_dragon: {
     story: "The Colchian Dragon is the unsleeping guardian of the Golden Fleece — an immense serpent coiled around the sacred oak in the grove of Ares at the far eastern edge of the world, who kept its watch without ever once closing its eyes, so that the Fleece glittered always just beyond the reach of any thief.\n\nA child of Typhon and Echidna, it was the last barrier between Jason and the prize his whole long voyage had been undertaken to win. No sword could pass it; the dragon would have devoured the hero where he stood. But Jason had Medea, the sorceress-princess of Colchis who loved him — and she came into the grove with her drugs and her low murmured charms and her sprinkled drops of sleep, and sang the great beast, for the first and only time in its life, into slumber. While its sleepless eyes at last fell shut, Jason lifted the shining Fleece from the tree and fled with it into the dark.",
+    beats: [
+      { label: "The Unsleeping Watch", weight: 0.8, figures: ['typhon', 'echidna'],
+        text: "A child of Typhon and Echidna, the Colchian Dragon coiled around the sacred oak in the grove of Ares, keeping its watch without ever once closing its eyes, so that the Golden Fleece glittered always just beyond reach." },
+      { label: "Medea's Lullaby", weight: 1.0, figures: ['medea', 'jason'],
+        text: "Medea came into the grove with her drugs and her low murmured charms and sang the great beast, for the first and only time in its life, into slumber." },
+      { label: "The Fleece Taken", weight: 0.65,
+        text: "While its sleepless eyes at last fell shut, Jason lifted the shining Fleece from the tree and fled with it into the dark." },
+    ],
     source: "Apollonius of Rhodes, Argonautica."
   },
   caucasian_eagle: {
     story: "The Caucasian Eagle was the instrument of the cruelest punishment in all the myths — a vast bird of prey, born of Typhon and Echidna, sent by Zeus to a windswept crag at the end of the world to serve as the daily torment of the chained Titan Prometheus.\n\nEach day the eagle flew to the cliff where Prometheus hung in unbreakable bonds, tore open his side, and ate away his liver; and each night, because the deathless Titan could not die, the liver grew whole again — so that the agony began afresh with every dawn, without relief and without end. For long ages of the world it went on, until Heracles, crossing that desolate place on his wanderings, lifted his great bow and shot the bird out of the sky, ending the torture and setting the friend of mankind free.",
+    beats: [
+      { label: "Instrument of Cruelty", weight: 0.8, figures: ['zeus', 'prometheus'],
+        text: "Born of Typhon and Echidna, the Caucasian Eagle was sent by Zeus to serve as the daily torment of the chained Titan Prometheus on a windswept crag at the end of the world." },
+      { label: "The Unending Agony", weight: 1.0, figures: ['prometheus'],
+        text: "Each day the eagle tore open his side and ate away his liver; each night the liver grew whole again — so that the agony began afresh with every dawn, without relief and without end." },
+      { label: "Shot from the Sky", weight: 0.75, figures: ['heracles'],
+        text: "For long ages it went on, until Heracles, crossing that desolate place, lifted his great bow and shot the bird out of the sky, ending the torture and setting the friend of mankind free." },
+    ],
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
   geryon: {
     story: "Geryon is the three-bodied giant of the sunset lands — a mighty warrior grown from a single waist into three torsos, three heads, and six arms, sometimes winged, who reigned over the island of Erytheia at the western edge of the world and kept there a famous herd of red cattle.\n\nA grandson of Medusa, born of the golden warrior Chrysaor who sprang from her blood, he was among the strongest beings Heracles ever faced. For his tenth labor the hero crossed the whole of the world to take the red cattle, killed the herdsman and the two-headed hound Orthrus that guarded them, and then met Geryon himself in arms. The giant's three bodies should have made him three times the foe — but a single arrow, dipped in the Hydra's venom, passed clean through all three at once, and the great cattle-king of the west went down, and the herd was driven home.",
+    beats: [
+      { label: "King of the Sunset Isle", weight: 0.8, figures: ['chrysaor', 'medusa'],
+        text: "A grandson of Medusa, born of the golden warrior Chrysaor, Geryon was a three-bodied giant who reigned over the island of Erytheia at the western edge of the world and kept a famous herd of red cattle." },
+      { label: "Orthrus Falls First", weight: 0.7, figures: ['orthrus', 'heracles'],
+        text: "For his tenth labor Heracles crossed the whole world to take the red cattle, killing the herdsman and the two-headed hound Orthrus that guarded them before the giant himself reached the field." },
+      { label: "One Arrow, Three Bodies", weight: 1.0, figures: ['heracles'],
+        text: "The giant's three bodies should have made him three times the foe — but a single arrow, dipped in the Hydra's venom, passed clean through all three at once, and the great cattle-king of the west went down." },
+    ],
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
   chrysaor: {
     story: "Chrysaor — his name means 'he of the golden sword' — leapt fully grown and armed into the world at the very moment of Medusa's death, springing from her severed neck in the same instant as his brother, the winged horse Pegasus. Two children born together out of a single act of horror: one of them flight, and one of them a blade.\n\nWhere Pegasus rose into the sky and into the company of the gods, Chrysaor stayed earthbound and shadowed, and his own myth is brief — his importance lies in what came after him. Joining with the Oceanid Callirrhoe, he fathered the three-bodied giant Geryon, whom Heracles would one day cross the whole world to slay. So from Medusa's ruin came not only beauty and a hero's mount, but a line of monsters reaching down the generations, like a golden sword drawn slowly from its sheath.",
+    beats: [
+      { label: "Born from the Blood", weight: 0.85, figures: ['medusa', 'pegasus'],
+        text: "Chrysaor leapt fully grown and armed into the world at the very moment of Medusa's death, springing from her severed neck in the same instant as his brother Pegasus — two children born of a single act of horror: one of them flight, and one of them a blade." },
+      { label: "The Earthbound Sword", weight: 0.7, figures: ['callirrhoe'],
+        text: "Where Pegasus rose into the sky, Chrysaor stayed earthbound and shadowed. Joining with the Oceanid Callirrhoe, his importance lies in what came after him." },
+      { label: "Father of Geryon", weight: 1.0, figures: ['geryon'],
+        text: "He fathered the three-bodied giant Geryon, whom Heracles would one day cross the whole world to slay — from Medusa's ruin came a line of monsters reaching down the generations, like a golden sword drawn slowly from its sheath." },
+    ],
     source: "Hesiod, Theogony."
   },
   pegasus: {
     story: "Pegasus is the winged horse of the heavens, white as a cloud and swift as the wind — the one shining and perfect thing to come out of an act of pure horror. He leaps into the stories at the very instant of a monster's death, beauty breaking free of blood.\n\nFor when Perseus struck the head from sleeping Medusa, it was out of the dark fountain of her severed neck that Pegasus burst forth full-grown, unfolding his great wings into the air. He flew to Mount Helicon, where a spring of the Muses opened where his hoof first struck the rock; and the hero Bellerophon, taming him with a golden bridle that Athena gave, rode him up against the Chimera and killed the fire-breathing beast from the safety of the sky. But when Bellerophon grew proud and tried to ride all the way up to Olympus, Pegasus threw his rider back down to earth and climbed on alone — and was received among the gods, to carry the thunderbolts of Zeus.",
+    beats: [
+      { label: "Beauty from Blood", weight: 0.85, figures: ['medusa', 'perseus'],
+        text: "When Perseus struck the head from sleeping Medusa, it was out of the dark fountain of her severed neck that Pegasus burst forth full-grown, unfolding his great wings into the air — beauty breaking free of blood." },
+      { label: "Tamed for the Chimera", weight: 1.0, figures: ['bellerophon', 'athena', 'chimera'],
+        text: "Bellerophon tamed him with a golden bridle that Athena gave, and rode him up against the Chimera and killed the fire-breathing beast from the safety of the sky." },
+      { label: "Received Among the Gods", weight: 0.7, figures: ['zeus'],
+        text: "When Bellerophon grew proud and tried to ride to Olympus, Pegasus threw his rider back down to earth and climbed on alone — received among the gods, to carry the thunderbolts of Zeus." },
+    ],
     source: "Hesiod, Theogony; Ovid, Metamorphoses IV. Further reading: Ted Hughes, Tales from Ovid."
   },
 
   // ---- SEA DEITIES ----
   phorcys: {
     story: "Phorcys is an ancient god of the sea's hidden perils — not the open storm but the deeper dangers beneath the surface: the reef that waits unseen, the sucking whirlpool, the dark fathoms where drowned things drift. Grey and crusted like an old rock at the tide-line, he is the deep sea's own grim face.\n\nBorn of Earth and the primordial Sea, he took his sister Ceto for his wife, and together this old pair bred the most fearsome brood in all the world. From them came the Gorgons with their stone-turning gaze, the grey-born Graeae who share a single eye, the dragon Ladon that guards the golden apples, and the serpents that coil at the edges of things. Phorcys himself does little in the stories — but nearly every monster a hero ever faced is, somewhere up the line, a child of his house.",
+    beats: [
+      { label: "The Sea's Grim Face", weight: 0.7,
+        text: "Phorcys is an ancient god of the sea's hidden perils — not the open storm but the deeper dangers beneath the surface, the dark fathoms where drowned things drift. Grey and crusted like an old rock at the tide-line." },
+      { label: "The Old Pair", weight: 0.85, figures: ['ceto', 'gaia', 'pontus'],
+        text: "Born of Earth and the primordial Sea, he took his sister Ceto for his wife, and together this old pair bred the most fearsome brood in all the world." },
+      { label: "Father of Every Monster", weight: 1.0, figures: ['medusa', 'graeae', 'ladon'],
+        text: "From them came the Gorgons with their stone-turning gaze, the grey-born Graeae who share a single eye, the dragon Ladon that guards the golden apples. Nearly every monster a hero ever faced is a child of his house." },
+    ],
     source: "Hesiod, Theogony."
   },
   ceto: {
     story: "Ceto is the goddess of the sea's monsters and its swallowing deeps — the dread of the great dark shapes that move below a boat, the terror that has no name until it surfaces. Her own name became the Greek word for every whale and sea-beast, so that to speak of a sea-monster at all is, in a way, to speak of her.\n\nSister and wife to the old sea-god Phorcys, she is the womb of horrors at the edge of the world. From her came the Gorgons and the Grey Sisters, and in many tellings the serpent Echidna and the strait-haunting Scylla besides — so that the monsters the heroes were born to slay were very largely the daughters of Ceto. She is the deep ocean understood as a living appetite: calm and lovely from above, and full of teeth below.",
+    beats: [
+      { label: "The Nameless Terror", weight: 0.75,
+        text: "Ceto is the goddess of the sea's monsters and its swallowing deeps — the dread of the great dark shapes that move below a boat. Her own name became the Greek word for every whale and sea-beast." },
+      { label: "Womb of Horrors", weight: 1.0, figures: ['phorcys', 'medusa', 'graeae'],
+        text: "Sister and wife to the old sea-god Phorcys, she is the womb of horrors at the edge of the world. From her came the Gorgons and the Grey Sisters, and in many tellings the serpent Echidna and Scylla besides." },
+      { label: "Calm Above, Teeth Below", weight: 0.65,
+        text: "The monsters the heroes were born to slay were very largely the daughters of Ceto. She is the deep ocean understood as a living appetite: calm and lovely from above, and full of teeth below." },
+    ],
     source: "Hesiod, Theogony."
   },
   amphitrite: {
     story: "Amphitrite is the queen of the sea, the calm of the deep waters and the mother of its creatures — a Nereid daughter of the truthful old sea-god Nereus, who reigns over the ocean at the side of Poseidon and lends the waves their gentler moods.\n\nShe did not come to her throne willingly. When Poseidon first desired her, Amphitrite fled his rough courtship to the very ends of the ocean, hiding herself in the furthest deeps where she believed no one could follow. But the sea-god sent his messengers searching through the waters, and a single dolphin found her in her hiding-place and pleaded his master's cause so sweetly that she relented and let herself be brought back to be made queen. In gratitude Poseidon set the dolphin's likeness among the stars — so that a courtship which began in flight ended as a constellation.",
+    beats: [
+      { label: "Queen of the Sea", weight: 0.8, figures: ['nereus', 'poseidon'],
+        text: "Amphitrite is the queen of the sea, the calm of the deep waters — a Nereid daughter of Nereus, who reigns over the ocean at the side of Poseidon and lends the waves their gentler moods." },
+      { label: "The Flight to the Deeps", weight: 1.0, figures: ['poseidon'],
+        text: "When Poseidon first desired her, Amphitrite fled his rough courtship to the very ends of the ocean, hiding in the furthest deeps. But a single dolphin found her and pleaded his master's cause so sweetly that she relented." },
+      { label: "A Constellation for Courtship", weight: 0.7,
+        text: "In gratitude Poseidon set the dolphin's likeness among the stars — so that a courtship which began in flight ended as a constellation." },
+    ],
     source: "Hesiod, Theogony."
   },
   triton: {
     story: "Triton is the herald of the sea, the merman son of Poseidon and Amphitrite — a god with the torso of a man and the long scaled tail of a fish, who swims at the head of his father's train through the deep. In his hands he carries a great twisted conch-shell, and that shell is both his voice and his instrument of command.\n\nWhen Triton sets the conch to his lips and blows, the sound rolls out across the water and the waves obey it — climbing into a roar when he wills the sea to rage, or sinking flat and still when he sounds the note of calm. It was his horn, the poets said, that Poseidon had him wind to call the floodwaters back after the great deluge, so that the drowned world might rise again into the light. He is the sea's announcing trumpet, the sound the ocean makes when it remembers that it has a king.",
+    beats: [
+      { label: "Herald of the Deep", weight: 0.75, figures: ['poseidon', 'amphitrite'],
+        text: "Triton is the herald of the sea, the merman son of Poseidon and Amphitrite — carrying a great twisted conch-shell that is both his voice and his instrument of command." },
+      { label: "The Conch That Commands", weight: 1.0,
+        text: "When Triton sets the conch to his lips and blows, the sound rolls out across the water and the waves obey it — climbing into a roar when he wills the sea to rage, or sinking flat and still when he sounds the note of calm." },
+      { label: "Calling Back the Flood", weight: 0.85, figures: ['poseidon'],
+        text: "It was his horn that Poseidon had him wind to call the floodwaters back after the great deluge, so that the drowned world might rise again into the light. He is the sea's announcing trumpet." },
+    ],
     source: "Hesiod, Theogony."
   },
   nereus: {
     story: "Nereus is the Old Man of the Sea — the eldest and gentlest of the sea-gods, born of Earth and the primordial deep long before Poseidon, and famous above all for two things: he never lies, and he knows what is to come. With his wife Doris he fathered the fifty Nereids, the kindly nymphs of the waves.\n\nTruthful and wise, he yields his knowledge only to those who can take it, for like the sea itself he is a shifter of shapes. When Heracles needed to learn the secret road to the garden of the golden apples, he had to seize the old god and cling on as Nereus turned in his grip to water, to fire, to a roaring beast and a coiling serpent — through form after form — until, finding he could not break free, the Old Man of the Sea returned to himself and told the hero the truth. He is the deep's calm conscience: ancient, honest, and not easily held.",
+    beats: [
+      { label: "The Truthful Elder", weight: 0.8, figures: ['gaia', 'pontus'],
+        text: "Nereus is the Old Man of the Sea — the eldest and gentlest of the sea-gods, born of Earth and the primordial deep long before Poseidon, famous above all because he never lies and he knows what is to come." },
+      { label: "The Shifting Grip", weight: 1.0, figures: ['heracles'],
+        text: "When Heracles needed the secret road to the golden apples, he seized the old god and clung on as Nereus turned in his grip to water, to fire, to a roaring beast and a coiling serpent — through form after form." },
+      { label: "The Deep's Calm Conscience", weight: 0.65,
+        text: "Finding he could not break free, the Old Man of the Sea returned to himself and told the hero the truth. He is the deep's calm conscience: ancient, honest, and not easily held." },
+    ],
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
   proteus: {
     story: "Proteus is the Old Man of the Sea, a shape-shifter who herds the grey seals of Poseidon across the shallows of the Egyptian isle of Pharos. He knows all things — past, present, and the paths that are still to come — but he will not speak unless forced, and forcing him is the trial.\n\nEach noon he rises from the surf, counts his seals like a shepherd counting sheep, and lies down among them to sleep. That is the only moment he can be caught, and whoever seizes him must hold fast through every horror he becomes: a bearded lion, a sinuous serpent, a leopard, a great boar, running water, a towering tree roaring with wind. Only if the grip never loosens will Proteus at last return to his own aged shape and, with a sigh, answer what is asked. It was Menelaus, stranded on his long voyage home from Troy, who wrestled the old god down on the advice of Proteus's own daughter Eidothea — and learned at last which winds to court and which gods to appease. Proteus is knowledge that does not want to be known, truth that fights to stay hidden, the sea itself refusing to hold one shape long enough to be read.",
+    beats: [
+      { label: "Shepherd of Seals", weight: 0.7, figures: ['poseidon'],
+        text: "Proteus is the Old Man of the Sea, a shape-shifter who herds the grey seals of Poseidon across the shallows of Pharos. He knows all things — past, present, and the paths still to come — but will not speak unless forced." },
+      { label: "Every Horror He Becomes", weight: 1.0,
+        text: "Whoever seizes him must hold fast through every horror he becomes: a bearded lion, a sinuous serpent, a leopard, a great boar, running water, a towering tree roaring with wind. Only if the grip never loosens will he answer." },
+      { label: "Menelaus on Pharos", weight: 0.85,
+        text: "It was Menelaus, stranded on his long voyage home from Troy, who wrestled the old god down on the advice of Proteus's own daughter Eidothea — and learned at last which winds to court and which gods to appease." },
+    ],
     source: "Homer, Odyssey IV."
   },
   thetis: {
     story: "Thetis is a silver-footed nymph of the sea, gentlest and most loyal of the Nereids, a shape-shifter and a help to the gods in their need — and the mother whose love could not, in the end, save her own son. She stands at the very meeting-point of the divine and the mortal, and pays the price of crossing it.\n\nSo beautiful was Thetis that both Zeus and Poseidon desired her — until it was foretold that she would bear a son greater than his father. At once the gods drew back, and to keep the danger small they married her to a mortal man, Peleus, who had to hold her fast as she changed in his arms to fire and water and beast before she would consent. Their son was Achilles, the greatest of warriors and the most short-lived; and Thetis, knowing his doom from the start, tried every way to cheat it — dipping him as an infant in the river of the dead to make him invulnerable, hiding him from the war, begging new armor for him from the gods — and still could only watch the prophecy close around her child, loving him all the more for being unable to keep him.",
+    beats: [
+      { label: "The Dangerous Prophecy", weight: 0.85, figures: ['zeus', 'poseidon'],
+        text: "So beautiful was Thetis that both Zeus and Poseidon desired her — until it was foretold she would bear a son greater than his father. At once the gods drew back and married her to a mortal man." },
+      { label: "Fire and Water and Beast", weight: 0.7,
+        text: "Peleus had to hold her fast as she changed in his arms to fire and water and beast before she would consent. Their son was Achilles, the greatest of warriors and the most short-lived." },
+      { label: "A Mother's Failing Shield", weight: 1.0, figures: ['hephaestus'],
+        text: "Thetis, knowing his doom from the start, tried every way to cheat it — dipping him in the river of the dead, hiding him from the war, begging new armor from the gods — and still could only watch the prophecy close around her child." },
+    ],
     source: "Hesiod, Theogony; Homer, Iliad."
   },
 
@@ -931,50 +1131,146 @@ export const deityStories = {
   // ---- ADDITIONAL FIGURES (previously shown only as plain descriptions) ----
   hemera: {
     story: "Hemera is the Day — not the sun itself but the soft pervading light of the daytime sky, the brightness that fills the world between one dawn and the next. She is one of the first powers, gentle and constant, the shining counterpart to her mother's dark.\n\nFor Hemera was born of Night. Out of black Nyx and the deep gloom of Erebus came their own bright opposite, the Day, and the two keep an ancient rhythm at the threshold of the world: as Hemera goes out each morning across the sky, her mother Nyx comes home to rest, and as Day returns at evening, Night goes forth again. They share a single house and are never within it at the same moment — the oldest taking of turns there is, light and dark forever passing each other in the doorway of the world.",
+    beats: [
+      { label: "Light from Darkness", weight: 0.85, figures: ['nyx', 'erebus'],
+        text: "Hemera was born of Night. Out of black Nyx and the deep gloom of Erebus came their own bright opposite, the Day — the soft pervading light of the daytime sky." },
+      { label: "The Oldest Rhythm", weight: 1.0, figures: ['nyx'],
+        text: "As Hemera goes out each morning across the sky her mother Nyx comes home to rest, and as Day returns at evening, Night goes forth again. They share a single house and are never within it at the same moment." },
+      { label: "The Passing in the Doorway", weight: 0.6,
+        text: "The oldest taking of turns there is, light and dark forever passing each other in the doorway of the world." },
+    ],
     source: "Hesiod, Theogony."
   },
   aether: {
     story: "Aether is the bright upper air — not the heavy, breathable air of the mortal world below, but the pure shining substance of the heights, the clear blue medium in which the gods themselves move and breathe. He is the very element of heaven, the luminous space between the clouds and the stars.\n\nLike his sister Hemera the Day, Aether was born of darkness: children both of black Night and deep Erebus, light and clear air alike came out of the primordial gloom. He is the brightness that lies above all the weather, untouched by storm or shadow, the calm radiance the Greeks imagined the immortals dwelt within. To breathe the lower air is to be mortal; Aether is the rarer stuff that the deathless ones breathe instead.",
+    beats: [
+      { label: "The Upper Brightness", weight: 0.75,
+        text: "Aether is the bright upper air — not the heavy, breathable air of the mortal world but the pure shining substance of the heights, the clear blue medium in which the gods themselves move and breathe." },
+      { label: "Born of the Deepest Dark", weight: 1.0, figures: ['nyx', 'erebus'],
+        text: "Like his sister Hemera, Aether was born of darkness: children both of black Night and deep Erebus, light and clear air alike came out of the primordial gloom." },
+      { label: "The Breath of the Gods", weight: 0.6,
+        text: "He is the brightness that lies above all the weather, untouched by storm or shadow. To breathe the lower air is to be mortal; Aether is the rarer stuff that the deathless ones breathe instead." },
+    ],
     source: "Hesiod, Theogony."
   },
   epimetheus: {
     story: "Epimetheus is the Titan whose name means 'afterthought' — the slower brother of clever Prometheus, the one who acts first and understands only later, when the harm is already done. Where his brother was foresight, Epimetheus is hindsight, forever wise a single moment too late.\n\nIt was Epimetheus who was given the task of furnishing the new-made animals with their gifts, and he spent them all so freely — speed here, claws there, warm fur and wings and armor — that when he came at last to humankind he found he had nothing left to give, and it fell to Prometheus to steal fire to make up the lack. And it was Epimetheus who, against his brother's express warning never to accept a gift from Zeus, took the beautiful Pandora into his house — whereupon she opened her fatal jar and loosed sickness, toil, and sorrow upon the world, leaving only Hope shut inside. Twice his afterthought cost humankind dearly: he is the proof that good intentions, without foresight, can undo a world.",
+    beats: [
+      { label: "Afterthought", weight: 0.7, figures: ['prometheus'],
+        text: "Epimetheus is the Titan whose name means 'afterthought' — the slower brother of clever Prometheus, the one who acts first and understands only later, when the harm is already done." },
+      { label: "Nothing Left to Give", weight: 0.85, figures: ['prometheus', 'humanity'],
+        text: "He spent all the gifts so freely on the animals — speed, claws, warm fur and wings — that when he came to humankind he had nothing left, and it fell to Prometheus to steal fire to make up the lack." },
+      { label: "Pandora at the Door", weight: 1.0, figures: ['zeus'],
+        text: "Against his brother's express warning never to accept a gift from Zeus, Epimetheus took the beautiful Pandora into his house — whereupon she opened her fatal jar and loosed sickness, toil, and sorrow upon the world, leaving only Hope shut inside." },
+    ],
     source: "Hesiod, Theogony; Works and Days."
   },
   styx: {
     story: "Styx is the great river of the underworld and the most dreadful oath in all creation — a black, cold stream that winds seven times around the realm of the dead, and at the same time a goddess, eldest daughter of Oceanus, whose name binds even the gods.\n\nWhen the Olympians went to war against the Titans, Styx was the very first to come to Zeus's side, bringing her children Victory, Strength, Power, and Zeal to stand with him; and in gratitude Zeus gave her the highest honor he could devise. Ever after, when a god wished to swear an oath that could not be broken, they swore by the waters of Styx — and any immortal who swore falsely by her was struck senseless for a year and banished from the councils of heaven for nine more. So the cold river of the dead became the one thing the deathless gods themselves were bound to fear: the only promise that not even a god dared break.",
+    beats: [
+      { label: "River and Goddess", weight: 0.75, figures: ['oceanus'],
+        text: "Styx is the great river of the underworld and the most dreadful oath in all creation — a black, cold stream that winds seven times around the realm of the dead, and at the same time a goddess, eldest daughter of Oceanus." },
+      { label: "First to Stand with Zeus", weight: 1.0, figures: ['zeus'],
+        text: "When the Olympians went to war against the Titans, Styx was the very first to come to Zeus's side, bringing her children Victory, Strength, Power, and Zeal to stand with him." },
+      { label: "The Unbreakable Oath", weight: 0.9,
+        text: "Ever after, when a god swore an oath that could not be broken, they swore by the waters of Styx — and any immortal who swore falsely was struck senseless for a year and banished for nine more. The one promise not even a god dared break." },
+    ],
     source: "Hesiod, Theogony."
   },
   leto: {
     story: "Leto is the gentle Titaness of motherhood and modesty, a quiet, dark-veiled goddess whose whole story is the cost and the triumph of bearing the children of Zeus. She asked for little, and was hunted across the world for it.\n\nFor when Leto grew great with Zeus's twins, the jealous Hera forbade any place on the firm earth to give her shelter, and sent a serpent to harry her from land to land as her time came upon her. No country dared receive her — until the barren floating island of Delos, anchored to nothing and so bound by none of Hera's decrees, took pity and let her come ashore. There, clinging to a slender palm tree, Leto laboured nine days and nights and at last brought forth Artemis, who turned at once and helped her mother deliver her brother Apollo. From the wanderer whom the whole earth refused came the goddess of the moon and the god of the sun; and Delos, her one refuge, was fixed forever in the sea and made holy.",
+    beats: [
+      { label: "Hunted Across the World", weight: 0.85, figures: ['hera', 'zeus'],
+        text: "When Leto grew great with Zeus's twins, the jealous Hera forbade any place on the firm earth to give her shelter, and sent a serpent to harry her from land to land as her time came upon her." },
+      { label: "The Barren Island", weight: 1.0,
+        text: "No country dared receive her — until the barren floating island of Delos, anchored to nothing and so bound by none of Hera's decrees, took pity and let her come ashore." },
+      { label: "Moon and Sun Born", weight: 0.9, figures: ['artemis', 'apollo'],
+        text: "Clinging to a slender palm tree, Leto laboured nine days and nights and brought forth Artemis, who turned at once and helped her mother deliver her brother Apollo. From the wanderer the whole earth refused came the goddess of the moon and the god of the sun." },
+    ],
     source: "Homeric Hymn to Apollo; Hesiod, Theogony."
   },
   maia: {
     story: "Maia is the eldest and shyest of the seven Pleiades, the daughters of Atlas set among the stars — a quiet mountain nymph who shunned the company of the gods and kept to a deep cave on Mount Cyllene, asking nothing of heaven.\n\nBut Zeus found her there in the dark of the night, while Hera slept, and from their secret union Maia bore a single extraordinary child: Hermes, who would climb out of his cradle on the very day of his birth to invent the lyre and steal Apollo's cattle before nightfall. The retiring nymph who wanted only her solitude became the mother of the cleverest of all the gods. Out of the most private of lives came the most restless and far-travelling of the Olympians — as if the quiet of her cave had been storing up all that motion for the world.",
+    beats: [
+      { label: "The Shy Pleiad", weight: 0.65, figures: ['atlas'],
+        text: "Maia is the eldest and shyest of the seven Pleiades, daughters of Atlas — a quiet mountain nymph who shunned the company of the gods and kept to a deep cave on Mount Cyllene." },
+      { label: "A Secret Union", weight: 0.8, figures: ['zeus'],
+        text: "Zeus found her there in the dark of the night, while Hera slept, and from their secret union Maia bore a single extraordinary child." },
+      { label: "Mother of the Trickster", weight: 1.0, figures: ['hermes'],
+        text: "Hermes climbed out of his cradle on the very day of his birth to invent the lyre and steal Apollo's cattle before nightfall. The retiring nymph who wanted only solitude became the mother of the cleverest of all the gods." },
+    ],
     source: "Homeric Hymn to Hermes; Hesiod, Theogony."
   },
   callirrhoe: {
     story: "Callirrhoe — her name means 'beautiful flowing' — is an Oceanid, one of the three thousand daughters of Oceanus and Tethys, a nymph of fresh and lovely running water. Her own myth is almost nothing but her lineage; she is one of those quiet figures whose meaning lies entirely in what flows out of her.\n\nFor the clear sweet water is also, in the old logic of the myths, the spring that can feed monstrous roots. Callirrhoe joined with Chrysaor, the golden warrior born from Medusa's severed neck, and bore him the three-bodied giant Geryon, whom Heracles would one day cross the whole world to kill. So from the most nourishing of elements came one of the great monsters of the west — beauty flowing, as it sometimes does in these stories, straight on into terror.",
+    beats: [
+      { label: "Beautiful Flowing", weight: 0.6, figures: ['oceanus', 'tethys'],
+        text: "Callirrhoe — her name means 'beautiful flowing' — is an Oceanid, one of the three thousand daughters of Oceanus and Tethys, a nymph of fresh and lovely running water." },
+      { label: "The Golden Warrior's Bride", weight: 0.85, figures: ['chrysaor', 'medusa'],
+        text: "Callirrhoe joined with Chrysaor, the golden warrior born from Medusa's severed neck, and bore him the three-bodied giant Geryon." },
+      { label: "Sweetness into Terror", weight: 1.0, figures: ['geryon', 'heracles'],
+        text: "From the most nourishing of elements came one of the great monsters of the west — Geryon, whom Heracles would cross the whole world to kill. Beauty flowing, as it sometimes does in these stories, straight on into terror." },
+    ],
     source: "Hesiod, Theogony."
   },
   glaucus: {
     story: "Glaucus began as a mortal fisherman and became a god almost by accident — one of the few to cross from the human world into the divine not through birth or punishment but through simple curiosity. He is the green-bearded merman of the open sea, a minor prophet of the waves with a sorrow at the heart of him.\n\nOne day, laying his catch on a strange meadow by the shore, he saw the dead fish twitch and leap back into the water at the touch of a certain herb; and when he tasted the plant himself a longing seized him, and he plunged into the sea, his legs fusing into a fish's tail, and rose again immortal. But his new godhood brought him no joy, for he fell hopelessly in love with the nymph Scylla, who fled him in horror; and when he begged the sorceress Circe for a love-charm, she desired him herself, and in her jealousy poisoned Scylla into a monster. So the fisherman who gained eternity gained an eternal grief with it — to have been, however unwillingly, the ruin of the very thing he loved.",
+    beats: [
+      { label: "The Strange Herb", weight: 0.8,
+        text: "One day, laying his catch on a strange meadow, Glaucus saw the dead fish twitch and leap back into the water at the touch of a certain herb; and when he tasted it himself, a longing seized him and he plunged into the sea, his legs fusing into a fish's tail." },
+      { label: "The Hopeless Suit", weight: 0.7, figures: ['scylla', 'circe'],
+        text: "His new godhood brought him no joy, for he fell hopelessly in love with the nymph Scylla, who fled him in horror; and when he begged the sorceress Circe for a love-charm, she desired him herself." },
+      { label: "The Ruin He Caused", weight: 1.0, figures: ['circe', 'scylla'],
+        text: "In her jealousy Circe poisoned Scylla into a monster. So the fisherman who gained eternity gained an eternal grief with it — to have been, however unwillingly, the ruin of the very thing he loved." },
+    ],
     source: "Ovid, Metamorphoses XIII–XIV. Further reading: Ted Hughes, Tales from Ovid."
   },
   stheno: {
     story: "Stheno is the eldest of the three Gorgon sisters and, the old tales say, the most murderous of them all — credited with slaying more men than both her sisters together. Where Medusa is remembered with a kind of pity, Stheno is remembered only with dread: winged, serpent-haired, and deathless.\n\nA daughter of the ancient sea-gods Phorcys and Ceto, she shares Medusa's snakes and stone-turning glare but not her mortality, and so could never be slain. When Perseus came and struck the head from her sleeping sister, Stheno woke with Euryale and rose shrieking into the air after him — but the hero was already vanishing on his winged sandals beyond their reach. Robbed of her vengeance, she remained at the world's edge, immortal and furious and grieving: the terror that outlived the one story everyone remembers, and was left with nothing to do but mourn.",
+    beats: [
+      { label: "The Most Murderous", weight: 0.75, figures: ['phorcys', 'ceto'],
+        text: "Stheno is the eldest of the three Gorgon sisters and the most murderous — a daughter of Phorcys and Ceto, credited with slaying more men than both her sisters together. Winged, serpent-haired, and deathless." },
+      { label: "The Shriek of the Immortal", weight: 1.0, figures: ['medusa', 'perseus'],
+        text: "When Perseus struck the head from her sleeping sister, Stheno woke with Euryale and rose shrieking into the air after him — but the hero was already vanishing on his winged sandals beyond their reach." },
+      { label: "Left to Mourn", weight: 0.7, figures: ['euryale'],
+        text: "Robbed of her vengeance, she remained at the world's edge, immortal and furious and grieving: the terror that outlived the one story everyone remembers, left with nothing to do but mourn." },
+    ],
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
   euryale: {
     story: "Euryale is the second of the three Gorgon sisters, the 'wide-roaming' one — immortal like Stheno and terrible like all her kind, winged and snake-haired, with a glare that turns the living to stone. But she is remembered most for a single, almost human thing: the sound of her grief.\n\nA daughter of Phorcys and Ceto, she could not be killed, and when Perseus beheaded their mortal sister Medusa, it was Euryale's cry that filled the world — a bellow of mourning so vast and so anguished that the poets said it gave music its first lament, the mournful double-piped tune invented in imitation of her wail. She roamed the wide earth after her sister's killer and never caught him; and so the immortal monster became, strangely, the first voice of sorrow, the deathless sister left to howl forever for the one who could die.",
+    beats: [
+      { label: "The Wide-Roaming One", weight: 0.7, figures: ['phorcys', 'ceto'],
+        text: "Euryale is the second of the three Gorgon sisters, the 'wide-roaming' one — a daughter of Phorcys and Ceto, immortal and terrible, winged and snake-haired, with a glare that turns the living to stone." },
+      { label: "The First Lament", weight: 1.0, figures: ['medusa', 'perseus'],
+        text: "When Perseus beheaded their mortal sister Medusa, it was Euryale's cry that filled the world — a bellow of mourning so vast that the poets said it gave music its first lament, the mournful double-piped tune invented in imitation of her wail." },
+      { label: "The Deathless Sister", weight: 0.8, figures: ['stheno'],
+        text: "She roamed the wide earth after her sister's killer and never caught him — the immortal monster who became, strangely, the first voice of sorrow, the deathless sister left to howl forever for the one who could die." },
+    ],
     source: "Hesiod, Theogony; Pindar, Pythian 12."
   },
   polyphemus: {
     story: "Polyphemus is the most famous of the Cyclopes — a one-eyed giant, a son of Poseidon, who herds his fat sheep in a cave on a wild island and answers to no law but his own enormous appetite. He is brute force without hospitality, the savage who devours his own guests.\n\nWhen Odysseus and his men sheltered in his cave, Polyphemus rolled a great stone across the mouth and began to eat them two at a time. But the cunning hero gave the giant strong wine until he slept, told him his name was 'Nobody,' and then drove a burning, sharpened stake into the single eye. Blinded, the Cyclops roared for help — but when his neighbours called to ask who was harming him, he could only bellow that 'Nobody' was killing him, and they left him to it. Odysseus and his survivors escaped clinging beneath the bellies of the sheep; yet the hero could not resist shouting back his true name as he sailed, and so Polyphemus prayed to his father Poseidon for vengeance, and bought Odysseus ten more years of wandering with a single proud boast.",
+    beats: [
+      { label: "The One-Eyed Shepherd", weight: 0.7, figures: ['poseidon'],
+        text: "Polyphemus is the most famous of the Cyclopes — a one-eyed giant, a son of Poseidon, who herds his fat sheep in a cave on a wild island and answers to no law but his own enormous appetite." },
+      { label: "Nobody Is Killing Me", weight: 1.0, figures: ['odysseus'],
+        text: "Odysseus gave the giant strong wine until he slept, told him his name was 'Nobody,' then drove a burning stake into the single eye. When Polyphemus roared for help his neighbours heard only that 'Nobody' was killing him, and left him to it." },
+      { label: "The Proud Boast", weight: 0.85, figures: ['odysseus', 'poseidon'],
+        text: "Odysseus could not resist shouting back his true name as he sailed, and so Polyphemus prayed to his father Poseidon for vengeance — buying the hero ten more years of wandering with a single proud boast." },
+    ],
     source: "Homer, Odyssey IX."
   },
   hydra: {
     story: "The Hydra of Lerna is the deathless terror of the marsh — a water-serpent of many heads that rises from the bog with venom in its breath, and whose dreadful secret is that it cannot simply be cut down: strike off one head and two grow at once from the wound, so that every blow only makes it stronger.\n\nBred by Typhon and Echidna and raised, the poets say, by Hera herself to be a snare for Heracles, the Hydra was the hero's second labor. He learned the hard way that the sword alone could never win, and called his nephew Iolaus to his side; together they made a method of it, Heracles lopping each head while Iolaus seared the raw stump with a torch before it could double. The one immortal head, which no fire could kill, he buried still hissing beneath a boulder — and dipped his arrows in the monster's black gall, carrying away a poison that would serve him through a lifetime of labors and, at the very last, bring about his own death.",
+    beats: [
+      { label: "Two for Every One", weight: 0.85, figures: ['typhon', 'echidna'],
+        text: "Bred by Typhon and Echidna, the Hydra of Lerna was a water-serpent of many heads whose dreadful secret was that it could not simply be cut down: strike off one head and two grew at once from the wound." },
+      { label: "The Method", weight: 1.0, figures: ['heracles'],
+        text: "Heracles learned the hard way, watching heads double under his blade — until his nephew Iolaus caught up a torch, and the two worked as one: severing each neck and searing the raw stump with fire before it could sprout anew." },
+      { label: "The Poison That Returns", weight: 0.75,
+        text: "The one immortal head he buried still hissing beneath a boulder; and in the Hydra's gall he dipped his arrows, making a poison so deadly it would one day become the death of Heracles himself." },
+    ],
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
   oedipus: {
