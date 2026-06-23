@@ -1,6 +1,6 @@
 # Theogony — A Web of Becoming
 
-Interactive "celestial atlas" of Greek mythology — a D3 force-directed star map where each figure is a star whose brightness reflects its renown (connection count). Built with React 18, D3 v7, and Tailwind CSS 3.
+Interactive "celestial atlas" of Greek mythology — a D3 force-directed star map where each figure is a star whose brightness reflects its renown (connection count). Features cinematic guided tours, a 3D zodiac sphere, and a detail panel with original prose retellings. Built with React 18, D3 v7, and Tailwind CSS 3.
 
 ## Commands
 
@@ -26,24 +26,31 @@ No test runner or linter is configured. `npm run build` is the only correctness 
 
 ```
 src/
-├── App.jsx                   # State root + all UI chrome (header, search, tours, path-finder, legend, detail panel)
-├── main.jsx                  # React DOM entry
-├── index.css                 # Tailwind + starfield/twinkle/float keyframes + graph & panel classes
+├── App.jsx                        # State root + all UI chrome (header, search, tours, path-finder, legend, detail panel, zodiac/guided-sky launchers)
+├── main.jsx                       # React DOM entry
+├── index.css                      # Tailwind + starfield/twinkle/float keyframes + graph & panel classes
 ├── components/
-│   ├── SkyGraph.jsx          # THE graph — D3 celestial atlas, exposed as an imperative React ref
-│   └── DetailPanel.jsx       # Right-hand slide-in detail view (opens on node select)
+│   ├── SkyGraph.jsx               # THE graph — D3 celestial atlas, exposed as an imperative React ref
+│   ├── DetailPanel.jsx            # Right-hand slide-in detail view (opens on node select)
+│   ├── GuidedSky.jsx              # Full-screen cinematic guided tour overlay (autoplay/manual, chapter scrubber, tale picker)
+│   ├── ConstellationStage.jsx     # Imperative SVG engine for abstract constellation animations (used by GuidedSky)
+│   ├── ZodiacSky.jsx              # Full-screen zodiac view — auto-advancing carousel with caption panel + glyph strip
+│   └── ZodiacSphere.jsx           # Interactive 3D-projected celestial globe of all 12 zodiac constellations
 └── data/
-    ├── mythology.js          # nodes[] + links[] — the entire dataset
-    ├── deityStories.js       # Original prose retellings keyed by node id ({ story, source })
-    ├── categoryConfig.js     # category display labels + categoryOrder
-    ├── linkTypeConfig.js     # link type labels + inverseLabel + linkTypeOrder
-    └── archetypeMap.js       # Jungian archetypes: { description, color } + archetypeOrder
+    ├── mythology.js               # nodes[] (116 nodes) + links[] (208 links) — the entire dataset
+    ├── deityStories.js            # Original prose retellings keyed by node id ({ story, source, beats? })
+    ├── tours.js                   # Guided tour narratives — 11 tours with { id, title, kicker, beats: [{ fig, text }] }
+    ├── zodiac.js                  # 12 zodiac signs with myth text, star coordinates, element accents
+    ├── constellations.js          # Abstract constellation specs per deity for the ConstellationStage engine
+    ├── categoryConfig.js          # category display labels + categoryOrder
+    ├── linkTypeConfig.js          # link type labels + inverseLabel + linkTypeOrder
+    └── archetypeMap.js            # Jungian archetypes: { description, color } + archetypeOrder
 
 public/
-└── portraits/                # Drop portraits here — resolved by id, no code changes needed
-    ├── {id}-head.webp        # Tight bust — clipped to the node circle on the graph
-    └── {id}-full.webp        # Full-body — shown at the top of the DetailPanel
-                              # .png variants are accepted as fallbacks (see fallback chain below)
+└── portraits/                     # Drop portraits here — resolved by id, no code changes needed
+    ├── {id}-head.webp             # Tight bust — clipped to the node circle on the graph
+    └── {id}-full.webp             # Full-body — shown at the top of the DetailPanel
+                                   # .png variants are accepted as fallbacks (see fallback chain below)
 ```
 
 > **Color source of truth:** graph/category/link colors live in the `CAT` and `LCOL` OKLCH maps exported from `SkyGraph.jsx` — **not** in `categoryConfig`/`linkTypeConfig`, which now provide only display labels and ordering. `DetailPanel` and `App` import `CAT`/`LCOL` from `SkyGraph` to stay consistent.
@@ -75,9 +82,31 @@ Portraits are resolved purely from `id` by convention (no `head_image`/`full_ima
 
 ### Story schema (`src/data/deityStories.js`)
 ```js
-{ chaos: { story: 'Before anything else there was Chaos…', source: 'Hesiod, Theogony.' } }
+{ chaos: { story: 'Before anything else there was Chaos…', source: 'Hesiod, Theogony.', beats: [...] } }
 ```
-Keyed by node id. `DetailPanel`'s "Origins" section renders `story` (falling back to `node.description`) with `source` as a citation line. All prose is original; sources are public-domain (Hesiod, Ovid, Homer, Apollodorus).
+Keyed by node id. `DetailPanel`'s "Origins" section renders `story` (falling back to `node.description`) with `source` as a citation line. Entries with `beats` array render as a vertical "Story Spine" constellation — each beat has `{ label, weight, text, figures? }` where `figures` are clickable navigation links. All prose is original; sources are public-domain (Hesiod, Ovid, Homer, Apollodorus).
+
+### Tour schema (`src/data/tours.js`)
+```js
+{ id: 'titans', title: 'The Fall of the Titans', kicker: 'A Cosmogony',
+  beats: [{ fig: 'chaos', text: 'In the beginning…' }, …] }
+```
+11 guided tours. Each beat's `fig` must be a valid node id in `mythology.js` AND have a matching constellation spec in `constellations.js`.
+
+### Zodiac schema (`src/data/zodiac.js`)
+```js
+{ id:'aries', name:'Aries', symbol:'♈', figure:'The Golden Ram',
+  element:'Fire', dates:'Mar 21 – Apr 19', motion:'rock',
+  text:'When Phrixus and Helle fled…',
+  b:[1], n:[[-64,24],[-28,10],…], e:[[0,1],[1,2],…] }
+```
+12 self-contained zodiac signs. `n` = star node `[x,y]` coordinates (-100..100 viewBox), `e` = edge index pairs, `b` = bright node indices. Element accents (Fire/Earth/Air/Water) map to OKLCH colors.
+
+### Constellation schema (`src/data/constellations.js`)
+```js
+{ m:'breathe', hero:0, b:[0], n:[[0,-2],[…]], e:[[0,1],…] }
+```
+Keyed by node id. Same coordinate/edge format as zodiac. `hero` marks the focal star (largest, gold-tinged). `m` is the motion type (`breathe`, `drift`, `sweep`, `cradle`, `pulse`, `undulate`, `rock`, `shimmer`, `tip`, `writhe`).
 
 ### Link schema
 ```js
@@ -109,7 +138,7 @@ SkyGraph ──onSelect(id) callback──▶ App.setSelectedId(id) ──▶ <D
 - `alphaDecay` 0.028
 - Pre-settles with 160 synchronous `sim.tick()`s, then `restart()`s for slow ambient drift
 
-**Renown / node size:** `prom = sqrt(degree) / sqrt(maxDegree)`; `radius = 2.2 + prom * 13.8`. More-connected figures are larger and brighter. This formula is recomputed wherever needed (SkyGraph, DetailPanel, App's autocomplete) — keep them in sync if you change it.
+**Renown / node size:** `prom = sqrt(degree) / sqrt(maxDegree)`; `radius = 2.4 + Math.pow(prom, 1.3) * 17`. More-connected figures are larger and brighter. This formula is recomputed wherever needed (SkyGraph, DetailPanel, App's autocomplete) — keep them in sync if you change it.
 
 ## Background Layer Stack
 
@@ -132,40 +161,62 @@ Each node `<g>` stacks: a blurred `glow` circle (`#glow` filter), a pale `core` 
 
 ## Detail Panel
 
-`DetailPanel` is a right-hand slide-in `<aside class="detail-panel">` (off-canvas via `translateX`, `.open` slides it in). It renders for the selected node and is the only detail surface (there is no modal/lightbox).
+`DetailPanel` is a right-hand slide-in `<aside class="detail-panel">` (off-canvas via `translateX`, `.open` slides it in). It renders for the selected node and is the only detail surface (there is no modal/lightbox). Scrolls to top automatically when navigating to a new deity.
 
 - **Hero:** the full-body `Portrait` (with a gradient overlay carrying the name/epithet/category badge) **or**, if no portrait exists, a generated **`Sigil`** — an SVG "constellation" of the node plus its top neighbors, sized by their renown.
-- **Renown bar:** visualizes `prom`, labeled with raw `degree`.
-- **Sections (in order):** Archetype (color + description from `archetypeMap`), Origins (`deityStories` prose + source, falling back to `description`), Domains, Myths, Symbols, Connections.
-- **Connections** are clickable buttons → `onNavigate(id)`, which re-selects + flies the graph to that node. Direction-aware labels use `linkTypeConfig`'s `label` (→) vs `inverseLabel` (←).
+- **Sections (in order):** Archetype (color + description from `archetypeMap`), Origins/Story Spine (`deityStories` prose + source, falling back to `description`; entries with `beats` render as a vertical constellation), Domains, Myths, Symbols, Connections.
+- **Connections** are clickable buttons → `onNavigate(id)`, which re-selects + flies the graph to that node and scrolls the panel to top. Direction-aware labels use `linkTypeConfig`'s `label` (→) vs `inverseLabel` (←).
+
+## Guided Sky (Cinematic Tours)
+
+`GuidedSky.jsx` is a full-screen overlay that presents the guided tours from `tours.js`. Each tour beat shows an abstract constellation (from `ConstellationStage.jsx` + `constellations.js`) with narration text.
+
+- **Autoplay** at 6.5s per beat; pause/resume via play button or spacebar
+- **Navigation:** arrow keys, prev/next buttons, or clickable chapter scrubber dots
+- **Tale picker:** dropdown to switch between the 11 tours
+- **ConstellationStage:** imperative SVG engine that ignites stars one-by-one, traces connecting edges, then applies a looping motion (`breathe`, `drift`, `sweep`, etc.). Three brightness tiers: hero (largest, gold-tinged) → bright → dim.
+
+## Zodiac Sky (3D Celestial Sphere)
+
+`ZodiacSky.jsx` + `ZodiacSphere.jsx` render a full-screen 3D-projected celestial globe with all 12 zodiac constellations on the ecliptic.
+
+- **Auto-advance carousel** cycles through signs every 6s; resets on any manual interaction
+- **3D projection:** sphere radius 220 SVG units, ~22° ecliptic tilt, perpetual slow drift (0.03 rad/s). Smooth rotation easing (8x/s) toward the selected sign.
+- **Selected sign prominence:** 1.8x node scale, doubled halo glow, thicker edges (1.5px + 3px glow), 17px bold label — non-selected dimmed to 0.25 opacity for high contrast
+- **Interaction:** click a constellation or a glyph in the bottom strip; drag to rotate the sphere; arrow keys advance signs
+- **Caption panel:** shows sign glyph, name, figure, element, dates, and myth text
 
 ## App Features (`App.jsx`)
 
 `App.jsx` holds all state and renders the chrome around `<SkyGraph>`:
 
 - **Search** — `SearchBox` with an `AutocompleteInput`; picking a figure calls `graphRef.select(id, true)`.
-- **Tours** — the `TOURS` array defines guided narratives (`{ id, title, steps: [[nodeId, caption], …] }`). On step change, `App` calls `select` + `setTourLock(true)` + `litEdge(prev, cur)`; `TourBar` drives prev/next.
+- **Tours** — two entry points: the in-graph TourBar (older, step-by-step with `litEdge` highlights) and the full-screen GuidedSky overlay (cinematic, autoplay). Both use `tours.js` data.
 - **Path** — `PathPanel` runs `bfs()` over an adjacency map between two figures and calls `highlightPath(ids)` to route the graph; the panel lists each hop with its relationship label.
 - **Legend** — `LegendPanel` popover, built from `categoryOrder`/`linkTypeOrder` + `CAT`/`LCOL`.
+- **Zodiac** — launches `ZodiacSky` as a full-screen overlay.
 - **Tooltip** — a single `<div id="tip">` that `SkyGraph` positions on `mousemove` and fills on hover (SkyGraph no-ops gracefully if the element is absent).
 
 ### State
 
 ```
-selectedId    — selected node id (drives DetailPanel + graph highlight); null = none
-legendOpen    — legend popover visible
-pathOpen      — path-finder panel visible (hides search; clears selection)
-tourMenuOpen  — tour dropdown visible
-activeTour    — current TOURS entry (null = no tour)
-tourStep      — index within the active tour
-hintFaded     — fades the "click a star" hint after first interaction / 9s
+selectedId       — selected node id (drives DetailPanel + graph highlight); null = none
+legendOpen       — legend popover visible
+pathOpen         — path-finder panel visible (hides search; clears selection)
+tourMenuOpen     — tour dropdown visible
+activeTour       — current TOURS entry (null = no tour)
+tourStep         — index within the active tour
+hintFaded        — fades the "click a star" hint after first interaction / 9s
+storyOpen        — GuidedSky cinematic overlay visible
+storyTourId      — which tour the GuidedSky overlay opened with
+zodiacOpen       — ZodiacSky overlay visible
 ```
 
 Selection is push-based: graph → `onSelect` → `selectedId`; App → `graphRef` imperative calls → graph. Opening Path or starting a Tour clears the current selection so modes don't overlap.
 
 ## Extending the Dataset
 
-Edit `src/data/mythology.js` (nodes/links) and optionally add a matching `src/data/deityStories.js` entry. Run `npm run build` to verify there are no broken references. To add imagery, drop `{id}-head.webp` / `{id}-full.webp` (or `.png`) in `public/portraits/` — they're picked up by id on next load, no code change needed.
+Edit `src/data/mythology.js` (nodes/links) and optionally add a matching `src/data/deityStories.js` entry. For guided tours, also add a constellation spec to `src/data/constellations.js` with the same node id. Run `npm run build` to verify there are no broken references. To add imagery, drop `{id}-head.webp` / `{id}-full.webp` (or `.png`) in `public/portraits/` — they're picked up by id on next load, no code change needed.
 
 ## CSS Classes of Note
 
@@ -185,3 +236,7 @@ Edit `src/data/mythology.js` (nodes/links) and optionally add a matching `src/da
 | `.tourbar` (+ `.open`) | Bottom guided-tour caption bar |
 | `.pop-in` | Quick scale/fade entrance for popovers (legend, path, tour menu) |
 | `.node-selected-ring` | Gold pulse animation (`@keyframes gold-pulse`) |
+| `.gs-root` / `.gs-caption` / `.gs-name` | GuidedSky + ZodiacSky shared cinematic overlay classes |
+| `.zs-root` / `.zs-strip` / `.zs-glyph-btn` | ZodiacSky-specific: root, glyph strip, sign buttons |
+| `.zs-selected` / `.zs-hovered` | ZodiacSphere constellation highlight states (gold edges/halos) |
+| `.zs-edge` / `.zs-halo` / `.zs-core` | ZodiacSphere star elements: connecting lines, glow halos, core dots |
