@@ -1049,82 +1049,242 @@ export const deityStories = {
   // ---- NYMPHS & EARTHWARD ----
   circe: {
     story: "Circe is the great enchantress of myth — daughter of Helios the Sun and an ocean nymph, born with the fire of stars and the cold of sea-water mingled in her blood. She lives alone on the wooded island of Aiaia, mistress of herbs and transformations, a goddess who has learned to need no one and who turns the men who wash up on her shore into the beasts she judges them to be.\n\nWhen Odysseus's crew came hungry to her halls, she feasted them and touched them with her wand, and they dropped to the floor as swine — snouts and bristles and little weeping eyes, their human minds left whole inside the bodies of pigs. Only Odysseus, armed by Hermes against her magic, withstood the cup; and when her spell broke harmless against him, she took him not as an enemy but as a lover, and kept him a year in ease before setting him on the road to the land of the dead. Yet her gift had a darker face. When the sea-god Glaucus came begging a charm to win the nymph Scylla, Circe — who wanted him for herself and was refused — poured poison into the cove where Scylla bathed, and watched the girl she envied burst from the waist down into a ring of baying dogs: a monster made out of nothing but jealousy.",
+    beats: [
+      { label: "Mistress of Aiaia", weight: 0.8, figures: ['helios'],
+        text: "Circe is the great enchantress — daughter of Helios the Sun, living alone on the wooded island of Aiaia, a goddess who turns the men who wash up on her shore into the beasts she judges them to be." },
+      { label: "Swine and the Unbreakable Man", weight: 1.0, figures: ['odysseus', 'hermes'],
+        text: "She feasted Odysseus's crew and touched them with her wand, dropping them to the floor as swine. Only Odysseus, armed by Hermes against her magic, withstood the cup — and she took him as a lover." },
+      { label: "The Poisoned Pool", weight: 0.85, figures: ['glaucus', 'scylla'],
+        text: "When the sea-god Glaucus came begging a charm to win Scylla, Circe — who wanted him for herself — poisoned the cove where the nymph bathed, and watched the girl burst into a ring of baying dogs: a monster made of jealousy." },
+    ],
     source: "Homer, Odyssey X; Ovid, Metamorphoses XIV. Further reading: Ted Hughes, Tales from Ovid."
   },
   calypso: {
     story: "Calypso is the lonely nymph of the island of Ogygia, a daughter of the Titan Atlas who dwells at the still navel of the sea, far from the company of gods and men — beautiful, immortal, and utterly alone. Her name means 'the hidden one,' and to be loved by her is to be hidden away from the whole of the world.\n\nWhen the shipwrecked Odysseus was cast upon her shore, the last survivor of all his fleet, Calypso took him in and loved him, and kept him at her side for seven long years. She offered him what is offered to no mortal — agelessness, deathlessness, an eternity with her — if only he would stay and forget the rocky little kingdom and the aging wife who waited for him. But he sat each day upon the headland weeping toward the grey water, and at last the gods themselves commanded her to release him. Grieving, she gave the man she loved the tools to build his raft and a fair wind to carry him off, and stood on the shore and watched him sail away into the world that had never once stopped calling him home.",
+    beats: [
+      { label: "The Hidden One", weight: 0.7, figures: ['atlas'],
+        text: "Calypso is the lonely nymph of Ogygia, a daughter of Atlas who dwells at the still navel of the sea — beautiful, immortal, and utterly alone. Her name means 'the hidden one.'" },
+      { label: "Seven Years of Longing", weight: 1.0, figures: ['odysseus'],
+        text: "When the shipwrecked Odysseus was cast upon her shore, Calypso took him in and loved him for seven years, offering him immortality itself — but he sat each day upon the headland weeping toward the grey water." },
+      { label: "The Raft and the Fair Wind", weight: 0.85,
+        text: "At last the gods commanded her to release him. Grieving, she gave the man she loved the tools to build his raft and a fair wind to carry him off, and stood on the shore and watched him sail away." },
+    ],
     source: "Homer, Odyssey V."
   },
   muses: {
     story: "The Muses are the nine goddesses of inspiration — the bright sisters who preside over poetry and music, history and dance, tragedy and the wheeling of the stars. They are the unseen presence behind every made thing of beauty, the breath a singer draws before the first true note.\n\nThey were born of nine nights between Zeus and Mnemosyne, the Titaness of Memory, on the slopes below Olympus — so that art is the child of power and remembrance together. They dwell on Mount Helicon, where the spring that Pegasus opened with a strike of his hoof runs cold and clear, and there they sing for the gods and touch chosen mortals with their gift. This is why the old poems all begin by calling upon them: no singer believed the song was truly his own, but rather that the Muses, the daughters of Memory, were speaking the remembered past through his mouth.",
+    beats: [
+      { label: "Nine Bright Sisters", weight: 0.8,
+        text: "The Muses are the nine goddesses of inspiration — the bright sisters who preside over poetry and music, history and dance, tragedy and the wheeling of the stars." },
+      { label: "Born of Power and Memory", weight: 1.0, figures: ['zeus', 'mnemosyne'],
+        text: "They were born of nine nights between Zeus and Mnemosyne, the Titaness of Memory — so that art is the child of power and remembrance together." },
+      { label: "The Spring on Helicon", weight: 0.7, figures: ['pegasus'],
+        text: "They dwell on Mount Helicon, where the spring that Pegasus opened with a strike of his hoof runs cold and clear, and there they sing for the gods and touch chosen mortals with their gift." },
+    ],
     source: "Hesiod, Theogony."
   },
   daphne: {
     story: "Daphne is a nymph of the wild woods and running water, a daughter of a river-god, who wished for nothing in the world but to run free among the trees and to be no man's at all. She is the first of Apollo's loves and the first of his griefs — the one who would sooner become a tree than be caught.\n\nHer fate was sealed by a quarrel of the gods. Stung by the radiant Apollo's mockery, little Eros drew two arrows from his quiver: one of gold, which he loosed into the god to kindle a helpless desire, and one of lead, which he shot into Daphne to fill her with loathing of it. So Apollo pursued her through the forest, pleading even as he ran, and she fled until her strength gave out at the bank of her father's river. There she cried out to the river-god to destroy the beauty that doomed her — and as the god's hands closed upon her, bark climbed her skin, her hair thickened into leaves, her swift feet struck root into the earth. Apollo embraced only a laurel tree, and pressed his face to the cool bark where her heart still beat beneath it; and he made the laurel his own forever, so that the girl who fled him would crown his every victory.",
+    beats: [
+      { label: "The Two Arrows", weight: 0.85, figures: ['eros', 'apollo'],
+        text: "Stung by Apollo's mockery, little Eros drew two arrows: one of gold to kindle helpless desire in the god, and one of lead to fill Daphne with loathing of it." },
+      { label: "The Chase Through the Forest", weight: 1.0, figures: ['apollo'],
+        text: "Apollo pursued her through the forest, pleading even as he ran, and she fled until her strength gave out at the bank of her father's river and she cried out to destroy the beauty that doomed her." },
+      { label: "Bark Over Her Heart", weight: 0.9,
+        text: "As the god's hands closed upon her, bark climbed her skin, her hair thickened into leaves, her feet struck root. Apollo embraced only a laurel tree, and made it his crown forever." },
+    ],
     source: "Ovid, Metamorphoses I. Further reading: Ted Hughes, Tales from Ovid."
   },
   io: {
     story: "Io is a mortal priestess of Hera, a princess of Argos whose only fault was to be beautiful enough to catch the wandering eye of Zeus. Hers is a story of helpless suffering — a girl flung back and forth between a god's desire and a goddess's jealousy, and given no say in either.\n\nTo hide his affair, Zeus changed Io into a snow-white heifer — but Hera, undeceived, asked for the lovely creature as a gift and set the hundred-eyed giant Argus to guard her, so that some of those unsleeping eyes were always open and watching. When Hermes lulled Argus to sleep with stories and killed him to set her free, Hera was not finished: she sent a maddening gadfly to sting the heifer onward, and drove poor Io wandering in torment across the whole width of the world, over the sea that took her name and past the very rock where Prometheus hung in chains. Only when she came at last to the Nile did Zeus restore her to herself with a gentle touch — and there, her long flight ended, she was made a woman again and bore the line of kings from which Heracles himself would one day come.",
+    beats: [
+      { label: "The White Heifer", weight: 0.85, figures: ['zeus', 'hera'],
+        text: "To hide his affair, Zeus changed Io into a snow-white heifer — but Hera, undeceived, asked for the creature as a gift and set the hundred-eyed giant Argus to guard her." },
+      { label: "The Slaying of Argus", weight: 1.0, figures: ['hermes'],
+        text: "Hermes lulled Argus to sleep with stories and killed him to set her free — but Hera sent a maddening gadfly to sting the heifer onward, driving Io in torment across the whole width of the world." },
+      { label: "Restored at the Nile", weight: 0.75, figures: ['zeus', 'heracles'],
+        text: "Only at the Nile did Zeus restore her with a gentle touch — and there she bore the line of kings from which Heracles himself would one day come." },
+    ],
     source: "Ovid, Metamorphoses I. Further reading: Ted Hughes, Tales from Ovid."
   },
   callisto: {
     story: "Callisto is a nymph of Artemis's wild company, a huntress sworn to the goddess's service and to lifelong chastity, who ran the forests with her bow and asked for nothing more. She is one of the gentlest of the doomed, punished for a wrong that was never hers to commit.\n\nZeus desired her and took her, and when at last her secret could no longer be hidden she was cast out of Artemis's band in shame — and then turned into a shaggy bear, by Hera's spite or the goddess's own anger, to wander in dread through the woods she had once hunted, fleeing the very hounds that had once run at her side. Years later her own son Arcas, grown now into a hunter, came upon the great bear among the trees and raised his spear, never knowing it was his mother — but Zeus, in pity, caught them both up into the heavens in that last instant and set them among the stars as the Great Bear and the Little Bear, circling the pole forever and, by Hera's lasting grudge, never permitted to sink and rest beneath the sea.",
+    beats: [
+      { label: "The Huntress Betrayed", weight: 0.8, figures: ['zeus', 'artemis'],
+        text: "Zeus desired her and took her; when her secret could no longer be hidden she was cast out of Artemis's band in shame — punished for a wrong that was never hers." },
+      { label: "The Bear in the Woods", weight: 1.0, figures: ['hera'],
+        text: "Turned into a shaggy bear by Hera's spite, she wandered in dread through the woods she had once hunted, fleeing the very hounds that had once run at her side." },
+      { label: "Set Among the Stars", weight: 0.85, figures: ['zeus'],
+        text: "When her own son raised his spear at the bear, never knowing it was his mother, Zeus caught them both into the heavens as the Great Bear and the Little Bear, circling the pole forever." },
+    ],
     source: "Ovid, Metamorphoses II. Further reading: Ted Hughes, Tales from Ovid."
   },
   arachne: {
     story: "Arachne is a mortal girl of Lydia, a weaver of such genius that the nymphs left their streams and groves to watch her work — and whose gift was matched only by her pride, for she would not grant that she had learned her art from anyone, least of all from a goddess. She is the first spider, and the oldest parable of a talent that will not bow.\n\nWhen she boasted that her weaving outshone Athena's own, the goddess came to her disguised as an old woman to counsel humility, and was scorned for it; so Athena threw off the disguise, and the two set their looms side by side. Athena wove the gods in their glory; Arachne wove the gods in their cruelties — every betrayal and disguise and violation, a tapestry flawless in its skill and unforgivable in its truth. Enraged less by the perfection than by the honesty of it, Athena struck the girl down. Where Arachne in despair hanged herself, the goddess loosened the noose into a thread and shrank her into a small dark spinner — condemned, with all her children after her, to weave in the corners of the world forever.",
+    beats: [
+      { label: "A Talent That Will Not Bow", weight: 0.7,
+        text: "Arachne is a mortal girl of Lydia, a weaver of such genius that the nymphs left their streams to watch her work — and whose pride would not grant she had learned her art from a goddess." },
+      { label: "The Contest of Looms", weight: 1.0, figures: ['athena'],
+        text: "Athena wove the gods in their glory; Arachne wove the gods in their cruelties — every betrayal and violation, a tapestry flawless in its skill and unforgivable in its truth." },
+      { label: "The First Spider", weight: 0.9, figures: ['athena'],
+        text: "Enraged by the honesty of it, Athena struck the girl down. Where Arachne in despair hanged herself, the goddess loosened the noose into a thread and shrank her into a small dark spinner, condemned to weave in the corners of the world forever." },
+    ],
     source: "Ovid, Metamorphoses VI. Further reading: Ted Hughes, Tales from Ovid."
   },
   asclepius: {
     story: "Asclepius is the great healer of myth, the mortal son of Apollo who rose to become the god of medicine — a man whose art grew so perfect that it overstepped the boundary the gods had set between the living and the dead. He is the hope at every sickbed, and the warning that even healing has a forbidden edge.\n\nSnatched as an unborn child from his dying mother's funeral pyre by his father Apollo, he was given to the wise centaur Chiron to raise, and learned from him every secret of herb and knife and binding, until he could close any wound and break any fever. But his skill ran past its appointed limit when he learned to raise the dead outright, calling souls back up out of the underworld — and Hades complained to Zeus that the very order of life and death was being unmade. So Zeus struck the healer down with a thunderbolt. Yet his worth was not denied him: he was set among the stars as the constellation of the Serpent-Bearer, and honored ever after as a god, his temples filled with the sick who came to be healed as they slept.",
+    beats: [
+      { label: "Snatched from the Pyre", weight: 0.8, figures: ['apollo'],
+        text: "Snatched as an unborn child from his dying mother's funeral pyre by Apollo, he was given to the wise centaur Chiron to raise, and learned every secret of herb and knife and binding." },
+      { label: "Raising the Dead", weight: 1.0, figures: ['hades'],
+        text: "His skill ran past its limit when he learned to raise the dead outright — and Hades complained to Zeus that the very order of life and death was being unmade." },
+      { label: "The Thunderbolt and the Stars", weight: 0.85, figures: ['zeus'],
+        text: "Zeus struck the healer down with a thunderbolt. Yet his worth was not denied: he was set among the stars as the Serpent-Bearer, and honored ever after as a god." },
+    ],
     source: "Ovid, Metamorphoses II, XV; Pindar, Pythian 3."
   },
   minotaur: {
     story: "The Minotaur is the shame of Crete made flesh — a creature with the body of a powerful man and the head and horns of a bull, born of an unnatural union and hidden away in the dark heart of a maze. He is hunger without reason, a man's mind caught in a beast's craving, and he feeds on the flesh of the young.\n\nHis making was itself a punishment. When King Minos kept back from Poseidon a magnificent white bull that was meant for sacrifice, the god in revenge filled the queen, Pasiphaë, with a monstrous passion for the animal, and from it she bore the bull-headed child. Minos, unable to kill it and unwilling to look upon it, had the craftsman Daedalus build the Labyrinth — a maze so cunning its own maker could scarcely find the way out — and shut the Minotaur within, feeding it on youths and maidens sent as tribute from conquered Athens. There it prowled the windings in the dark, until Theseus came at last with a sword in his hand and a thread to mark his way, and killed it at the center of the maze.",
+    beats: [
+      { label: "The Shame of Crete", weight: 0.8, figures: ['poseidon'],
+        text: "When King Minos kept back from Poseidon a magnificent white bull, the god filled the queen with a monstrous passion for the animal, and from it she bore the bull-headed child." },
+      { label: "The Labyrinth", weight: 0.9, figures: ['daedalus'],
+        text: "Minos had the craftsman Daedalus build the Labyrinth — a maze so cunning its own maker could scarcely find the way out — and shut the Minotaur within, feeding it on youths and maidens." },
+      { label: "Killed at the Center", weight: 1.0, figures: ['theseus'],
+        text: "There it prowled the windings in the dark, until Theseus came at last with a sword in his hand and a thread to mark his way, and killed it at the center of the maze." },
+    ],
     source: "Apollodorus, Library; Ovid, Metamorphoses VIII."
   },
   ariadne: {
     story: "Ariadne is the princess of Crete who holds the thread of the most famous story in the maze — daughter of King Minos, half-sister to the Minotaur, the girl whose love undoes the monster and whose abandonment becomes, against all expectation, the doorway to something far greater. She is the one left sleeping on the empty shore who wakes to find herself a god's bride.\n\nWhen Theseus came to Crete to face the Minotaur, Ariadne fell in love with him and gave him the secret that saved his life — a ball of thread to unwind through the Labyrinth, so that he could find the way back out of the dark once the killing was done. She fled with him across the sea, having betrayed her own father and her own blood for his sake; and he repaid her by abandoning her, asleep and alone, on the island of Naxos as he sailed away at dawn. But there, in the depths of her grief, the god Dionysus found her — and loved her as the hero had not, took her for his wife, and lifted her bridal crown up into the night, where it shines still as the Corona, a circlet of stars set forever above the woman who was left behind.",
+    beats: [
+      { label: "The Thread of the Maze", weight: 1.0, figures: ['theseus', 'minotaur'],
+        text: "When Theseus came to face the Minotaur, Ariadne fell in love and gave him the secret that saved his life — a ball of thread to unwind through the Labyrinth, so he could find the way back out." },
+      { label: "Abandoned on Naxos", weight: 0.85, figures: ['theseus'],
+        text: "She fled with him across the sea, having betrayed her own father for his sake; and he repaid her by abandoning her, asleep and alone, on the island of Naxos as he sailed away at dawn." },
+      { label: "A God's Bride", weight: 0.9, figures: ['dionysus'],
+        text: "In the depths of her grief, Dionysus found her and loved her as the hero had not, took her for his wife, and lifted her bridal crown into the night, where it shines still as the Corona." },
+    ],
     source: "Apollodorus, Library; Ovid, Metamorphoses VIII."
   },
   medea: {
     story: "Medea is the most formidable of all the mortal women of myth — a sorceress and a priestess of Hecate, granddaughter of the Sun, whose love and whose vengeance burn with one and the same terrible intensity. She is power that gives away everything for love, and then, betrayed, takes everything back: the most devoted and the most fearsome figure in the story she shares with Jason.\n\nWhen Jason came to her father's distant kingdom for the Golden Fleece, Medea fell helplessly in love and turned the whole force of her magic to his survival — taming the fire-breathing bulls, lulling the sleepless dragon, betraying her father and killing her own brother to flee with him across the sea. She gave him children and made him the match of a king. And when, for ambition's sake, Jason cast her aside to marry a younger princess for a crown, the same fierce heart turned to ice: she sent the bride a poisoned robe that burned her alive, and then — to leave Jason with nothing in the world left to live for — she killed with her own hand the children she had borne him, and rode away above the ruin in a chariot drawn by dragons, beyond his reach and beyond every judgment but her own.",
+    beats: [
+      { label: "Love and Sorcery", weight: 0.9, figures: ['jason', 'hecate'],
+        text: "When Jason came for the Golden Fleece, Medea fell helplessly in love and turned the whole force of her magic to his survival — taming fire-breathing bulls, lulling the sleepless dragon, betraying her father and killing her own brother." },
+      { label: "The Broken Oath", weight: 0.8, figures: ['jason'],
+        text: "She gave him children and made him the match of a king. And when, for ambition's sake, Jason cast her aside to marry a younger princess, the same fierce heart turned to ice." },
+      { label: "The Chariot of Dragons", weight: 1.0, figures: ['jason'],
+        text: "She sent the bride a poisoned robe that burned her alive, then killed with her own hand the children she had borne him, and rode away in a chariot drawn by dragons — beyond his reach and beyond every judgment but her own." },
+    ],
     source: "Apollonius of Rhodes, Argonautica; Ovid, Metamorphoses VII; Euripides, Medea."
   },
    semele: {
     story: "Semele is a princess of Thebes, a mortal woman loved by Zeus himself and the mother of a god — the only human ever to give birth to an Olympian, and to pay for that glory with her life. She is the bright moth drawn to the one light no mortal can survive the sight of.\n\nWhile Semele was carrying Zeus's child, jealous Hera came to her disguised as an old nurse and quietly sowed a doubt: was her divine lover truly a god at all? So Semele, deceived, begged Zeus to swear an unbreakable oath, and then asked him to show himself to her exactly as he showed himself to Hera, in the full blaze of his divinity. Bound by his oath and unable to refuse, the god came to her crowned in his own lightning — and the sight of him burned her to ash where she stood. But Zeus snatched the unborn child from the fire and sewed it into his own thigh to finish its growing, and so brought forth Dionysus; and the son, when he was grown, went down into the land of the dead to bring his mother up from the shadows and set her among the stars.",
+    beats: [
+      { label: "Beloved of Zeus", weight: 0.7, figures: ['zeus'],
+        text: "Semele is a princess of Thebes, a mortal woman loved by Zeus himself — the only human ever to give birth to an Olympian, the bright moth drawn to the one light no mortal can survive." },
+      { label: "Hera's Poisoned Doubt", weight: 1.0, figures: ['hera', 'zeus'],
+        text: "Jealous Hera came disguised as an old nurse and sowed a doubt, until Semele begged Zeus to show himself in his full divinity. Bound by his oath, the god came crowned in lightning — and the sight burned her to ash." },
+      { label: "The Twice-Born Son", weight: 0.85, figures: ['dionysus'],
+        text: "Zeus snatched the unborn child from the fire and sewed it into his own thigh; and the son, Dionysus, when grown, went down to the land of the dead to bring his mother up and set her among the stars." },
+    ],
     source: "Ovid, Metamorphoses III. Further reading: Ted Hughes, Tales from Ovid."
   },
   phaethon: {
     story: "Phaethon is the boy who drove the chariot of the Sun — a child of Helios and a mortal woman, who reached for proof of his divine father and seized instead the instrument of his own death. His is the great myth of ambition outrunning strength, the cautionary blaze written in fire across the sky.\n\nTaunted that the Sun was no true father of his, Phaethon journeyed to the blazing palace of Helios and begged for a sign that none could ever doubt; and his father, having rashly sworn to grant whatever the boy asked, could not refuse him the one thing he wanted — to drive the sun-chariot across the heavens for a single day. But Phaethon had not the strength to hold the four fire-breathing horses, and they bolted from the worn path, scorching the high heavens and then plunging low to set the very earth ablaze, drying the rivers and blackening whole lands to desert, until the world itself cried out for mercy. To save creation, Zeus struck the runaway boy from the sky with a thunderbolt, and Phaethon fell blazing like a shooting star into the river Eridanus — where his grieving sisters were turned to weeping poplars on the bank, and their tears to beads of amber.",
+    beats: [
+      { label: "A Father's Rash Oath", weight: 0.8, figures: ['helios'],
+        text: "Taunted that the Sun was no true father of his, Phaethon journeyed to the blazing palace of Helios and begged a sign — and his father, having rashly sworn to grant whatever the boy asked, could not refuse him the sun-chariot." },
+      { label: "The Heavens Ablaze", weight: 1.0,
+        text: "Phaethon had not the strength to hold the fire-breathing horses; they bolted from the worn path, scorching the heavens and setting the earth ablaze, drying rivers and blackening whole lands to desert." },
+      { label: "Struck from the Sky", weight: 0.9, figures: ['zeus'],
+        text: "To save creation, Zeus struck the boy from the sky with a thunderbolt, and Phaethon fell blazing like a shooting star into the river Eridanus — where his sisters were turned to weeping poplars and their tears to amber." },
+    ],
     source: "Ovid, Metamorphoses I–II. Further reading: Ted Hughes, Tales from Ovid."
   },
   narcissus: {
     story: "Narcissus is a youth of heartbreaking beauty and heartbreaking coldness — a boy so lovely that every nymph and mortal who saw him fell in love, and so proud that he turned them all away without a second glance. He is the emblem of a beauty that can love nothing outside itself, and of the punishment folded quietly inside that gift.\n\nOne of those he scorned prayed that Narcissus might one day love, and never have what he loved — and Nemesis, the goddess who answers cruelty, heard the prayer and granted it. Coming hot and thirsty to a still, clear pool, Narcissus bent to drink and saw his own reflection gazing up at him, and fell in love with it past all reason, never understanding that it was himself. He could not kiss the face without shattering it, could not embrace it, could not bring himself to leave it; and so he lay by the water reaching for the unreachable until he wasted away and died there, still staring down. Where his body had lain the others found only a flower, white-petalled and bowed toward the water, that carries his name to this day.",
+    beats: [
+      { label: "Beauty Without Mercy", weight: 0.7, figures: ['echo'],
+        text: "Narcissus is a youth of heartbreaking beauty and heartbreaking coldness — so lovely that every nymph fell in love, and so proud that he turned them all away without a second glance." },
+      { label: "The Answered Prayer", weight: 1.0, figures: ['nemesis'],
+        text: "Nemesis heard the prayer that Narcissus might love and never have what he loved. At a still pool he saw his own reflection and fell in love with it past all reason, never understanding it was himself." },
+      { label: "The Flower by the Water", weight: 0.85,
+        text: "He could not kiss the face without shattering it; he lay by the water reaching for the unreachable until he wasted away. Where his body had lain the others found only a white-petalled flower bowed toward the water." },
+    ],
     source: "Ovid, Metamorphoses III. Further reading: Ted Hughes, Tales from Ovid."
   },
   echo: {
     story: "Echo is a nymph of the hills and woodlands, once a bright and chattering creature who loved nothing better than the last word — until her own voice became first her punishment and then all that was left of her. She is the sound that answers from the cliff-face and the empty valley, a love that could never once speak first.\n\nShe had angered Hera by covering for Zeus with her endless talk, holding the goddess in conversation while the god's lovers slipped quietly away; so Hera took from her all speech of her own, leaving her able only to give back the last words that others spoke. Then Echo loved the beautiful Narcissus, and trailed him through the woods aching to call out to him — but could only return his own words to him, 'Is anyone here? — here. Come to me — to me,' until he turned from her in scorn. Heartbroken and refused, she wasted away in the lonely glens until her body faded entirely and nothing remained but her voice, which lingers still in caves and mountains, answering whoever calls into them.",
+    beats: [
+      { label: "Hera's Punishment", weight: 0.8, figures: ['hera', 'zeus'],
+        text: "Echo had angered Hera by covering for Zeus with her endless talk; so Hera took from her all speech of her own, leaving her able only to give back the last words that others spoke." },
+      { label: "The Unreturnable Love", weight: 1.0, figures: ['narcissus'],
+        text: "Echo loved the beautiful Narcissus and trailed him through the woods aching to call out — but could only return his own words, until he turned from her in scorn." },
+      { label: "Only a Voice", weight: 0.85,
+        text: "Heartbroken and refused, she wasted away in the lonely glens until her body faded entirely and nothing remained but her voice, which lingers still in caves and mountains, answering whoever calls." },
+    ],
     source: "Ovid, Metamorphoses III. Further reading: Ted Hughes, Tales from Ovid."
   },
   actaeon: {
     story: "Actaeon is a young hunter of Thebes, grandson of a king and a pupil of the wise centaur Chiron — a skilled and innocent man whose only crime was to be in the wrong glade at the wrong hour. His is the most frightening kind of tragedy: ruin with no fault in it, a doom that falls by sheer ill chance.\n\nWandering the wooded mountain with his pack of hounds after a day's hunting, Actaeon parted the leaves of a hidden valley and came without warning upon the goddess Artemis bathing naked in a forest pool among her nymphs. She would suffer no man who had seen her so to live to speak of it; with no spell but a handful of flung water she set antlers branching from his brow, drew his neck out long, dappled his skin and stole his voice — and turned the hunter into a stag. His own fifty hounds, catching the strange new scent, gave chase to the master they no longer knew, ran him down upon the slope, and tore him to pieces while he tried in vain to call each of them by name.",
+    beats: [
+      { label: "The Wrong Glade", weight: 0.7,
+        text: "Actaeon is a young hunter whose only crime was to be in the wrong glade at the wrong hour — ruin with no fault in it, a doom that falls by sheer ill chance." },
+      { label: "The Flung Water", weight: 1.0, figures: ['artemis'],
+        text: "He came upon Artemis bathing naked in a forest pool; with no spell but a handful of flung water she set antlers branching from his brow and turned the hunter into a stag." },
+      { label: "Torn by His Own Hounds", weight: 0.9,
+        text: "His own fifty hounds, catching the strange new scent, gave chase to the master they no longer knew, ran him down upon the slope, and tore him to pieces while he tried in vain to call them by name." },
+    ],
     source: "Ovid, Metamorphoses III. Further reading: Ted Hughes, Tales from Ovid."
   },
   tiresias: {
     story: "Tiresias is the great blind prophet of Thebes, the seer whose inner sight outlasted his eyes and even his death — for he kept his prophetic mind among the shades of the dead, and it was his ghost that Odysseus crossed the edge of the world to consult. He is the one mortal who lived as both man and woman, and so came to know more of life than either alone can know.\n\nWalking once in the forest, he came upon two great serpents coupling on the path and struck them with his staff — and was at once changed into a woman, and lived seven years as one before chancing on the same sign again and being changed back. So when Zeus and Hera fell to arguing whether man or woman takes the greater pleasure in love, they summoned the one being who had been both; and Tiresias answered, truthfully, that the woman's pleasure is by far the greater. Furious to lose the argument, Hera struck him blind on the spot — and Zeus, who could not undo another god's act, gave him in recompense the gift of true prophecy and a life that spanned seven generations of mortal men.",
+    beats: [
+      { label: "The Two Serpents", weight: 0.8,
+        text: "Walking in the forest, Tiresias came upon two serpents coupling on the path and struck them — and was at once changed into a woman, living seven years as one before being changed back." },
+      { label: "The Argument of the Gods", weight: 1.0, figures: ['zeus', 'hera'],
+        text: "When Zeus and Hera argued whether man or woman takes the greater pleasure in love, they summoned the one being who had been both; and Tiresias answered that the woman's pleasure is far greater." },
+      { label: "Blindness and Prophecy", weight: 0.85, figures: ['hera', 'zeus'],
+        text: "Furious, Hera struck him blind on the spot — and Zeus, who could not undo another god's act, gave him in recompense the gift of true prophecy and a life spanning seven generations." },
+    ],
     source: "Ovid, Metamorphoses III. Further reading: Ted Hughes, Tales from Ovid."
   },
   adonis: {
     story: "Adonis is a youth of such surpassing beauty that two goddesses fell to war over him — the very image of mortal loveliness, fleeting and doomed, beloved of Aphrodite herself and mourned by her when the brief flower of his life was cut. He is the beauty the world cannot keep, the spring blossom that dies almost as soon as it opens.\n\nEven his birth came out of a tangled grief, for he was born from a myrrh tree into which his mother had been transformed. Aphrodite loved the child from the moment she first saw him and hid him in a chest, leaving him with Persephone for safekeeping — but the queen of the dead came to love him too and would not give him back, until Zeus decreed that he should pass part of each year in the world above and part below, shared between the goddess of love and the goddess of death. Then, hunting against Aphrodite's pleading, Adonis was gored by a wild boar and bled out in her arms; and from his blood, where it soaked into the ground, she raised the windflower, the anemone, that the spring wind coaxes open and the same wind scatters.",
+    beats: [
+      { label: "Shared Between Two Worlds", weight: 0.85, figures: ['aphrodite', 'persephone', 'zeus'],
+        text: "Aphrodite loved the child and hid him with Persephone for safekeeping — but the queen of the dead came to love him too, until Zeus decreed he should pass part of each year above and part below." },
+      { label: "The Boar in the Thicket", weight: 1.0, figures: ['aphrodite'],
+        text: "Hunting against Aphrodite's pleading, Adonis was gored by a wild boar and bled out in her arms — the beauty the world could not keep." },
+      { label: "The Windflower", weight: 0.75,
+        text: "From his blood, where it soaked into the ground, Aphrodite raised the anemone, the windflower that the spring wind coaxes open and the same wind scatters." },
+    ],
     source: "Ovid, Metamorphoses X. Further reading: Ted Hughes, Tales from Ovid."
   },
   hermaphroditus: {
     story: "Hermaphroditus is the child of Hermes and Aphrodite, and carries in his very name the union of his parents — a youth of rare beauty who became, in the space of a single afternoon, the first being to hold both man and woman in one body. His story is of two selves fused past any separating, of a desire granted so completely that it erased the boundary it had longed to cross.\n\nWandering far from home, the boy came to a clear pool in Caria where the water-nymph Salmacis dwelt, and stripped to bathe in its still water. The nymph, seized with sudden desire, slipped in after him and wound herself about him as he struggled to break free, and prayed to the gods that the two of them might never, ever be parted. The gods granted it with terrible exactness: the two bodies grew together into one, neither wholly male nor wholly female but both at once. And Hermaphroditus, rising changed from the water, begged in his turn that whoever bathed in that pool thereafter should be softened and half-unmanned as he had been — so that the spring kept its strange power ever after.",
+    beats: [
+      { label: "Child of Two Gods", weight: 0.7, figures: ['hermes', 'aphrodite'],
+        text: "Hermaphroditus is the child of Hermes and Aphrodite — a youth of rare beauty who carries in his very name the union of his parents." },
+      { label: "The Pool in Caria", weight: 1.0, figures: ['salmacis'],
+        text: "The water-nymph Salmacis slipped into the pool after him and wound herself about him as he struggled, praying to the gods that the two might never be parted — and the gods granted it with terrible exactness, fusing two bodies into one." },
+      { label: "The Enchanted Spring", weight: 0.8,
+        text: "Rising changed from the water, Hermaphroditus begged that whoever bathed in that pool should be softened as he had been — so the spring kept its strange power ever after." },
+    ],
     source: "Ovid, Metamorphoses IV. Further reading: Ted Hughes, Tales from Ovid."
   },
   salmacis: {
     story: "Salmacis is the nymph of a single still pool in Caria — and the one naiad in all the stories who would not hunt. While her sisters ran the woods with Artemis's bow, Salmacis lingered always at her own clear water, combing her hair and gazing at her own reflection, in love with stillness and with herself.\n\nThen the beautiful youth Hermaphroditus came to her pool and stripped to bathe in it, and Salmacis was seized with a desire she could not master. She slipped into the water after him and wound herself about his struggling body, and prayed aloud that the gods would never let the two of them be parted. The gods granted it with terrible exactness: the two bodies grew together into a single being, both man and woman at once and neither wholly either. Salmacis won her wish to be joined to him forever — but lost herself entirely in the winning of it, her name surviving only on the enchanted spring that softens whoever bathes there to this day.",
+    beats: [
+      { label: "The Nymph Who Would Not Hunt", weight: 0.65, figures: ['artemis'],
+        text: "While her sisters ran the woods with Artemis's bow, Salmacis lingered at her own clear water, combing her hair and gazing at her reflection, in love with stillness and with herself." },
+      { label: "A Desire Beyond Mastering", weight: 1.0, figures: ['hermaphroditus'],
+        text: "When the beautiful Hermaphroditus came to bathe, Salmacis slipped into the water after him and wound herself about his struggling body, praying aloud that the gods would never part them." },
+      { label: "Lost in the Winning", weight: 0.85,
+        text: "The two bodies grew together into one, both man and woman at once. Salmacis won her wish to be joined forever — but lost herself entirely in the winning of it." },
+    ],
     source: "Ovid, Metamorphoses IV. Further reading: Ted Hughes, Tales from Ovid."
   },
 
@@ -1289,30 +1449,86 @@ export const deityStories = {
   },
   alcmene: {
     story: "Alcmene is the mortal mother of the greatest of heroes — a princess of such beauty and wisdom that the poets said no woman of her age surpassed her, and so virtuous that even Zeus had to come to her in disguise. She is the human vessel of a more-than-human son.\n\nFor Zeus desired her, but Alcmene was faithful and would yield only to her own husband Amphitryon; so the god took on Amphitryon's exact shape while the true husband was away at war, and came to her bed, and that night she conceived. Of that union Heracles was born — and with him, the same night, a mortal half-brother by her real husband. But the child of Zeus drew down upon his mother the undying jealousy of Hera, and much of Alcmene's life was spent in fear and flight, shielding the boy from the goddess's wrath. She gave the world its mightiest hero, and paid for it with a lifetime of looking over her shoulder.",
+    beats: [
+      { label: "The Faithful Wife", weight: 0.7, figures: ['zeus'],
+        text: "Alcmene was so virtuous that even Zeus had to come to her in disguise — taking on her husband Amphitryon's exact shape while the true man was away at war." },
+      { label: "Mother of the Mightiest", weight: 1.0, figures: ['heracles'],
+        text: "Of that union Heracles was born — the mightiest of all heroes, the child of Zeus and a mortal woman whose beauty and wisdom none in her age surpassed." },
+      { label: "Hera's Shadow", weight: 0.8, figures: ['hera'],
+        text: "The child of Zeus drew down upon his mother the undying jealousy of Hera, and much of Alcmene's life was spent in fear and flight, shielding the boy from the goddess's wrath." },
+    ],
     source: "Hesiod, Shield of Heracles; Apollodorus, Library."
   },
   danae: {
     story: "Danaë is the bronze-towered princess and the mother of Perseus — a woman shut away from the world to thwart a prophecy, who became the very channel through which that prophecy worked itself out. Her story is one of imprisonment turned, against all a fearful father's care, into destiny.\n\nFor an oracle had warned King Acrisius of Argos that his daughter's son would one day kill him, and so he locked Danaë in a chamber of bronze where no man could reach her. But no wall keeps out a god: Zeus came to her as a shower of golden rain that poured down through the roof into her lap, and she conceived and bore Perseus. Enraged and still afraid, Acrisius sealed mother and infant in a wooden chest and cast them into the sea — yet they did not drown, but washed safe to a far island, where Perseus grew into the hero who would slay Medusa. And the prophecy came true in the end, gently and by accident, long years later: so the locked tower and the floating chest only carried fate the longer way around to the same door.",
+    beats: [
+      { label: "The Bronze Tower", weight: 0.85, figures: ['zeus'],
+        text: "An oracle warned that her son would kill his grandfather, so King Acrisius locked Danae in a chamber of bronze — but Zeus came to her as a shower of golden rain, and she conceived Perseus." },
+      { label: "Cast upon the Sea", weight: 1.0, figures: ['perseus'],
+        text: "Acrisius sealed mother and infant in a wooden chest and cast them into the sea — yet they washed safe to a far island, where Perseus grew into the hero who would slay Medusa." },
+      { label: "Fate the Longer Way Around", weight: 0.7,
+        text: "The prophecy came true in the end, gently and by accident, long years later — the locked tower and the floating chest only carried fate the longer way around to the same door." },
+    ],
     source: "Apollodorus, Library; Ovid, Metamorphoses IV."
   },
   andromeda: {
     story: "Andromeda is the princess chained to the rock — the Ethiopian king's daughter offered up to a sea-monster, and saved at the last instant by a passing hero, whose rescue became one of the great love-stories and one of the great constellations of the sky.\n\nHer peril was not of her own making. Her mother, Queen Cassiopeia, boasted that Andromeda was lovelier than the sea-nymphs, and the offended Nereids sent the monster Cetus to ravage the coast; the only way to appease it, the oracle said, was to chain the princess to a seaside cliff as its prey. There she hung, waiting to be devoured — until Perseus, flying home with the head of Medusa, saw her, fell in love at the sight, and turned the rising monster to stone. He freed her and married her, and at the end of their lives the gods set Andromeda among the stars beside her husband and her parents: the chained maiden raised forever into the night.",
+    beats: [
+      { label: "Chained to the Rock", weight: 0.85,
+        text: "Her mother boasted that Andromeda was lovelier than the sea-nymphs, and the offended Nereids sent a monster to ravage the coast; the only appeasement was to chain the princess to a cliff as prey." },
+      { label: "The Hero from the Sky", weight: 1.0, figures: ['perseus', 'medusa'],
+        text: "Perseus, flying home with the head of Medusa, saw her chained and fell in love at the sight; he turned the rising monster to stone, freed her, and married her." },
+      { label: "Raised into the Stars", weight: 0.7,
+        text: "At the end of their lives the gods set Andromeda among the stars beside her husband and her parents: the chained maiden raised forever into the night." },
+    ],
     source: "Ovid, Metamorphoses IV; Apollodorus, Library."
   },
   humanity: {
     story: "Humanity is the strangest creature in the whole of the Theogony — the only beings who age and sicken and know that they must die, who feel the cold and the dark closing in, and who nonetheless raise cities, sing songs, and shape gods in their own image. The entire divine drama circles, in the end, the question of what to do with them.\n\nThey were made, the stories say, from clay and water by the Titan Prometheus, who loved them, and given the stolen fire of heaven that set them apart from the beasts — the spark of craft and warmth and ruinous ambition all at once. For that gift Prometheus suffered, and through Pandora's opened jar came every sorrow that mortal flesh is heir to, with only Hope left shut inside. Fragile, doomed, and unaccountably defiant, humankind is the audience and the prize of every myth: the short-lived clay that learned to look up at the stars and give them names.",
+    beats: [
+      { label: "Shaped from Clay", weight: 0.85, figures: ['prometheus'],
+        text: "They were made from clay and water by the Titan Prometheus, who loved them, and given the stolen fire of heaven — the spark of craft and warmth and ruinous ambition all at once." },
+      { label: "Pandora's Jar", weight: 1.0, figures: ['epimetheus'],
+        text: "For that gift Prometheus suffered, and through Pandora's opened jar came every sorrow that mortal flesh is heir to, with only Hope left shut inside." },
+      { label: "The Short-Lived Clay", weight: 0.7,
+        text: "Fragile, doomed, and unaccountably defiant, humankind is the audience and the prize of every myth: the short-lived clay that learned to look up at the stars and give them names." },
+    ],
     source: "Hesiod, Works and Days; Theogony."
   },
   daedalus: {
     story: "Daedalus is the master craftsman of myth — the inventor, architect, and maker whose cleverness could build anything the mind could imagine, and whose story is a long warning about the things a brilliant maker should perhaps refuse to build. He is genius without the wisdom to govern it.\n\nIt was Daedalus who built the Labyrinth to hold the Minotaur, and Daedalus who had earlier made the very device by which the monster was conceived; and when King Minos imprisoned him to keep his secrets, the craftsman simply invented escape, fashioning wings of feathers and wax for himself and his son Icarus. But genius cannot always protect what it loves: Icarus, exulting in flight, soared too near the sun against his father's warning, and the wax melted, and the boy fell into the sea while Daedalus flew helplessly on. Long before, in envy, he had murdered his own gifted nephew for surpassing him. The maker of wonders carried to his grave the knowledge that his cleverness had cost him both a rival and a son.",
+    beats: [
+      { label: "Builder of the Labyrinth", weight: 0.85, figures: ['minotaur'],
+        text: "It was Daedalus who built the Labyrinth to hold the Minotaur, and who had earlier made the very device by which the monster was conceived — genius without the wisdom to govern it." },
+      { label: "Wings of Wax", weight: 1.0, figures: ['icarus'],
+        text: "Imprisoned on Crete, the craftsman fashioned wings of feathers and wax for himself and his son Icarus. But the boy soared too near the sun, the wax melted, and Icarus fell into the sea while Daedalus flew helplessly on." },
+      { label: "The Murdered Nephew", weight: 0.8, figures: ['perdix'],
+        text: "Long before, in envy, he had murdered his own gifted nephew Perdix for surpassing him. The maker of wonders carried to his grave the knowledge that his cleverness had cost him both a rival and a son." },
+    ],
     source: "Ovid, Metamorphoses VIII; Apollodorus, Library."
   },
   icarus: {
     story: "Icarus is the boy who flew too high — the son of the great craftsman Daedalus, whose name has become the very word for a bright ambition that climbs past its limit and falls. His whole story lasts only a single morning, and ends in the sea.\n\nImprisoned with his father on Crete, Icarus was given wings of feathers and wax that Daedalus had made for their escape, with a single careful warning: fly the middle way, neither so low that the sea-spray clogs the feathers nor so high that the sun melts the wax. But once aloft, drunk on the sheer joy of flight, the boy forgot the warning and rose higher and higher toward the sun — until the wax softened, the feathers loosed one by one, and he fell out of the bright sky into the water that bears his name to this day. His father flew on alone. Icarus is the eternal image of youth and rapture and ruin: the fall that came not from failure, but from flying.",
+    beats: [
+      { label: "The Father's Warning", weight: 0.75, figures: ['daedalus'],
+        text: "Imprisoned on Crete, Icarus was given wings of feathers and wax by his father Daedalus, with a single warning: fly the middle way, neither so low the spray clogs the feathers nor so high the sun melts the wax." },
+      { label: "Drunk on Flight", weight: 1.0,
+        text: "Once aloft, drunk on the sheer joy of flight, the boy forgot the warning and rose higher and higher toward the sun — until the wax softened, the feathers loosed, and he fell from the bright sky." },
+      { label: "The Sea That Bears His Name", weight: 0.8, figures: ['daedalus'],
+        text: "He fell into the water that bears his name to this day, and his father flew on alone. Icarus is the eternal image of youth and rapture and ruin: the fall that came not from failure, but from flying." },
+    ],
     source: "Ovid, Metamorphoses VIII; Apollodorus, Library."
   },
   perdix: {
     story: "Perdix is the gifted nephew of Daedalus — a boy whose brilliance rivalled and then outshone his master's, and who paid for it with his life, only to be saved at the last instant in the shape of a low and wary bird. His brief story is the dark root of his uncle's later sorrows.\n\nApprenticed to Daedalus, young Perdix had a genius of his own: studying the spine of a fish, he invented the saw; he devised the compass for drawing perfect circles. But his uncle, consumed with envy that the pupil should surpass the teacher, lured the boy to the height of the Acropolis and threw him down. The goddess Athena, who loves all skill, caught him as he fell and changed him into a partridge — and to this day the partridge flies low and nests in the hedgerows, never building high or trusting the heights, as though the bird still remembers the long fall and will never again be coaxed to climb.",
+    beats: [
+      { label: "The Gifted Apprentice", weight: 0.75, figures: ['daedalus'],
+        text: "Apprenticed to Daedalus, young Perdix had a genius of his own: studying the spine of a fish, he invented the saw; he devised the compass for drawing perfect circles." },
+      { label: "Thrown from the Heights", weight: 1.0, figures: ['daedalus'],
+        text: "His uncle, consumed with envy that the pupil should surpass the teacher, lured the boy to the height of the Acropolis and threw him down." },
+      { label: "The Low-Flying Bird", weight: 0.85, figures: ['athena'],
+        text: "Athena caught him as he fell and changed him into a partridge — and to this day the partridge flies low and nests in hedgerows, as though the bird still remembers the fall and will never again trust the heights." },
+    ],
     source: "Ovid, Metamorphoses VIII; Apollodorus, Library."
   }
 };
