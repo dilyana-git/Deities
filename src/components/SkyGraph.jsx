@@ -1036,9 +1036,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
       if (tip) {
         const catLabel = categoryConfig[d.category]?.label || d.category
+        const nConn = adj[d.id]?.size || 0
         tip.innerHTML = `<span class="tip-cat" style="background:${CAT[d.category]}"></span>`
           + `<span class="tip-name">${d.name}</span>`
           + (d.epithet ? `<span class="tip-epi">${d.epithet}</span>` : '')
+          + `<span class="tip-conn">${nConn} connection${nConn !== 1 ? 's' : ''}</span>`
         tip.style.opacity = '1'
       }
     }

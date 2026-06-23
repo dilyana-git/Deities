@@ -376,6 +376,10 @@ body {
   font-family: 'Crimson Pro', serif; font-style: italic; font-size: 11px;
   color: #5c6678; width: 100%; padding-left: 15px; margin-top: -2px;
 }
+#tip .tip-conn {
+  font-family: 'Crimson Pro', serif; font-size: 10px;
+  color: #3a4354; width: 100%; padding-left: 15px; margin-top: 1px;
+}
 
 
 /* ── SVG star elements ── */
