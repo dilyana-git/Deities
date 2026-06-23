@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import ZodiacSphere from './ZodiacSphere.jsx'
 import { ZODIAC } from '../data/zodiac.js'
 
@@ -58,8 +58,22 @@ export default function ZodiacSky({ onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  const touchRef = useRef(null)
+  const handleTouchStart = useCallback(e => {
+    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }, [])
+  const handleTouchEnd = useCallback(e => {
+    if (!touchRef.current) return
+    const dx = e.changedTouches[0].clientX - touchRef.current.x
+    const dy = e.changedTouches[0].clientY - touchRef.current.y
+    touchRef.current = null
+    if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return
+    if (dx < 0) { setSelected(s => (s + 1) % 12); resetAuto() }
+    else        { setSelected(s => (s + 11) % 12); resetAuto() }
+  }, [])
+
   return (
-    <div className="gs-root zs-root" style={{ '--accent': accent }}>
+    <div className="gs-root zs-root" style={{ '--accent': accent }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       <ZodiacSphere signs={ZODIAC} selectedIndex={selected} onSelect={i => { setSelected(i); resetAuto() }} />
 
       <div className="grade wash" />

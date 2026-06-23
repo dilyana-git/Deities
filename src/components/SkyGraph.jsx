@@ -751,6 +751,20 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       _ignitionDone = true; teardownSkip()
     }, WAVE_MS[5] + 1600)
 
+    /* drag hint — after entrance, gently nudge a hub node to suggest dragging */
+    const dragHintTimer = setTimeout(() => {
+      const hub = nodes.slice().sort((a, b) => b.degree - a.degree)[0]
+      if (!hub) return
+      const g = gNode.filter(n => n.id === hub.id)
+      g.transition('drag-hint')
+        .duration(400).ease(d3.easeSinInOut)
+        .attr('transform', `translate(${hub.x + 8},${hub.y - 6})`)
+        .transition().duration(400).ease(d3.easeSinInOut)
+        .attr('transform', `translate(${hub.x - 5},${hub.y + 4})`)
+        .transition().duration(350).ease(d3.easeSinOut)
+        .attr('transform', `translate(${hub.x},${hub.y})`)
+    }, WAVE_MS[5] + 2800)
+
     /* ── tooltip positioning ────────────────────────────────────── */
     const tip = document.getElementById('tip')
     if (tip) {
