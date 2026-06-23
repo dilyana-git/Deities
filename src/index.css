@@ -875,24 +875,24 @@ body {
    active, so twelve labels don't add constant text noise. */
 .zs-strip {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
-  display: flex; justify-content: center; align-items: center; gap: 5px;
-  padding: 14px 30px; pointer-events: auto;
-  background: linear-gradient(transparent, rgba(6,9,15,.82) 45%);
+  display: flex; justify-content: center; align-items: center; gap: 8px;
+  padding: 20px 30px 24px; pointer-events: auto;
+  background: linear-gradient(transparent, rgba(6,9,15,.88) 40%);
 }
 .zs-glyph-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 7px 9px; border-radius: 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 10px 14px; border-radius: 10px;
   border: 1px solid transparent; background: none;
   cursor: pointer; min-width: 0; position: relative;
   transition: background .2s, border-color .2s, transform .15s;
 }
 /* resting = quiet neutral grey (no colour competes with the gold active cue) */
-.zs-sym { font-size: 16px; line-height: 1; color: rgba(150,158,174,.55); font-variant-emoji: text; transition: color .2s, text-shadow .2s; }
+.zs-sym { font-size: 24px; line-height: 1; color: rgba(150,158,174,.55); font-variant-emoji: text; transition: color .2s, text-shadow .2s; }
 /* name = floating label above the mark; hidden at rest, revealed on hover/active */
 .zs-sname {
-  position: absolute; bottom: calc(100% + 4px); left: 50%;
+  position: absolute; bottom: calc(100% + 6px); left: 50%;
   transform: translateX(-50%) translateY(3px);
-  font-family: Cinzel, serif; font-size: 9px; letter-spacing: .12em; text-transform: uppercase;
+  font-family: Cinzel, serif; font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
   color: #ece6d6; white-space: nowrap; pointer-events: none;
   opacity: 0; transition: opacity .18s, transform .18s;
 }
@@ -909,18 +909,18 @@ body {
 .zs-glyph-btn.on { background: rgba(205,184,138,.07); transform: translateY(-2px); }
 .zs-glyph-btn.on .zs-sym { color: var(--gold); text-shadow: 0 0 10px rgba(205,184,138,.55); }
 .zs-glyph-btn.on::after {
-  content: ''; position: absolute; left: 22%; right: 22%; bottom: 2px; height: 2px;
+  content: ''; position: absolute; left: 20%; right: 20%; bottom: 4px; height: 2.5px;
   background: var(--gold); border-radius: 2px;
   box-shadow: 0 0 8px var(--gold), 0 0 3px var(--gold);
 }
 
 /* prev/next at the rail ends — same control family as the close ✕ in the header */
 .zs-rail-nav {
-  flex-shrink: 0; width: 36px; height: 36px; margin: 0 6px;
+  flex-shrink: 0; width: 44px; height: 44px; margin: 0 8px;
   display: grid; place-items: center;
   border: 1px solid rgba(205,184,138,.28); border-radius: 50%;
   background: rgba(8,11,20,.5); color: var(--gold);
-  font-size: 20px; line-height: 1; cursor: pointer; opacity: .8;
+  font-size: 24px; line-height: 1; cursor: pointer; opacity: .8;
   transition: opacity .2s, border-color .2s, background .2s, transform .15s;
 }
 .zs-rail-nav:hover { opacity: 1; border-color: var(--gold); background: rgba(205,184,138,.08); transform: translateY(-2px); }
@@ -953,8 +953,9 @@ body {
   .zs-caption { top: auto; bottom: 72px; transform: none; padding: 0 20px; max-width: 100%; }
   .zs-caption .gs-name { font-size: 32px; }
   .zs-caption .gs-narration { font-size: 15px; max-width: 100%; }
-  .zs-strip { gap: 0; padding: 6px 8px; }
-  .zs-glyph-btn { padding: 4px 5px 6px; }
+  .zs-strip { gap: 2px; padding: 10px 8px 14px; }
+  .zs-glyph-btn { padding: 6px 8px; }
+  .zs-sym { font-size: 20px; }
   .zs-sname { display: none; }
   .zs-rail-nav { display: none; }
 }
