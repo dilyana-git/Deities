@@ -719,30 +719,36 @@ body {
 }
 
 /* ── tale picker ── */
-.gs-tales { position: absolute; top: 26px; right: 40px; z-index: 8; width: 248px; }
+.gs-tales { position: absolute; top: 26px; right: 40px; z-index: 8; width: 290px; }
 .gs-tales-btn {
   width: 100%; text-align: left; padding: 11px 15px; border-radius: 9px;
   border: 1px solid rgba(205,184,138,.28); background: rgba(8,11,20,.75); backdrop-filter: blur(6px);
   font-family: Cinzel, serif; font-size: 12px; letter-spacing: .08em; color: var(--gold);
   display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  transition: border-color .2s;
+  cursor: pointer; transition: border-color .2s;
 }
 .gs-tales-btn:hover { border-color: var(--gold); }
 .gs-tales-btn .car { transition: transform .25s; color: var(--gold-dim); }
 .gs-tales.open .gs-tales-btn .car { transform: rotate(180deg); }
-.gs-tales-list { display: none; flex-direction: column; gap: 8px; margin-top: 8px; }
+.gs-tales-list { display: none; flex-direction: column; gap: 5px; margin-top: 8px; max-height: 70vh; overflow-y: auto; }
 .gs-tales.open .gs-tales-list { display: flex; }
 .gs-tale {
-  text-align: left; padding: 12px 15px; border-radius: 9px;
-  border: 1px solid rgba(154,163,180,.16); background: rgba(8,11,20,.82); backdrop-filter: blur(6px);
-  display: flex; flex-direction: column; gap: 3px; transition: border-color .2s, background .2s;
-  width: 100%;
+  text-align: left; padding: 13px 16px; border-radius: 9px;
+  border: 1px solid rgba(154,163,180,.12); background: rgba(8,11,20,.82); backdrop-filter: blur(6px);
+  display: flex; flex-direction: column; gap: 4px; transition: border-color .2s, background .2s;
+  width: 100%; cursor: pointer; position: relative;
 }
-.gs-tale:hover { border-color: rgba(205,184,138,.4); }
+.gs-tale:hover { border-color: rgba(205,184,138,.4); background: rgba(16,20,32,.9); }
 .gs-tale-k { font-family: Cinzel, serif; font-size: 8.5px; letter-spacing: .26em; color: var(--gold-dim); text-transform: uppercase; }
-.gs-tale-t { font-family: Cinzel, serif; font-size: 14px; color: var(--ink); }
-.gs-tale-n { font-size: 12px; font-style: italic; color: var(--faint); }
-.gs-tale.on { border-color: var(--gold); background: rgba(205,184,138,.1); }
+.gs-tale-t { font-family: Cinzel, serif; font-size: 14px; color: var(--ink); line-height: 1.3; }
+.gs-tale-n { font-size: 11px; font-style: italic; color: var(--faint); display: flex; align-items: center; gap: 6px; }
+.gs-tale-n::before { content: ''; display: inline-block; width: 12px; height: 1px; background: var(--gold-dim); opacity: .5; }
+.gs-tale.on { border-color: rgba(205,184,138,.35); background: rgba(205,184,138,.06); }
+.gs-tale.on::before {
+  content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 2.5px;
+  border-radius: 2px; background: var(--gold); box-shadow: 0 0 6px var(--gold);
+}
+.gs-tale.on .gs-tale-k { color: var(--gold); }
 .gs-tale.on .gs-tale-t { color: #ece6d6; }
 
 /* ── hint ── */
