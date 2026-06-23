@@ -39,10 +39,10 @@ body {
 
 /* ── Depth haze: barely-perceptible nebula behind the web ─────────────────── */
 @keyframes haze-drift {
-  0%   { transform: translate(0, 0)     rotate(0deg);   filter: hue-rotate(0deg); }
-  33%  { transform: translate(40px, -20px) rotate(3deg);  filter: hue-rotate(18deg); }
-  66%  { transform: translate(-30px, 15px) rotate(-2deg); filter: hue-rotate(-12deg); }
-  100% { transform: translate(0, 0)     rotate(0deg);   filter: hue-rotate(0deg); }
+  0%   { transform: translate(0, 0)     rotate(0deg); }
+  33%  { transform: translate(40px, -20px) rotate(3deg); }
+  66%  { transform: translate(-30px, 15px) rotate(-2deg); }
+  100% { transform: translate(0, 0)     rotate(0deg); }
 }
 .depth-haze {
   animation: haze-drift 90s ease-in-out infinite;
@@ -233,7 +233,7 @@ body {
 /* node interaction states */
 .node .core { transition: opacity .2s; }
 .node .ring { transition: stroke .2s, stroke-width .2s, opacity .2s; }
-.node { transition: opacity .22s, filter .35s; }
+.node { transition: opacity .22s; }
 
 .nodes.focusing .node.faded   { opacity: .16; }
 .nodes.focusing .node.lit     .node-label { opacity: 1; fill: #e7ebf2; }

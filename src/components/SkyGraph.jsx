@@ -197,7 +197,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const rnd = () => { _s = (_s * 1103515245 + 12345) & 0x7fffffff; return _s / 0x7fffffff }
     const big = Math.max(W, H) * 2.2
     const TINTS = ['#d6dce8', '#c8c0b8', '#b8c4d8', '#e0d8c8', '#c0c8d6', '#d8ccc0']
-    const starData = d3.range(680).map(() => {
+    const starData = d3.range(420).map(() => {
       const x = -big * 0.3 + rnd() * big
       const y = -big * 0.3 + rnd() * big
       const distFromCenter = Math.sqrt((x - W/2)**2 + (y - H/2)**2) / (big * 0.5)
@@ -207,7 +207,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const tint = TINTS[Math.floor(rnd() * TINTS.length)]
       return { x, y, r, o, tint }
     })
-    const flareStars = starData.filter(d => d.o > 0.38)
+    const flareStars = starData.filter(d => d.o > 0.48)
 
     bgLayer.selectAll('circle.flare')
       .data(flareStars)
@@ -378,7 +378,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('r',        d => radius(d) * 1.6)
       .attr('fill',     d => CAT[d.category])
       .attr('opacity',  d => 0.03 + d.prom * 0.08)
-      .attr('filter',   d => d.prom > 0.5 ? 'url(#glow)' : null)
+      .attr('filter',   d => d.prom > 0.65 ? 'url(#glow)' : null)
       .classed('hub-breath', d => d.prom >= hubBreathThreshold)
       .style('--glow-base',     d => (0.03 + d.prom * 0.08).toFixed(3))
       .style('--glow-r',        d => (radius(d) * 1.6).toFixed(1))
@@ -438,19 +438,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .text(d => d.name)
 
     /* ── tick ───────────────────────────────────────────────────── */
-    function ticked() {
-      linkSel.attr('d', d => {
-        const sx = d.source.x, sy = d.source.y, tx = d.target.x, ty = d.target.y
-        const dx = tx - sx, dy = ty - sy
-        const len = Math.sqrt(dx * dx + dy * dy) || 1
-        const off = Math.min(len * 0.12, 14)
-        const mx = (sx + tx) / 2 - (dy / len) * off
-        const my = (sy + ty) / 2 + (dx / len) * off
-        return `M${sx},${sy}Q${mx},${my} ${tx},${ty}`
-      })
-      gNode.attr('transform', d => `translate(${d.x},${d.y})`)
+    let _tickCount = 0
 
-      // 1. anchor each cluster label over its category's densest sub-blob
+    function updateClusterLabels() {
       const anchor = new Map()
       for (const c of cats) {
         const ms = catNodes.get(c)
@@ -472,7 +462,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         anchor.set(c, { x: d3.mean(blob, n => n.x), y: d3.min(blob, n => n.y) - 26 })
       }
 
-      // 2. spring each label toward its anchor, separate overlapping label boxes
       for (const c of cats) {
         if (!labelPos.has(c)) labelPos.set(c, { ...anchor.get(c) })
       }
@@ -506,7 +495,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         if (!moved) break
       }
 
-      // 3. clamp inside the viewBox
       for (const c of cats) {
         const p = labelPos.get(c), b = labelSize.get(c)
         p.x = Math.min(Math.max(p.x, b.w / 2), W - b.w / 2)
@@ -514,8 +502,23 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       }
 
       clusterSel.attr('x', c => labelPos.get(c).x).attr('y', c => labelPos.get(c).y)
+    }
 
-      positionEdgeLabels()
+    function ticked() {
+      linkSel.attr('d', d => {
+        const sx = d.source.x, sy = d.source.y, tx = d.target.x, ty = d.target.y
+        const dx = tx - sx, dy = ty - sy
+        const len = Math.sqrt(dx * dx + dy * dy) || 1
+        const off = Math.min(len * 0.12, 14)
+        const mx = (sx + tx) / 2 - (dy / len) * off
+        const my = (sy + ty) / 2 + (dx / len) * off
+        return `M${sx},${sy}Q${mx},${my} ${tx},${ty}`
+      })
+      gNode.attr('transform', d => `translate(${d.x},${d.y})`)
+
+      if (++_tickCount % 8 === 0) updateClusterLabels()
+
+      if (!linkLabelLayer.selectAll('text').empty()) positionEdgeLabels()
     }
 
     /* Pre-settle the layout off-screen, then hold the sim "warm" so it never
@@ -525,7 +528,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        the frustrated system drifts gently and perpetually — real physics, not a
        scripted loop. Stopped when the tab is hidden (visibility handler below). */
     sim.stop()
-    for (let i = 0; i < 240; i++) sim.tick()
+    for (let i = 0; i < 160; i++) sim.tick()
+    updateClusterLabels()
     ticked()
     sim.on('tick', ticked)
     sim.alphaTarget(WARM_ALPHA).alpha(WARM_ALPHA).restart()
@@ -1220,7 +1224,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
             .attr('opacity', 0)
             .attr('filter', 'url(#trace-glow)')
           return { dot, tail, path: rp.el, reversed: rp.reversed, hop: i,
-                   startT: i * TRACE_GAP, dur: TRACE_DUR }
+                   startT: i * TRACE_GAP, dur: TRACE_DUR,
+                   pathLen: rp.el.getTotalLength() }
         })
 
         const totalT = (dots.length - 1) * TRACE_GAP + TRACE_DUR
@@ -1241,9 +1246,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
             }
             let frac = local / d.dur
             if (d.reversed) frac = 1 - frac
-            const pathEl = d.path
-            const len = pathEl.getTotalLength()
-            const pt = pathEl.getPointAtLength(frac * len)
+            const pt = d.path.getPointAtLength(frac * d.pathLen)
             const fade = frac < 0.1 ? frac / 0.1 : frac > 0.9 ? (1 - frac) / 0.1 : 1
             d.dot.attr('cx', pt.x).attr('cy', pt.y).attr('opacity', fade * 0.95)
             d.tail.attr('cx', pt.x).attr('cy', pt.y).attr('opacity', fade * 0.25)
