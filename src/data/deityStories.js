@@ -133,26 +133,78 @@ export const deityStories = {
   },
   thanatos: {
     story: "Thanatos is Death — not the violence that kills but the quiet, final closing that comes after, the iron-hearted god who gathers each mortal at the end and carries them across the last threshold. He is gentle in his way, and utterly without exception: alone of all the gods he takes no offerings and grants no favors, for there is nothing anyone can give him to be spared.\n\nBorn of Night without a father, twin brother to Sleep, he is the most hated of the gods by men and the most steadfast. Twice only was he cheated of his due: the cunning Sisyphus once chained him so that for a time no one in all the world could die, and Heracles wrestled him at a graveside and tore back the soul of Alcestis from his grip. But these are the rare exceptions that prove his rule — for in the end Thanatos comes for everyone, and in the end no one slips past him twice.",
+    beats: [
+      { label: "The Quiet Closing", weight: 0.9,
+        text: "Thanatos is Death — not the violence that kills but the quiet, final closing that comes after, the iron-hearted god who gathers each mortal at the end and carries them across the last threshold." },
+      { label: "Twin of Sleep", weight: 0.65, figures: ['nyx', 'hypnos'],
+        text: "Born of Night without a father, twin brother to Sleep, he is the most hated of the gods by men and the most steadfast." },
+      { label: "Twice Cheated", weight: 1, figures: ['heracles'],
+        text: "Twice only was he cheated of his due: the cunning Sisyphus once chained him so that no one in all the world could die, and Heracles wrestled him at a graveside and tore back the soul of Alcestis from his grip." },
+      { label: "No One Slips Past", weight: 0.75,
+        text: "These are the rare exceptions that prove his rule — for in the end Thanatos comes for everyone, and in the end no one slips past him twice." },
+    ],
     source: "Hesiod, Theogony."
   },
   hypnos: {
     story: "Hypnos is Sleep, the gentle twin of Death and the kinder of the two — the god who walks the world each night on silent feet, touching the eyes of the weary and laying even the strongest low without a wound. Where his brother takes a life forever, Hypnos takes it only until the morning.\n\nHe dwells in a still cave at the edge of the world where the sun never reaches and the river of forgetfulness murmurs softly through the dark, and his countless sons, the Dreams, drift about him like moths. So great is his power that he can quiet even the restless mind of Zeus: Hera once bribed him to lull the king of the gods to sleep so that she might work her will unwatched, and though he dreaded the waking, he did it — for there is nothing under heaven that does not, in the end, have to rest.",
+    beats: [
+      { label: "The Gentle Twin", weight: 0.8, figures: ['thanatos'],
+        text: "Hypnos is Sleep, the gentle twin of Death and the kinder of the two — the god who walks the world each night on silent feet, laying even the strongest low without a wound." },
+      { label: "The Cave of Forgetting", weight: 0.6, figures: ['morpheus'],
+        text: "He dwells in a still cave at the edge of the world where the sun never reaches and the river of forgetfulness murmurs softly through the dark, and his countless sons, the Dreams, drift about him like moths." },
+      { label: "Lulling the King", weight: 1, figures: ['zeus', 'hera'],
+        text: "Hera once bribed him to lull the king of the gods to sleep so that she might work her will unwatched, and though he dreaded the waking, he did it." },
+      { label: "Everything Must Rest", weight: 0.7,
+        text: "There is nothing under heaven that does not, in the end, have to rest." },
+    ],
     source: "Hesiod, Theogony; Homer, Iliad XIV."
   },
   morpheus: {
     story: "Morpheus is the shaper of dreams, one of the thousand sons of Sleep — and the most gifted of them, for he can take the exact form of any mortal: their face and voice, their walk, the very way they hold themselves, so that he may step into a sleeper's mind wearing the shape of someone loved and known.\n\nIt is through Morpheus that the gods send their messages by night, and through him that the dead seem to come back to us in our sleep. When the drowned king Ceyx could not return home to his wife Alcyone, it was Morpheus who put on his pale and dripping shape and stood at her bedside to tell her, gently, that she was already a widow — so that even grief, in the old stories, arrives first as a dream wearing a beloved face.",
+    beats: [
+      { label: "The Shaper of Dreams", weight: 0.85, figures: ['hypnos'],
+        text: "Morpheus is the shaper of dreams, one of the thousand sons of Sleep — and the most gifted of them, for he can take the exact form of any mortal." },
+      { label: "Messenger by Night", weight: 0.7,
+        text: "It is through Morpheus that the gods send their messages by night, and through him that the dead seem to come back to us in our sleep." },
+      { label: "A Beloved Face", weight: 1,
+        text: "When the drowned king Ceyx could not return home, it was Morpheus who put on his pale and dripping shape and stood at her bedside to tell her, gently, that she was already a widow." },
+    ],
     source: "Ovid, Metamorphoses XI."
   },
   moirai: {
     story: "The Moirai are the three Fates, the grey weavers who hold every life as a single thread between their hands — Clotho who spins it into being, Lachesis who measures out its length, and Atropos, the smallest and most terrible, who cuts it without appeal. What they decide is decided, and there is no court above them.\n\nOlder even than the Olympians in their power, they were present at every birth and will be present at every death, and not even Zeus can unmake what they have set — some say he is only the one who carries out their will. They are blind to pleading and deaf to prayer; they spun the doom into the infant Meleager on the night he was born and let it run its length unbroken. To the Greeks they were the proof that beneath all the bright, quarreling gods there ran a deeper law that even heaven itself had to obey.",
+    beats: [
+      { label: "The Grey Weavers", weight: 0.9,
+        text: "The Moirai are the three Fates — Clotho who spins the thread of life into being, Lachesis who measures out its length, and Atropos, the smallest and most terrible, who cuts it without appeal." },
+      { label: "Above the Gods", weight: 1, figures: ['zeus'],
+        text: "Not even Zeus can unmake what they have set — some say he is only the one who carries out their will. They are blind to pleading and deaf to prayer." },
+      { label: "A Deeper Law", weight: 0.75,
+        text: "To the Greeks they were the proof that beneath all the bright, quarreling gods there ran a deeper law that even heaven itself had to obey." },
+    ],
     source: "Hesiod, Theogony."
   },
   nemesis: {
     story: "Nemesis is the goddess of due measure, the cold hand that restores the balance whenever a mortal's fortune or pride swells past its proper bound. She is not cruelty but correction — the weight that comes down on the scale grown too light with arrogance, the answer the universe makes to anyone who forgets that they are not a god.\n\nA daughter of Night, she carries a measuring-rod and a bridle, and she watches the proud the way a creditor watches a debt. It was Nemesis who heard the prayer raised against cold Narcissus and bent him to fall in love with his own reflection, so that the boy who had scorned every lover wasted away wanting only himself. She gives good fortune freely — but she watches what is done with it, and to those who mistake a gift for a right, she comes quietly to take the difference back.",
+    beats: [
+      { label: "The Cold Hand", weight: 0.85, figures: ['nyx'],
+        text: "Nemesis is the goddess of due measure, the cold hand that restores the balance whenever a mortal's fortune or pride swells past its proper bound. A daughter of Night, she carries a measuring-rod and a bridle." },
+      { label: "The Mirror Pool", weight: 1, figures: ['narcissus'],
+        text: "It was Nemesis who heard the prayer raised against cold Narcissus and bent him to fall in love with his own reflection, so that the boy who had scorned every lover wasted away wanting only himself." },
+      { label: "Taking the Difference", weight: 0.7,
+        text: "She gives good fortune freely — but she watches what is done with it, and to those who mistake a gift for a right, she comes quietly to take the difference back." },
+    ],
     source: "Hesiod, Theogony."
   },
   eris: {
     story: "Eris is Strife, the sister and companion of war, the small bitter goddess who is never invited and always comes. From her descend all the things that pull a peace apart — quarrel and rivalry, lying words, toil and famine and ruin — the whole brood of discord that so often begins in a single slighted moment.\n\nHer most famous act was the smallest. Left off the guest-list for the wedding of Peleus and Thetis, Eris came all the same, and tossed among the goddesses a single golden apple inscribed 'to the fairest.' Hera, Athena, and Aphrodite each claimed it; the quarrel was handed to the Trojan prince Paris to settle; and his choice lit the long slow fuse that ended in the ten-year burning of Troy. So the greatest war of the age began with one uninvited goddess and one little golden apple of spite.",
+    beats: [
+      { label: "Never Invited", weight: 0.8,
+        text: "Eris is Strife, the sister and companion of war, the small bitter goddess who is never invited and always comes." },
+      { label: "The Golden Apple", weight: 1, figures: ['thetis', 'hera', 'athena', 'aphrodite'],
+        text: "Left off the guest-list for the wedding of Peleus and Thetis, Eris tossed among the goddesses a single golden apple inscribed 'to the fairest.'" },
+      { label: "The Fuse That Lit Troy", weight: 0.9,
+        text: "The quarrel was handed to the Trojan prince Paris to settle; and his choice lit the long slow fuse that ended in the ten-year burning of Troy." },
+    ],
     source: "Hesiod, Theogony; Works and Days."
   },
 
@@ -273,26 +325,80 @@ export const deityStories = {
   },
   metis: {
     story: "Metis is deep cunning given a face — an Oceanid whose name is the very word for the shrewd and supple wisdom that loosens what cannot be untied. She was the first power Zeus turned to and the first he loved; it was her counsel that brewed the draught which made Cronus disgorge the children he had swallowed.\n\nBut it was foretold that Metis would bear children mightier than their father — first a daughter, then a son who would cast Zeus down as Zeus had cast down his own. So the new king, having learned the old lesson well, coaxed her small with soft words and swallowed her whole, taking her wisdom inside himself for good. From within him she counsels him still; and when her time came the child was not lost but born from his own splitting skull — Athena, leaping out full-grown and armored, carrying her mother's grey unsleeping mind.",
+    beats: [
+      { label: "Cunning Given a Face", weight: 0.8, figures: ['cronus'],
+        text: "Metis is deep cunning given a face — the shrewd and supple wisdom that loosens what cannot be untied. It was her counsel that brewed the draught which made Cronus disgorge the children he had swallowed." },
+      { label: "The Dread Prophecy", weight: 0.85, figures: ['zeus'],
+        text: "It was foretold that Metis would bear children mightier than their father — first a daughter, then a son who would cast Zeus down as Zeus had cast down his own." },
+      { label: "Swallowed Whole", weight: 1, figures: ['zeus'],
+        text: "So the new king, having learned the old lesson well, coaxed her small with soft words and swallowed her whole, taking her wisdom inside himself for good. From within him she counsels him still." },
+      { label: "Born from the Skull", weight: 0.9, figures: ['athena'],
+        text: "When her time came the child was not lost but born from his own splitting skull — Athena, leaping out full-grown and armored, carrying her mother's grey unsleeping mind." },
+    ],
     source: "Hesiod, Theogony."
   },
   prometheus: {
     story: "Prometheus — his name means 'forethought' — is the cleverest of the Titans and the truest friend that mortals ever found among the gods. While his brothers warred or shouldered the sky, he bent his quick mind toward the shivering, short-lived creatures of the dust, and could not bear to leave them helpless in the cold.\n\nAt the first dividing of the sacrifice he tricked Zeus into choosing bare bones dressed in glistening fat, so that the good meat would stay with men; and when Zeus hid fire away in revenge, Prometheus stole it back, carrying a single live ember down to earth concealed in a hollow fennel-stalk. For that theft Zeus had him chained to a crag at the edge of the world, where each day an eagle came to tear out his liver, and each night the liver grew whole again — an agony built to have no ending. So he hung for an age of the world, until Heracles passed beneath the cliff, lifted his bow, and shot the eagle out of the sky.",
+    beats: [
+      { label: "Friend of Mortals", weight: 0.85,
+        text: "Prometheus — his name means 'forethought' — is the cleverest of the Titans and the truest friend that mortals ever found among the gods. He bent his quick mind toward the shivering, short-lived creatures of the dust, and could not bear to leave them helpless in the cold." },
+      { label: "The Stolen Fire", weight: 1, figures: ['zeus'],
+        text: "He tricked Zeus into choosing bare bones dressed in glistening fat, so that the good meat would stay with men; and when Zeus hid fire away in revenge, Prometheus stole it back, carrying a single live ember down to earth concealed in a hollow fennel-stalk." },
+      { label: "The Eagle and the Crag", weight: 0.9, figures: ['caucasian_eagle'],
+        text: "For that theft Zeus had him chained to a crag at the edge of the world, where each day an eagle came to tear out his liver, and each night the liver grew whole again — an agony built to have no ending." },
+      { label: "The Arrow of Heracles", weight: 0.7, figures: ['heracles'],
+        text: "So he hung for an age of the world, until Heracles passed beneath the cliff, lifted his bow, and shot the eagle out of the sky." },
+    ],
     source: "Hesiod, Theogony; Works and Days."
   },
   atlas: {
     story: "Atlas is endurance turned to stone — a Titan of immense and patient strength who stands at the western rim of the world, where the day goes down, and bears upon his neck and unwearying arms the whole weight of the heavens.\n\nWhen the Titans rose against the young Olympians and were broken, Zeus did not cast Atlas into the pit with the others. He gave him instead a punishment shaped exactly like the crime: since the Titans had reached up to seize heaven, Atlas would hold heaven up — forever, alone, never once setting it down. Only a single time was the burden ever shifted from him, when Heracles took the sky onto his own shoulders for the space of an errand; and even then Atlas had to be tricked into stooping back beneath it, having tasted for one moment what it was to stand up straight.",
+    beats: [
+      { label: "Endurance Turned to Stone", weight: 0.85,
+        text: "Atlas is endurance turned to stone — a Titan of immense and patient strength who stands at the western rim of the world, bearing upon his neck and unwearying arms the whole weight of the heavens." },
+      { label: "A Punishment Like the Crime", weight: 1, figures: ['zeus'],
+        text: "Zeus did not cast Atlas into the pit with the others. He gave him a punishment shaped exactly like the crime: since the Titans had reached up to seize heaven, Atlas would hold heaven up — forever, alone, never once setting it down." },
+      { label: "One Moment Upright", weight: 0.75, figures: ['heracles'],
+        text: "Only once was the burden ever shifted, when Heracles took the sky onto his own shoulders for the space of an errand; and even then Atlas had to be tricked into stooping back beneath it, having tasted for one moment what it was to stand up straight." },
+    ],
     source: "Hesiod, Theogony."
   },
   helios: {
     story: "Helios is the Sun made flesh — the unwearying god who climbs each dawn into a chariot of fire drawn by four white horses and drives the burning day from the eastern gates to the western sea. From that height nothing is hidden from him; he is the great witness of the world, who sees every deed done beneath the light.\n\nIt was Helios who caught Aphrodite in the arms of Ares and carried the tale to her husband, and Helios who told grieving Demeter that Hades had taken her daughter down into the dark. But his own clear seeing brought him the deepest sorrow of all. When his mortal son Phaethon begged to drive the sun-chariot for a single day, the boy could not hold the horses, scorched the green earth black from sky to sea, and had to be struck dead out of the heavens to save the world — and the father who sees all things could do nothing but watch his child fall, burning, into a river.",
+    beats: [
+      { label: "The Great Witness", weight: 0.85,
+        text: "Helios is the Sun made flesh — the unwearying god who drives the burning day from the eastern gates to the western sea. From that height nothing is hidden from him; he is the great witness of the world." },
+      { label: "Teller of Truths", weight: 0.7, figures: ['aphrodite', 'ares', 'demeter'],
+        text: "It was Helios who caught Aphrodite in the arms of Ares and carried the tale to her husband, and Helios who told grieving Demeter that Hades had taken her daughter down into the dark." },
+      { label: "The Fall of Phaethon", weight: 1, figures: ['phaethon', 'zeus'],
+        text: "When his mortal son Phaethon begged to drive the sun-chariot, the boy could not hold the horses, scorched the green earth black from sky to sea, and had to be struck dead out of the heavens to save the world." },
+      { label: "A Father Who Could Only Watch", weight: 0.8,
+        text: "The father who sees all things could do nothing but watch his child fall, burning, into a river." },
+    ],
     source: "Hesiod, Theogony; Ovid, Metamorphoses II. Further reading: Ted Hughes, Tales from Ovid."
   },
   selene: {
     story: "Selene is the Moon herself, a calm-browed goddess crowned with a thin bright crescent, who rises when her brother the Sun lies down and rides her silver car across the dark, drawing the tides and the dreams of sleepers softly after her.\n\nHer one great story is a long and tender ache. She looked down one night upon Endymion, a shepherd asleep on a Carian hillside, and loved him past all reason — and rather than watch him grow old and die as mortal men must, she begged that he be granted an endless sleep, ageless and unbroken. So he lies forever young in his cave, breathing slow, and forever the Moon comes down through the dark to bend over him and gaze — loving a man who will never once wake to know that he is loved.",
+    beats: [
+      { label: "The Silver Car", weight: 0.75, figures: ['helios'],
+        text: "Selene is the Moon herself, a calm-browed goddess crowned with a thin bright crescent, who rises when her brother the Sun lies down and rides her silver car across the dark." },
+      { label: "Love Past All Reason", weight: 1,
+        text: "She looked down one night upon Endymion, a shepherd asleep on a Carian hillside, and loved him past all reason — and rather than watch him grow old and die, she begged that he be granted an endless sleep, ageless and unbroken." },
+      { label: "The Sleeper Who Never Wakes", weight: 0.85,
+        text: "So he lies forever young in his cave, breathing slow, and forever the Moon comes down through the dark to bend over him and gaze — loving a man who will never once wake to know that he is loved." },
+    ],
     source: "Hesiod, Theogony."
   },
   eos: {
     story: "Eos is the Dawn — rosy-fingered, saffron-robed, the goddess who throws open the gates of the east each morning so that her brother the Sun may follow her out. She is lovely and restless, forever falling in love with mortal men and bearing them away into the bright unfolding edge of the day.\n\nHer sorrow is a gift granted in haste. Loving the Trojan prince Tithonus, she begged Zeus to make him immortal, and it was done. But Eos in her longing had forgotten to ask also for his unfading youth — and so her lover could not die and yet could not stay young. He withered and shrank and dried, year upon slow year, until at last there was nothing left of him but a thin, ceaseless voice; and pity, they say, shrank that voice into the cicada, which sings on through every summer in the heat of her brother's light.",
+    beats: [
+      { label: "Rosy-Fingered Dawn", weight: 0.8, figures: ['helios'],
+        text: "Eos is the Dawn — rosy-fingered, saffron-robed, the goddess who throws open the gates of the east each morning so that her brother the Sun may follow her out. Lovely and restless, forever falling in love with mortal men." },
+      { label: "A Gift Granted in Haste", weight: 1, figures: ['zeus'],
+        text: "Loving the Trojan prince Tithonus, she begged Zeus to make him immortal, and it was done. But Eos in her longing had forgotten to ask also for his unfading youth." },
+      { label: "The Voice of the Cicada", weight: 0.85,
+        text: "Her lover could not die and yet could not stay young. He withered and shrank, year upon slow year, until there was nothing left of him but a thin, ceaseless voice — and pity shrank that voice into the cicada, which sings on through every summer." },
+    ],
     source: "Hesiod, Theogony; Homeric Hymn to Aphrodite."
   },
 
@@ -413,10 +519,28 @@ export const deityStories = {
   },
   hephaestus: {
     story: "Hephaestus is the smith of the gods, the lame master of fire and the forge, and the one Olympian who truly labors — and out of his labor come wonders no other hand could shape: the armor of heroes, self-moving servants of gold, the very thrones and palaces of heaven.\n\nHis own mother cast him out. Hera, ashamed to have borne a crippled son, flung him from the height of Olympus, and he fell a whole day before he struck the sea, lamed for good. But the rejected child grew into the one craftsman the gods could not do without, and he took his revenge through art: he made his mother a throne of surpassing beauty that locked her fast the instant she sat, and would not free her until the gods came bargaining. Wedded to Aphrodite, who had never wanted him, he once caught her with her lover Ares in a net of bronze finer than any spider's thread and hauled the trapped pair up for all Olympus to laugh at — proving that patience and a clever hand can shame even the strong and the beautiful.",
+    beats: [
+      { label: "The Lame Smith", weight: 0.85,
+        text: "Hephaestus is the smith of the gods, the lame master of fire and the forge, and the one Olympian who truly labors — and out of his labor come wonders no other hand could shape: the armor of heroes, self-moving servants of gold, the very thrones of heaven." },
+      { label: "Cast from Olympus", weight: 0.9, figures: ['hera'],
+        text: "His own mother cast him out. Hera, ashamed to have borne a crippled son, flung him from the height of Olympus, and he fell a whole day before he struck the sea, lamed for good." },
+      { label: "The Throne of Revenge", weight: 0.8,
+        text: "The rejected child grew into the one craftsman the gods could not do without, and took his revenge through art: he made his mother a throne of surpassing beauty that locked her fast the instant she sat, and would not free her until the gods came bargaining." },
+      { label: "The Bronze Net", weight: 1, figures: ['aphrodite', 'ares'],
+        text: "Wedded to Aphrodite, who had never wanted him, he caught her with her lover Ares in a net of bronze finer than any spider\'s thread and hauled the trapped pair up for all Olympus to laugh at — proving that patience and a clever hand can shame even the strong and the beautiful." },
+    ],
     source: "Homer, Odyssey VIII; Iliad."
   },
   ares: {
     story: "Ares is the god of war in its rawest form — not the cool generalship of the battlefield but the blood-thrill, the slaughter, the screaming chaos where the spears press close. Son of Zeus and Hera, he is the least loved of all the Olympians, and his own father tells him to his face that of all the gods he is the most hateful.\n\nWhere Athena brings war ordered toward a purpose, Ares brings only the savage joy of the killing, and the old stories take a quiet pleasure in humbling him. Snared in Hephaestus's invisible net in the arms of Aphrodite, he was held up naked and ridiculous before the assembled gods; wounded by a mortal hero on the plain of Troy, he fled bellowing back to Olympus to nurse the scratch and complain. He is strength without wisdom and courage without restraint — feared upon the field, and respected almost nowhere off it.",
+    beats: [
+      { label: "The Most Hateful God", weight: 0.85, figures: ['zeus', 'hera'],
+        text: "Ares is the god of war in its rawest form — the blood-thrill, the slaughter, the screaming chaos where the spears press close. Son of Zeus and Hera, he is the least loved of all the Olympians, and his own father tells him he is the most hateful." },
+      { label: "Snared in the Net", weight: 1, figures: ['hephaestus', 'aphrodite'],
+        text: "Snared in Hephaestus\'s invisible net in the arms of Aphrodite, he was held up naked and ridiculous before the assembled gods — strength and beauty caught and shamed by patience and a clever hand." },
+      { label: "Wounded at Troy", weight: 0.7, figures: ['athena'],
+        text: "Where Athena brings war ordered toward a purpose, Ares brings only the savage joy of the killing. Wounded by a mortal hero on the plain of Troy, he fled bellowing back to Olympus to nurse the scratch and complain." },
+    ],
     source: "Homer, Iliad."
   },
   aphrodite: {
@@ -435,10 +559,30 @@ export const deityStories = {
   },
   hermes: {
     story: "Hermes is the quick-footed messenger of the gods, the patron of travelers and traders, of heralds and thieves and lucky finds, and the keeper of every boundary and crossroads. Wing-sandalled, bearing the herald's staff, he alone moves freely between Olympus, the green earth, and the silent country of the dead, whose souls he leads gently down at the close of their lives.\n\nHe was a trickster from the first hour of his life. Born at dawn in a cave to Zeus and the shy nymph Maia, he climbed from his cradle before nightfall, invented the lyre from a tortoise-shell he found at the door, and then slipped away to steal the cattle of his elder brother Apollo — driving them backward so their tracks would lie. Hauled up to Olympus to answer for the theft, the infant lied so sweetly, and played his new-made lyre so beautifully, that Apollo forgave everything, traded the stolen herd for the instrument, and the two became fast friends. So the youngest Olympian charmed his way into the company of the gods before he could rightly walk.",
+    beats: [
+      { label: "The God of Crossroads", weight: 0.8,
+        text: "Hermes is the quick-footed messenger of the gods, patron of travelers and traders, of heralds and thieves and lucky finds. Wing-sandalled, bearing the herald\'s staff, he alone moves freely between Olympus, the green earth, and the silent country of the dead." },
+      { label: "Born a Trickster", weight: 0.9, figures: ['zeus', 'maia'],
+        text: "He was a trickster from his first hour. Born at dawn in a cave to Zeus and the shy nymph Maia, he climbed from his cradle before nightfall, invented the lyre from a tortoise-shell, and slipped away to steal the cattle of his elder brother." },
+      { label: "The Stolen Herd", weight: 1, figures: ['apollo'],
+        text: "Hauled up to Olympus to answer for the theft, the infant lied so sweetly and played his new-made lyre so beautifully that Apollo forgave everything, traded the stolen herd for the instrument, and the two became fast friends." },
+      { label: "Charmed into Heaven", weight: 0.6,
+        text: "So the youngest Olympian charmed his way into the company of the gods before he could rightly walk." },
+    ],
     source: "Homeric Hymn to Hermes."
   },
   dionysus: {
     story: "Dionysus is the god of the vine and of wine, of ecstasy and the theatre and the wild release that loosens the bound and ordered self — the one Olympian born of a mortal woman, the god who arrives from outside and changes whatever he touches. He carries joy and freedom in one hand and madness and ruin in the other, and offers either without warning.\n\nHe was born twice over. His mother, the princess Semele, was tricked by jealous Hera into begging Zeus to show himself in his full divinity, and the sight of the unveiled god burned her to ash where she stood — but Zeus snatched the unborn child from the fire and sewed it into his own thigh, from which Dionysus was brought forth a second time, now wholly divine. Ever after he wanders the world with his reeling, ivy-crowned followers, blessing all who welcome him and destroying those who will not: when King Pentheus of Thebes denied his godhood and tried to cage his rites, the god drove the women of the city into a frenzy, and Pentheus was torn limb from limb by the hands of his own mother, who in her madness took her son for a lion.",
+    beats: [
+      { label: "The God Who Arrives", weight: 0.85,
+        text: "Dionysus is the god of the vine and of wine, of ecstasy and the theatre and the wild release — the one Olympian born of a mortal woman, the god who arrives from outside and changes whatever he touches. He carries joy in one hand and madness in the other." },
+      { label: "Born Twice Over", weight: 1, figures: ['semele', 'hera', 'zeus'],
+        text: "His mother Semele was tricked by jealous Hera into begging Zeus to show himself in his full divinity, and the sight burned her to ash — but Zeus snatched the unborn child from the fire and sewed it into his own thigh, from which Dionysus was brought forth a second time, now wholly divine." },
+      { label: "Welcome or Ruin", weight: 0.7,
+        text: "Ever after he wanders the world with his reeling, ivy-crowned followers, blessing all who welcome him and destroying those who will not." },
+      { label: "The Madness of Pentheus", weight: 0.9,
+        text: "When King Pentheus of Thebes denied his godhood and tried to cage his rites, the god drove the women of the city into a frenzy, and Pentheus was torn limb from limb by the hands of his own mother, who in her madness took her son for a lion." },
+    ],
     source: "Ovid, Metamorphoses III; Euripides, Bacchae. Further reading: Ted Hughes, Tales from Ovid."
   },
 
@@ -473,16 +617,44 @@ export const deityStories = {
   },
   hecate: {
     story: "Hecate is the goddess of the crossroads, of witchcraft and the moonless dark, of thresholds and the magic that gathers wherever one way gives onto another. Alone among the gods she holds a portion of power in all three realms at once — earth, sea, and sky — and passes freely between the living and the dead.\n\nTorch-bearing, and often shown with three faces turned to watch three roads at once, she is the lantern at every dangerous passage and the guide of all who must travel in the dark. It was Hecate who heard Persephone's cry as the earth swallowed her, and Hecate who walked before the lost maiden afterward with her two blazing torches, lighting the road between the upper world and the lower. So she became the close companion of the dead queen, lingering ever after at the boundary where one world ends and the next begins.",
+    beats: [
+      { label: "Goddess of Crossroads", weight: 0.85,
+        text: "Hecate is the goddess of the crossroads, of witchcraft and the moonless dark, of thresholds and the magic that gathers wherever one way gives onto another. Alone among the gods she holds a portion of power in all three realms at once — earth, sea, and sky." },
+      { label: "Three Faces Watching", weight: 0.7,
+        text: "Torch-bearing, and often shown with three faces turned to watch three roads at once, she is the lantern at every dangerous passage and the guide of all who must travel in the dark." },
+      { label: "The Cry in the Earth", weight: 1, figures: ['persephone'],
+        text: "It was Hecate who heard Persephone\'s cry as the earth swallowed her, and Hecate who walked before the lost maiden afterward with her two blazing torches, lighting the road between the upper world and the lower." },
+      { label: "Between the Worlds", weight: 0.75,
+        text: "So she became the close companion of the dead queen, lingering ever after at the boundary where one world ends and the next begins." },
+    ],
     source: "Hesiod, Theogony."
   },
   erinyes: {
     story: "The Erinyes — the Furies — were born from blood and violence before the world had any law to answer them. When Cronus took up the jagged sickle and unmanned his father Uranus, the dark drops that fell upon the Earth quickened into three terrible daughters: Alecto the unceasing, Tisiphone the avenger of murder, and Megaera the jealous one. They are older than the Olympians, older than mercy, and they answer to no throne.\n\nSerpent-haired, black-winged, and weeping tears of blood, they rise from the dark whenever kindred blood is spilled or a sacred oath is broken. They do not judge — they pursue, with a patience that outlasts the turning of the world. Orestes, who slew his own mother Clytemnestra to avenge his murdered father, was hunted across Greece by their shrieking, sleepless wrath until Athena herself convened the first court of law in Athens to try his case. There the Furies were persuaded — barely — to accept the verdict, and were given a new name: the Eumenides, the Kindly Ones, housed in a cavern beneath the Areopagus. But kindness is only the mask they agreed to wear. Beneath it they are still the oldest anger in the world, and what they hunt, they never stop hunting.",
+    beats: [
+      { label: "Born from Blood", weight: 0.9, figures: ['cronus', 'uranus'],
+        text: "When Cronus took up the jagged sickle and unmanned his father Uranus, the dark drops that fell upon the Earth quickened into three terrible daughters: Alecto the unceasing, Tisiphone the avenger, and Megaera the jealous one. They are older than the Olympians, older than mercy." },
+      { label: "The Sleepless Hunt", weight: 0.8,
+        text: "Serpent-haired, black-winged, and weeping tears of blood, they rise from the dark whenever kindred blood is spilled or a sacred oath is broken. They do not judge — they pursue, with a patience that outlasts the turning of the world." },
+      { label: "The Trial of Orestes", weight: 1, figures: ['athena'],
+        text: "Orestes, who slew his own mother to avenge his murdered father, was hunted across Greece by their shrieking, sleepless wrath until Athena herself convened the first court of law in Athens to try his case." },
+      { label: "The Kindly Ones", weight: 0.7,
+        text: "There the Furies were persuaded — barely — to accept the verdict, and were given a new name: the Eumenides, the Kindly Ones. But kindness is only the mask they agreed to wear. Beneath it they are still the oldest anger in the world." },
+    ],
     source: "Hesiod, Theogony; Aeschylus, Eumenides."
   },
 
   // ---- MONSTERS ----
   typhon: {
     story: "Typhon is the last and most terrible child of the Earth — a storm-giant so vast that his head brushed the stars and his outstretched arms touched the east and the west, with a hundred serpent-heads bursting from his shoulders, fire flashing from his eyes, and the cries of every beast roaring together from his throats. He is chaos itself risen up in monstrous flesh to swallow the new order of heaven.\n\nGaia bore him in her grief and fury after the Titans were chained, and loosed him against the young king of the gods to undo all that Zeus had built. Their battle scorched the land and boiled the sea and shook the pillars of the world; for a time the monster even overmastered Zeus and cut the very sinews from his limbs. But Zeus recovered his strength, and with a storm of a hundred thunderbolts beat Typhon down at last and hurled him beneath Mount Etna in Sicily — where he lies pinned to this day, and his unspent rage still breaks from the mountain's peak in smoke and running fire.",
+    beats: [
+      { label: "Earth's Last Weapon", weight: 0.85, figures: ['gaia'],
+        text: "Gaia bore Typhon in her grief and fury after the Titans were chained — a storm-giant so vast that his head brushed the stars, with a hundred serpent-heads bursting from his shoulders and the cries of every beast roaring from his throats." },
+      { label: "The Sinews of Zeus", weight: 1.0, figures: ['zeus'],
+        text: "Their battle scorched the land and boiled the sea and shook the pillars of the world; for a time the monster even overmastered Zeus and cut the very sinews from his limbs." },
+      { label: "Beneath Mount Etna", weight: 0.75,
+        text: "Zeus recovered his strength and with a storm of a hundred thunderbolts beat Typhon down at last and hurled him beneath Mount Etna — where he lies pinned to this day, and his unspent rage still breaks from the peak in smoke and running fire." },
+    ],
     source: "Hesiod, Theogony."
   },
   echidna: {
@@ -591,26 +763,86 @@ export const deityStories = {
   // ---- HEROES ----
   perseus: {
     story: "Perseus is the bright hero of the impossible errand — son of Zeus and the mortal princess Danaë, and one of the very few in all the myths to walk out of his story into a long and happy life. Where other heroes are undone by pride or fate, Perseus is carried through by courage, quickness, and the steady favor of the gods.\n\nHe was born in a locked bronze chamber, for his grandfather had shut Danaë away to thwart a prophecy that her son would one day kill him — yet Zeus came to her as a shower of golden light, and Perseus was born all the same. Cast adrift in a wooden chest with his mother and washed ashore on a distant island, he grew, and was sent by a scheming king to fetch the head of Medusa, a task meant to be his death. Instead, guided by Athena's mirror-bright shield and Hermes' winged sandals, he struck off the Gorgon's head by her reflection, rescued Andromeda from a sea-monster on his way home, and turned his enemies to stone with the trophy in his hand. Even the old prophecy came true in the end — but gently, by the accident of a discus thrown astray, long years and a whole life later.",
+    beats: [
+      { label: "The Bronze Chamber", weight: 0.7, figures: ['zeus', 'danae'],
+        text: "He was born in a locked bronze chamber where his grandfather had shut Danaë away to thwart a prophecy — yet Zeus came to her as a shower of golden light, and Perseus was born all the same." },
+      { label: "The Gorgon's Head", weight: 1.0, figures: ['athena', 'hermes', 'medusa'],
+        text: "Sent to fetch the head of Medusa on an errand meant to be his death, Perseus was guided by Athena's mirror-bright shield and Hermes' winged sandals, and struck off the Gorgon's head by her reflection." },
+      { label: "Andromeda Unchained", weight: 0.85, figures: ['andromeda'],
+        text: "On his way home he rescued Andromeda from a sea-monster, turning the beast to stone with the trophy in his hand — and won her as his bride." },
+      { label: "The Gentle Prophecy", weight: 0.6,
+        text: "Even the old prophecy came true in the end — but gently, by the accident of a discus thrown astray, long years and a whole life later." },
+    ],
     source: "Ovid, Metamorphoses IV–V; Apollodorus, Library. Further reading: Ted Hughes, Tales from Ovid."
   },
   heracles: {
     story: "Heracles is the greatest of all the Greek heroes — the strongest man who ever lived and the only mortal ever to win a seat among the gods. A son of Zeus, his strength was matched at every turn only by the suffering laid upon him, and his whole life is one long labor of that strength bent, again and again, to undoing harm.\n\nHis sorrow began before his birth, in Hera's hatred of yet another of her husband's children; and it was Hera who, when he was grown and happy, struck him with a madness in which he killed his own wife and children with his bare hands. To purge that horror he was bound to the service of a lesser king, who set him twelve impossible labors — to strangle the lion of Nemea, to cut down the deathless Hydra, to cleanse the world of its monsters and haul up the very hound of hell. He accomplished every one. And though he died at the last in agony, poisoned by a robe steeped in a centaur's blood, the gods lifted him from the burning pyre and set him among the stars: the mortal who suffered his way into heaven.",
+    beats: [
+      { label: "Hera's Hatred", weight: 0.8, figures: ['hera', 'zeus'],
+        text: "His sorrow began before his birth, in Hera's hatred of yet another of her husband's children; and it was Hera who struck him with a madness in which he killed his own wife and children with his bare hands." },
+      { label: "The Twelve Labors", weight: 1.0, figures: ['nemean_lion', 'hydra', 'cerberus'],
+        text: "To purge that horror he was bound to a lesser king, who set him twelve impossible labors — to strangle the lion of Nemea, to cut down the deathless Hydra, to cleanse the world of its monsters and haul up the very hound of hell." },
+      { label: "The Poisoned Robe", weight: 0.85,
+        text: "He accomplished every one. And though he died at the last in agony, poisoned by a robe steeped in a centaur's blood, the fire consumed only what was mortal in him." },
+      { label: "Suffered into Heaven", weight: 0.7,
+        text: "The gods lifted him from the burning pyre and set him among the stars: the mortal who suffered his way into heaven." },
+    ],
     source: "Apollodorus, Library; Hesiod, Theogony."
   },
   odysseus: {
     story: "Odysseus is the cleverest of all the Greek heroes — not the strongest spear nor the swiftest runner, but the subtlest mind, the man of many turns and many tricks who wins by wit what others cannot win by force. He is the hero of the long way home, and of the patience and cunning it takes to survive it.\n\nIt was Odysseus who devised the wooden horse that took the towers of Troy after ten years of siege; but the same cleverness made him an enemy, for he blinded the Cyclops Polyphemus, and the Cyclops was a son of Poseidon. So the sea-god hounded him for ten more years across every water of the world, and one by one Odysseus lost his ships and all his men — to the lotus and the whirlpool, to the witch Circe and the singing Sirens, to his crew's own folly. Alone at the last, washed up naked on a strange shore, he still talked and schemed and endured his way home to Ithaca, to the wife and the kingdom that had waited twenty years for his return.",
+    beats: [
+      { label: "The Wooden Horse", weight: 0.85,
+        text: "It was Odysseus who devised the wooden horse that took the towers of Troy after ten years of siege — the subtlest mind, winning by wit what others could not win by force." },
+      { label: "The Cyclops's Eye", weight: 1.0, figures: ['polyphemus', 'poseidon'],
+        text: "He blinded the Cyclops Polyphemus, and the Cyclops was a son of Poseidon. So the sea-god hounded him for ten more years across every water of the world." },
+      { label: "Witch and Whirlpool", weight: 0.75, figures: ['circe', 'scylla', 'charybdis'],
+        text: "One by one Odysseus lost his ships and all his men — to the lotus and the whirlpool, to the witch Circe and the singing Sirens, to his crew's own folly." },
+      { label: "The Long Way Home", weight: 0.9,
+        text: "Alone at the last, washed up naked on a strange shore, he still talked and schemed and endured his way home to Ithaca, to the wife and the kingdom that had waited twenty years for his return." },
+    ],
     source: "Homer, Odyssey."
   },
   theseus: {
     story: "Theseus is the great hero and founding king of Athens — bold, clever, and restless, the slayer of the Minotaur and the prince who walked willingly into the maze. He is courage with a flaw running through it, a hero whose triumphs and whose betrayals are cut from the very same daring.\n\nWhen Athens was forced to send its young men and women to Crete as tribute, to be devoured by the Minotaur, Theseus offered himself among them and vowed to end the horror. There the king's daughter Ariadne fell in love with him and gave him a sword and a ball of thread; he tied the thread at the mouth of the Labyrinth, unwound it as he went, killed the bull-headed monster at the maze's heart, and followed the line back out into the light. But sailing home he abandoned Ariadne asleep on the island of Naxos — and then, in his joy or his carelessness, forgot to change his black sails for white, the agreed sign of his survival, so that his watching father, believing him dead, threw himself from the cliffs into the sea that bears his name ever since.",
+    beats: [
+      { label: "Into the Labyrinth", weight: 0.85, figures: ['minotaur'],
+        text: "When Athens was forced to send its young to Crete to be devoured by the Minotaur, Theseus offered himself among them and vowed to end the horror." },
+      { label: "Ariadne's Thread", weight: 1.0, figures: ['ariadne'],
+        text: "The king's daughter Ariadne fell in love with him and gave him a sword and a ball of thread; he unwound it through the Labyrinth, killed the bull-headed monster at the maze's heart, and followed the line back out into the light." },
+      { label: "The Sleeping Shore", weight: 0.7, figures: ['ariadne'],
+        text: "But sailing home he abandoned Ariadne asleep on the island of Naxos — the hero whose triumphs and whose betrayals were cut from the very same daring." },
+      { label: "The Black Sails", weight: 0.9,
+        text: "In his joy or his carelessness he forgot to change his black sails for white, the agreed sign of his survival, so that his watching father, believing him dead, threw himself from the cliffs into the sea that bears his name ever since." },
+    ],
     source: "Plutarch, Life of Theseus; Ovid, Metamorphoses VIII."
   },
   bellerophon: {
     story: "Bellerophon is the rider of the winged horse and the slayer of the Chimera — a dazzling hero lifted to the very edge of heaven, and then flung all the way back down. His story is the oldest warning in the myths: that the height a man is given is not a height he may keep.\n\nSent on an errand designed to kill him — to destroy the fire-breathing Chimera that no man could approach on foot — Bellerophon first tamed the wild winged horse Pegasus with a golden bridle laid in his hands by Athena, and from the saddle of the sky he killed the monster and went on to win battle after battle. But triumph swelled into pride, and at the last he dared to ride Pegasus up toward Olympus itself, to take a seat among the gods. The horse threw him. Bellerophon fell the whole long way back to the earth, and lived out his remaining days lamed and broken and alone, wandering the plain and shunning the paths of other men — a hero ruined by reaching too high.",
+    beats: [
+      { label: "The Golden Bridle", weight: 0.85, figures: ['athena', 'pegasus'],
+        text: "Sent to destroy the fire-breathing Chimera on an errand designed to kill him, Bellerophon first tamed the wild winged horse Pegasus with a golden bridle laid in his hands by Athena." },
+      { label: "Slaying the Chimera", weight: 1.0, figures: ['chimera'],
+        text: "From the saddle of the sky he killed the Chimera and went on to win battle after battle — a dazzling hero lifted to the very edge of heaven." },
+      { label: "The Reach for Olympus", weight: 0.9, figures: ['pegasus'],
+        text: "But triumph swelled into pride, and at the last he dared to ride Pegasus up toward Olympus itself, to take a seat among the gods. The horse threw him." },
+      { label: "The Broken Wanderer", weight: 0.65,
+        text: "Bellerophon fell the whole long way back to the earth, and lived out his remaining days lamed and broken and alone, wandering the plain and shunning the paths of other men." },
+    ],
     source: "Homer, Iliad VI; Hesiod, Theogony."
   },
   jason: {
     story: "Jason is the captain of the Argonauts, the prince who gathered the greatest heroes of his age aboard a single ship and sailed to the world's end for the Golden Fleece. He is the leader who could not have triumphed alone — and whose deepest failing was that he came to forget it.\n\nRobbed of his father's throne, Jason was sent after the Fleece on a quest meant to destroy him, and would surely have perished at the edge of the world but for the sorceress Medea, the king's own daughter, who fell helplessly in love with him. By her magic he yoked the fire-breathing bulls, sowed the dragon's teeth, and charmed asleep the sleepless serpent that guarded the prize; she betrayed her father and killed her own brother to carry him to safety. Yet years afterward, his ambition outrunning his loyalty, Jason cast Medea aside to marry a younger princess for a crown — and her revenge was total and terrible, consuming his new bride and the children Medea herself had borne him, and leaving him at the end with nothing at all.",
+    beats: [
+      { label: "The Stolen Throne", weight: 0.65,
+        text: "Robbed of his father's throne, Jason was sent after the Golden Fleece on a quest meant to destroy him — the prince who gathered the greatest heroes of his age aboard a single ship." },
+      { label: "Medea's Sorcery", weight: 1.0, figures: ['medea', 'colchian_dragon'],
+        text: "He would surely have perished but for the sorceress Medea, who fell helplessly in love with him. By her magic he yoked the fire-breathing bulls, sowed the dragon's teeth, and charmed asleep the sleepless serpent that guarded the prize." },
+      { label: "The Broken Vow", weight: 0.85, figures: ['medea'],
+        text: "Yet years afterward, his ambition outrunning his loyalty, Jason cast Medea aside to marry a younger princess for a crown — the leader who forgot what he owed." },
+      { label: "Medea's Revenge", weight: 0.9, figures: ['medea'],
+        text: "Her revenge was total and terrible, consuming his new bride and the children Medea herself had borne him, and leaving him at the end with nothing at all." },
+    ],
     source: "Apollonius of Rhodes, Argonautica; Ovid, Metamorphoses VII."
   },
 
@@ -747,6 +979,16 @@ export const deityStories = {
   },
   oedipus: {
     story: "Oedipus is the hero who answered the riddle and could not escape his own — the king of Thebes whose cleverness saved a city and whose fate destroyed him, the man who saw the truth of everyone but himself until it was far too late. His name, 'swollen-foot,' is the scar of the prophecy he was born under.\n\nFor it was foretold before his birth that he would kill his father and marry his mother, and to prevent it his parents pierced his feet and left him on a mountainside to die. He was saved, and raised far away knowing nothing of his birth — so that when he met and killed a stranger at a crossroads, and then freed Thebes by solving the Sphinx's riddle and was given the widowed queen as his reward, he did not know that the stranger had been his father and the queen was his mother. When at last the truth came to light, his mother-wife hanged herself, and Oedipus put out his own eyes with the pins of her brooches — choosing blindness over a single moment more of seeing what he had done.",
+    beats: [
+      { label: "The Pierced Feet", weight: 0.7,
+        text: "It was foretold before his birth that he would kill his father and marry his mother, and to prevent it his parents pierced his feet and left him on a mountainside to die. He was saved, and raised far away knowing nothing of his birth." },
+      { label: "The Riddle of the Sphinx", weight: 0.9, figures: ['sphinx'],
+        text: "He met and killed a stranger at a crossroads, then freed Thebes by solving the Sphinx's riddle and was given the widowed queen as his reward — never knowing the stranger had been his father and the queen was his mother." },
+      { label: "The Truth Unveiled", weight: 1.0,
+        text: "When at last the truth came to light — the man who saw the truth of everyone but himself learned the full horror of what he had done." },
+      { label: "The Chosen Blindness", weight: 0.85,
+        text: "His mother-wife hanged herself, and Oedipus put out his own eyes with the pins of her brooches — choosing blindness over a single moment more of seeing what he had done." },
+    ],
     source: "Sophocles, Oedipus Rex; Apollodorus, Library."
   },
   alcmene: {
