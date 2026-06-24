@@ -197,6 +197,19 @@ body {
   .node .glow, .node .glow.hub-breath { animation: none; }
 }
 
+/* ── Genesis ignition titles ───────────────────────────────────────────────
+   Brief generation labels ("PRIMORDIALS", "TITANS"…) that flash at the
+   center of the sky during the cosmogony sequence and dissolve. */
+.genesis-title {
+  font-family: 'Cinzel', serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: .35em;
+  fill: #cdb88a;
+  pointer-events: none;
+  text-transform: uppercase;
+}
+
 /* Pause sky-layer CSS animations when the tab is hidden */
 #sky.paused .flare,
 #sky.paused .star-shimmer,
