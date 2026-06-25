@@ -91,12 +91,10 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     nodes.forEach(n => { n.degree = adj[n.id].size })
     const maxDeg = Math.max(...nodes.map(n => n.degree))
     nodes.forEach(n => { n.prom = Math.sqrt(n.degree) / Math.sqrt(maxDeg) })
-    /* node size scales with connection count (renown). The exponent on prom
-       steepens the gradient past the area-true sqrt so degree differences read
-       clearly across the field — leaf stars stay small, hubs (Zeus, Gaia)
-       grow visibly larger. prom itself is left untouched (it still drives glow
-       opacity, label prominence, renown bars). */
-    const radius = n => 5 + Math.pow(n.prom, 1.2) * 16
+    /* node size scales with connection count (renown). The wider range and
+       steeper exponent make hubs (Zeus, Gaia) dramatically larger while leaf
+       stars stay small — the hierarchy reads instantly across the field. */
+    const radius = n => 4 + Math.pow(n.prom, 1.4) * 22
 
     /* ── birth-order generation (BFS along parent_of / birthed edges) ── */
     const childAdj = {}
@@ -370,14 +368,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const hubBreathThreshold = promValues[Math.min(5, promValues.length - 1)] || 0.6
 
     gNode.append('circle').attr('class','glow')
-      .attr('r',        d => radius(d) * 1.6)
+      .attr('r',        d => radius(d) * 1.25)
       .attr('fill',     d => CAT[d.category])
-      .attr('opacity',  d => 0.09 + d.prom * 0.16)
+      .attr('opacity',  d => 0.07 + d.prom * 0.14)
       .attr('filter',   d => d.prom > 0.65 ? 'url(#glow)' : null)
       .classed('hub-breath', d => d.prom >= hubBreathThreshold)
-      .style('--glow-base',     d => (0.09 + d.prom * 0.16).toFixed(3))
-      .style('--glow-r',        d => (radius(d) * 1.6).toFixed(1))
-      .style('--glow-r-peak',   d => (radius(d) * 2.1).toFixed(1))
+      .style('--glow-base',     d => (0.07 + d.prom * 0.14).toFixed(3))
+      .style('--glow-r',        d => (radius(d) * 1.25).toFixed(1))
+      .style('--glow-r-peak',   d => (radius(d) * 1.5).toFixed(1))
       .style('--twinkle-dur',   () => `${(4.5 + rnd() * 4.5).toFixed(2)}s`)
       .style('--twinkle-delay', () => `-${(rnd() * 7).toFixed(2)}s`)
       .style('--breath-dur',    () => `${(3.5 + rnd() * 1.5).toFixed(2)}s`)
@@ -397,7 +395,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('height',             d => radius(d) * 2)
       .attr('clip-path',          d => `url(#clip-${d.id})`)
       .attr('preserveAspectRatio','xMidYMid slice')
-      .attr('opacity', 0.88)
+      .attr('opacity', 0.95)
       .on('error', function(_, d) {
         const el = d3.select(this)
         const chain = [
@@ -413,19 +411,19 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       })
 
     gNode.append('circle').attr('class','ring')
-      .attr('r',            d => radius(d) + 1.6)
+      .attr('r',            d => radius(d) + 0.5)
       .attr('fill',         'none')
       .attr('stroke',       d => CAT[d.category])
-      .attr('stroke-width', 1.4)
-      .attr('opacity',      0.72)
+      .attr('stroke-width', 0.8)
+      .attr('opacity',      0.55)
 
     /* gold pulse ring — invisible until the node has `.selected`, then the
        CSS animation kicks in. The ring sits outside the category ring. */
     gNode.append('circle').attr('class','sel-ring')
-      .attr('r',            d => radius(d) + 5)
+      .attr('r',            d => radius(d) + 3)
       .attr('fill',         'none')
       .attr('stroke',       '#cdb88a')
-      .attr('stroke-width', 1.5)
+      .attr('stroke-width', 1.2)
       .attr('opacity',      0)
 
     gNode.append('text').attr('class','node-label')
@@ -706,11 +704,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       /* glow flare — all nodes get a brief brightness spike when born */
       d3.select(this).select('.glow')
         .transition('ign').duration(200).delay(delay)
-        .attr('opacity', isHub ? 0.45 : 0.22)
-        .attr('r', radius(d) * (isHub ? 2.8 : 2.2))
+        .attr('opacity', isHub ? 0.4 : 0.2)
+        .attr('r', radius(d) * (isHub ? 2.0 : 1.6))
         .transition('ign').duration(1100).ease(d3.easeCubicOut)
-        .attr('opacity', 0.09 + d.prom * 0.16)
-        .attr('r', radius(d) * 1.6)
+        .attr('opacity', 0.07 + d.prom * 0.14)
+        .attr('r', radius(d) * 1.25)
     })
 
     /* cluster labels seep in once their category's nodes have arrived */
@@ -920,12 +918,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const d = g.datum()
       const r = radius(d) * scale
       const t = d3.transition().duration(280).ease(d3.easeCubicOut)
-      g.select('.glow').transition(t).attr('r', r * 1.6)
+      g.select('.glow').transition(t).attr('r', r * 1.25)
       g.select('.core').transition(t).attr('r', r)
       g.select('image').transition(t)
         .attr('x', -r).attr('y', -r).attr('width', r * 2).attr('height', r * 2)
-      g.select('.ring').transition(t).attr('r', r + 1.6)
-      g.select('.sel-ring').transition(t).attr('r', r + 5)
+      g.select('.ring').transition(t).attr('r', r + 0.5)
+      g.select('.sel-ring').transition(t).attr('r', r + 3)
       g.select('.node-label').transition(t).attr('x', r + 6)
       defs.select(`#clip-${d.id} circle`).transition(t).attr('r', r)
     }
@@ -1013,12 +1011,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         const g = gNode.filter(n => n.id === id)
         const d = g.datum()
         const r = radius(d)
-        const baseOp = 0.09 + d.prom * 0.16
+        const baseOp = 0.07 + d.prom * 0.14
         g.select('.glow')
           .transition('nova').duration(180).ease(d3.easeCubicOut)
-          .attr('r', r * 2.8).attr('opacity', Math.min(baseOp * 3.5, 0.45))
+          .attr('r', r * 2.0).attr('opacity', Math.min(baseOp * 3.5, 0.4))
           .transition('nova').duration(600).ease(d3.easeCubicOut)
-          .attr('r', r * 1.6).attr('opacity', baseOp)
+          .attr('r', r * 1.25).attr('opacity', baseOp)
       }
     }
 
@@ -1040,7 +1038,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const hg = gNode.filter(n => n.id === d.id)
       hg.select('.ring')
         .transition('ring-shimmer').duration(140).ease(d3.easeCubicOut)
-        .attr('opacity', 1).attr('stroke-width', 2)
+        .attr('opacity', 0.9).attr('stroke-width', 1.2)
 
       /* magnetic lean: temporarily nudge neighbors toward the hovered node */
       _hoverNudges = []
@@ -1093,7 +1091,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       /* restore ring from hover shimmer */
       gNode.selectAll('.ring').interrupt('ring-shimmer')
         .transition('ring-restore').duration(220).ease(d3.easeCubicOut)
-        .attr('opacity', 0.55).attr('stroke-width', 1.1)
+        .attr('opacity', 0.45).attr('stroke-width', 0.8)
 
       /* release magnetic lean — spring nodes back */
       if (_hoverNudges) {

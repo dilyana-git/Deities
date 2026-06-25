@@ -261,7 +261,7 @@ body {
 }
 .node.receded .node-label { opacity: 0 !important; }
 
-.node.lit    .ring { stroke-width: 1.6px; opacity: .9; }
+.node.lit    .ring { stroke-width: 1px; opacity: .75; }
 
 /* A selected node's leaf neighbours grow + brighten so the constellation of
    nodes reads as strongly as the lit edges radiating to them. Scale the inner
@@ -287,11 +287,11 @@ body {
 /* subtle scale on hover for immediate feedback */
 .node:hover .core { transform: scale(1.08); transform-origin: center; transform-box: fill-box; }
 
-.node.selected .ring  { stroke: #cdb88a !important; stroke-width: 2.2px; opacity: 1; }
+.node.selected .ring  { stroke: #cdb88a !important; stroke-width: 1.2px; opacity: 0.9; }
 .node.selected .core  { opacity: 1; }
 .node.selected .sel-ring { opacity: 1; animation: gold-pulse 2s ease-in-out infinite; }
 .node.selected .node-label { opacity: 1 !important; fill: #cdb88a !important; }
-.node.route   .ring  { stroke: #cdb88a !important; stroke-width: 2px; opacity: 1; }
+.node.route   .ring  { stroke: #cdb88a !important; stroke-width: 1px; opacity: 0.85; }
 .node.route   .core  { opacity: 1; }
 .node.route   .node-label { opacity: 1 !important; fill: #cdb88a !important; }
 .node.nolabel .node-label { opacity: 0 !important; }
