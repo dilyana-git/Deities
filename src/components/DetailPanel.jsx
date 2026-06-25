@@ -5,6 +5,7 @@ import { CAT, LCOL } from './SkyGraph.jsx'
 import { linkTypeConfig } from '../data/linkTypeConfig.js'
 import { categoryConfig } from '../data/categoryConfig.js'
 import { deityStories } from '../data/deityStories.js'
+import { getConstellation } from '../data/constellations.js'
 
 /* precompute adjacency + prom */
 const _adj = {}
@@ -174,22 +175,57 @@ export default function DetailPanel({ nodeId, onClose, onNavigate }) {
 
 const GOLD = '#cdb88a'
 
-/* ── Constellation spine: the "Origins" story told as a vertical sequence of
-   star-marked beats on a dashed thread in the left margin — a little vertical
-   constellation. Each beat's star core scales and brightens with `weight`, so the
-   pivotal turns read as the brightest stars. Beats carrying `figures` become
-   clickable, flying the graph to the beat's central figure via onNavigate. The
-   panel falls back to plain prose for any figure whose entry has no `beats`. */
-function StorySpine({ beats, catColor, source, onNavigate }) {
+function MiniConstellation({ spec, weight, catColor }) {
+  const w = weight ?? 0.7
+  const sz = 28
+  const vb = 200
+  const scale = vb / 200
+  const heroIdx = spec.hero ?? 0
+  const bright = new Set(spec.b || [])
+
+  return (
+    <svg viewBox={`-100 -100 ${vb} ${vb}`} width={sz} height={sz}
+      style={{ display:'block', overflow:'visible' }}>
+      <circle cx="0" cy="0" r="90" fill={catColor} opacity={0.06} />
+      {spec.e.map(([a, b], i) => (
+        <line key={i}
+          x1={spec.n[a][0]} y1={spec.n[a][1]}
+          x2={spec.n[b][0]} y2={spec.n[b][1]}
+          stroke={catColor} strokeWidth={1.2 * scale} opacity={0.35 + w * 0.2} />
+      ))}
+      {spec.n.map(([x, y], i) => {
+        const isHero = i === heroIdx
+        const isBright = bright.has(i)
+        const r = isHero ? (3.5 + w * 3) * scale
+          : isBright ? (2.5 + w * 2) * scale
+          : (1.8 + w * 1.2) * scale
+        return (
+          <g key={i}>
+            {(isHero || isBright) && (
+              <circle cx={x} cy={y} r={r * 2.2}
+                fill={isHero ? GOLD : catColor} opacity={0.12} />
+            )}
+            <circle cx={x} cy={y} r={r}
+              fill={isHero ? '#f3eede' : isBright ? '#ece6d6' : '#b8bfcc'}
+              opacity={isHero ? 1 : isBright ? 0.85 : 0.5 + w * 0.3} />
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+function StorySpine({ beats, catColor, source, onNavigate, nodeId }) {
   return (
     <div style={{ position:'relative' }}>
-      {/* the thread */}
-      <div style={{ position:'absolute', left:6, top:8, bottom: source ? 34 : 8, width:0,
-        borderLeft:`1px dashed ${catColor}66` }}/>
+      <div style={{ position:'absolute', left:14, top:14, bottom: source ? 34 : 14, width:0,
+        borderLeft:`1px dashed ${catColor}44` }}/>
       {beats.map((b, i) => {
         const w = b.weight ?? 0.7
-        const core = 4 + w * 6
-        const nav = (b.figures?.length && onNavigate) ? () => onNavigate(b.figures[0]) : null
+        const fig = b.figures?.[0]
+        const specKey = fig || `${nodeId || 'beat'}-${i}`
+        const spec = getConstellation(specKey)
+        const nav = (fig && onNavigate) ? () => onNavigate(fig) : null
         return (
           <div key={i}
             onClick={nav || undefined}
@@ -198,18 +234,12 @@ function StorySpine({ beats, catColor, source, onNavigate }) {
             onMouseLeave={nav ? e => { e.currentTarget.style.transform = 'translateX(0)' } : undefined}
             role={nav ? 'button' : undefined}
             tabIndex={nav ? 0 : undefined}
-            title={nav ? `Fly to ${_nodeMap[b.figures[0]]?.name || b.figures[0]}` : undefined}
-            style={{ position:'relative', paddingLeft:30,
+            title={nav ? `Fly to ${_nodeMap[fig]?.name || fig}` : undefined}
+            style={{ position:'relative', paddingLeft:38,
               paddingBottom: i < beats.length - 1 ? 22 : 0,
               cursor: nav ? 'pointer' : 'default', transition:'transform .15s', outline:'none' }}>
-            {/* star node */}
-            <div style={{ position:'absolute', left:0, top:3, width:13, height:13 }}>
-              <div style={{ position:'absolute', inset:0, borderRadius:'50%', background:catColor,
-                opacity:.16, transform:'scale(2)', filter:'blur(2px)' }}/>
-              <div style={{ position:'absolute', inset:`${(13 - core) / 2}px`, borderRadius:'50%',
-                background:'#ece6d6', boxShadow:`0 0 ${4 + w * 6}px ${GOLD}${w > .8 ? 'aa' : '77'}` }}/>
-              <div style={{ position:'absolute', inset:0, borderRadius:'50%',
-                border:`1px solid ${catColor}`, opacity:.5 }}/>
+            <div style={{ position:'absolute', left:0, top:1 }}>
+              <MiniConstellation spec={spec} weight={w} catColor={catColor} />
             </div>
             <div style={{ fontFamily:'Cinzel, serif', fontSize:9.5, letterSpacing:'.16em',
               textTransform:'uppercase', color:GOLD, marginBottom:5, marginTop:1 }}>{b.label}</div>
@@ -218,7 +248,7 @@ function StorySpine({ beats, catColor, source, onNavigate }) {
         )
       })}
       {source && (
-        <p style={{ margin:'20px 0 0', paddingLeft:30, fontStyle:'italic', fontSize:12,
+        <p style={{ margin:'20px 0 0', paddingLeft:38, fontStyle:'italic', fontSize:12,
           color:'#3a4354' }}>— {source}</p>
       )}
     </div>
@@ -405,7 +435,7 @@ function PanelContent({ node, connections, onClose, onNavigate }) {
         {(story?.beats?.length || storyText) && (
           <Section label={story?.beats?.length ? 'The Story in Stars' : 'Origins'} index={sectionIdx++}>
             {story?.beats?.length ? (
-              <StorySpine beats={story.beats} catColor={catColor} source={storySource} onNavigate={onNavigate}/>
+              <StorySpine beats={story.beats} catColor={catColor} source={storySource} onNavigate={onNavigate} nodeId={node.id}/>
             ) : (
               <>
                 {storyText.split(/\n\s*\n/).map((para, i) => (
