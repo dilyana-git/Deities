@@ -54,10 +54,6 @@ const LINK_DASH = {
 
 const W = 1200, H = 740
 
-/* perpetual "warm" sim energy — the antagonistic cluster/collide/charge forces
-   never fully settle, so the graph keeps drifting gently. Higher = more motion. */
-const WARM_ALPHA = 0.045
-
 /* ════════════════════════════════════════════════════════════════════════
    SkyGraph — D3 celestial-atlas graph, exposed as an imperative React ref
    ════════════════════════════════════════════════════════════════════════ */
@@ -100,7 +96,32 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        clearly across the field — leaf stars stay small, hubs (Zeus, Gaia)
        grow visibly larger. prom itself is left untouched (it still drives glow
        opacity, label prominence, renown bars). */
-    const radius = n => 2.4 + Math.pow(n.prom, 1.3) * 17
+    const radius = n => 5 + Math.pow(n.prom, 1.2) * 16
+
+    /* ── birth-order generation (BFS along parent_of / birthed edges) ── */
+    const childAdj = {}
+    nodes.forEach(n => (childAdj[n.id] = []))
+    links.forEach(l => {
+      if (l.type === 'parent_of' || l.type === 'birthed')
+        childAdj[l.source].push(l.target)
+    })
+    const gen = {}
+    const roots = nodes.filter(n => n.category === 'primordial').map(n => n.id)
+    const queue = roots.map(id => ({ id, g: 0 }))
+    roots.forEach(id => (gen[id] = 0))
+    while (queue.length) {
+      const { id, g } = queue.shift()
+      for (const cid of childAdj[id]) {
+        if (gen[cid] == null) { gen[cid] = g + 1; queue.push({ id: cid, g: g + 1 }) }
+      }
+    }
+    const maxGen = Math.max(...Object.values(gen), 1)
+    nodes.forEach(n => {
+      if (gen[n.id] == null) gen[n.id] = maxGen + 1
+    })
+    const genOrder = nodes.slice().sort((a, b) => gen[a.id] - gen[b.id] || a.id.localeCompare(b.id))
+    const birthRank = {}
+    genOrder.forEach((n, i) => (birthRank[n.id] = i))
 
     /* ── svg scaffold ───────────────────────────────────────────── */
     const svg = d3.select(el)
@@ -172,17 +193,17 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const rnd = () => { _s = (_s * 1103515245 + 12345) & 0x7fffffff; return _s / 0x7fffffff }
     const big = Math.max(W, H) * 2.2
     const TINTS = ['#d6dce8', '#c8c0b8', '#b8c4d8', '#e0d8c8', '#c0c8d6', '#d8ccc0']
-    const starData = d3.range(680).map(() => {
+    const starData = d3.range(420).map(() => {
       const x = -big * 0.3 + rnd() * big
       const y = -big * 0.3 + rnd() * big
       const distFromCenter = Math.sqrt((x - W/2)**2 + (y - H/2)**2) / (big * 0.5)
       const depthBias = Math.max(0, 1 - distFromCenter * 0.6)
       const r = 0.25 + rnd() * 0.6 + depthBias * rnd() * 0.9
-      const o = 0.06 + rnd() * 0.22 + depthBias * rnd() * 0.25
+      const o = 0.12 + rnd() * 0.3 + depthBias * rnd() * 0.32
       const tint = TINTS[Math.floor(rnd() * TINTS.length)]
       return { x, y, r, o, tint }
     })
-    const flareStars = starData.filter(d => d.o > 0.38)
+    const flareStars = starData.filter(d => d.o > 0.48)
 
     bgLayer.selectAll('circle.flare')
       .data(flareStars)
@@ -291,7 +312,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('stroke-width', 0.7)
       .attr('stroke-linecap', 'round')
       .attr('fill', 'none')
-      .attr('opacity', 0.08)
+      .attr('opacity', 0)
       .attr('data-type-color', d => LCOL[d.type] || '#555')
       .attr('data-type-dash', d => LINK_DASH[d.type] || '')
 
@@ -300,6 +321,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const clusterSel = clusterLayer.selectAll('text').data(cats).join('text')
       .attr('class', 'cluster-label')
       .attr('text-anchor', 'middle')
+      .attr('opacity', 0)
       .text(c => CAT_LABEL[c] || c)
 
     /* Densest-sub-blob anchoring + mutual de-collision (computed every tick,
@@ -340,7 +362,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .call(d3.drag()
         .on('start', (e, d) => { if (!e.active) sim.alphaTarget(0.18).restart(); d.fx = d.x; d.fy = d.y })
         .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; d.x = e.x; d.y = e.y; ticked() })
-        .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(WARM_ALPHA); d.fx = null; d.fy = null }))
+        .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null }))
 
     /* hub breathing — the top ~5 nodes are gravitational centers; they get a
        dedicated slow pulse (radius + opacity over ~4s) that reads as a beacon
@@ -350,10 +372,10 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     gNode.append('circle').attr('class','glow')
       .attr('r',        d => radius(d) * 1.6)
       .attr('fill',     d => CAT[d.category])
-      .attr('opacity',  d => 0.03 + d.prom * 0.08)
-      .attr('filter',   d => d.prom > 0.5 ? 'url(#glow)' : null)
+      .attr('opacity',  d => 0.09 + d.prom * 0.16)
+      .attr('filter',   d => d.prom > 0.65 ? 'url(#glow)' : null)
       .classed('hub-breath', d => d.prom >= hubBreathThreshold)
-      .style('--glow-base',     d => (0.03 + d.prom * 0.08).toFixed(3))
+      .style('--glow-base',     d => (0.09 + d.prom * 0.16).toFixed(3))
       .style('--glow-r',        d => (radius(d) * 1.6).toFixed(1))
       .style('--glow-r-peak',   d => (radius(d) * 2.1).toFixed(1))
       .style('--twinkle-dur',   () => `${(4.5 + rnd() * 4.5).toFixed(2)}s`)
@@ -364,7 +386,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     gNode.append('circle').attr('class','core')
       .attr('r',       d => radius(d))
       .attr('fill',    '#ece6d6')
-      .attr('opacity', d => 0.5 + d.prom * 0.5)
+      .attr('opacity', d => 0.72 + d.prom * 0.28)
 
     /* head portrait — clipped to the node circle */
     gNode.append('image')
@@ -394,8 +416,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('r',            d => radius(d) + 1.6)
       .attr('fill',         'none')
       .attr('stroke',       d => CAT[d.category])
-      .attr('stroke-width', 1.1)
-      .attr('opacity',      0.55)
+      .attr('stroke-width', 1.4)
+      .attr('opacity',      0.72)
 
     /* gold pulse ring — invisible until the node has `.selected`, then the
        CSS animation kicks in. The ring sits outside the category ring. */
@@ -411,19 +433,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .text(d => d.name)
 
     /* ── tick ───────────────────────────────────────────────────── */
-    function ticked() {
-      linkSel.attr('d', d => {
-        const sx = d.source.x, sy = d.source.y, tx = d.target.x, ty = d.target.y
-        const dx = tx - sx, dy = ty - sy
-        const len = Math.sqrt(dx * dx + dy * dy) || 1
-        const off = Math.min(len * 0.12, 14)
-        const mx = (sx + tx) / 2 - (dy / len) * off
-        const my = (sy + ty) / 2 + (dx / len) * off
-        return `M${sx},${sy}Q${mx},${my} ${tx},${ty}`
-      })
-      gNode.attr('transform', d => `translate(${d.x},${d.y})`)
+    let _tickCount = 0
 
-      // 1. anchor each cluster label over its category's densest sub-blob
+    function updateClusterLabels() {
       const anchor = new Map()
       for (const c of cats) {
         const ms = catNodes.get(c)
@@ -445,7 +457,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         anchor.set(c, { x: d3.mean(blob, n => n.x), y: d3.min(blob, n => n.y) - 26 })
       }
 
-      // 2. spring each label toward its anchor, separate overlapping label boxes
       for (const c of cats) {
         if (!labelPos.has(c)) labelPos.set(c, { ...anchor.get(c) })
       }
@@ -479,7 +490,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         if (!moved) break
       }
 
-      // 3. clamp inside the viewBox
       for (const c of cats) {
         const p = labelPos.get(c), b = labelSize.get(c)
         p.x = Math.min(Math.max(p.x, b.w / 2), W - b.w / 2)
@@ -487,21 +497,38 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       }
 
       clusterSel.attr('x', c => labelPos.get(c).x).attr('y', c => labelPos.get(c).y)
-
-      positionEdgeLabels()
     }
 
-    /* Pre-settle the layout off-screen, then hold the sim "warm" so it never
-       freezes: a low constant alphaTarget keeps cluster/charge/collide
-       micro-adjusting forever. Those constraints can't all be satisfied at once
-       (every node pulled to its cluster anchor yet pushed apart by collide), so
-       the frustrated system drifts gently and perpetually — real physics, not a
-       scripted loop. Stopped when the tab is hidden (visibility handler below). */
+    function ticked() {
+      linkSel.attr('d', d => {
+        const sx = d.source.x, sy = d.source.y, tx = d.target.x, ty = d.target.y
+        const dx = tx - sx, dy = ty - sy
+        const len = Math.sqrt(dx * dx + dy * dy) || 1
+        const off = Math.min(len * 0.12, 14)
+        const mx = (sx + tx) / 2 - (dy / len) * off
+        const my = (sy + ty) / 2 + (dx / len) * off
+        return `M${sx},${sy}Q${mx},${my} ${tx},${ty}`
+      })
+      gNode.attr('transform', d => `translate(${d.x},${d.y})`)
+
+      if (++_tickCount % 8 === 0) updateClusterLabels()
+
+      if (!linkLabelLayer.selectAll('text').empty()) positionEdgeLabels()
+    }
+
+    /* Pre-settle the layout off-screen, then STOP. Holding the sim "warm" used to
+       rewrite every edge path + node transform on every frame, forever — that
+       starved the main thread and made interaction janky. The layout is fixed
+       after the pre-settle; gentle perpetual motion now comes from the GPU-cheap
+       CSS float layers instead. A drag re-energises the sim; it then cools to rest. */
     sim.stop()
-    for (let i = 0; i < 240; i++) sim.tick()
+    for (let i = 0; i < 160; i++) sim.tick()
+    updateClusterLabels()
     ticked()
     sim.on('tick', ticked)
-    sim.alphaTarget(WARM_ALPHA).alpha(WARM_ALPHA).restart()
+    /* no warm restart — the sim idles (no per-frame DOM churn) until a drag wakes it */
+
+    /* birth-order entrance is handled by the cosmogony ignition below */
 
     /* ── zoom / pan ─────────────────────────────────────────────── */
     const zoom = d3.zoom().scaleExtent([0.35, 4.5])
@@ -521,7 +548,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const handleVisibility = () => {
       svg.classed('paused', document.hidden)
       if (document.hidden) sim.stop()
-      else sim.alphaTarget(WARM_ALPHA).restart()
     }
     document.addEventListener('visibilitychange', handleVisibility)
 
@@ -543,22 +569,23 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       }
     }
 
-    /* ── ignition sequence + parallax settle ────────────────────────
-       The cosmogony unfolds: open on near-black starfield, edges draw
-       themselves as thin light-traces (stroke-dashoffset sweep), nodes
-       ignite in genealogical order — Chaos first, then Gaia, the Titans,
-       the Olympians — hubs flare brightest, last. The whole web arrives
-       slightly over-zoomed and eases back to rest with a gentle overshoot
-       (parallax settle). Skippable on any input. */
+    /* ── cosmogony ignition ────────────────────────────────────────
+       The cosmos builds itself generationally. Starfield emerges from
+       black; Chaos sparks first, then the Primordials, Titans, Olympians
+       — each generation's nodes flare into existence with sparkle
+       particles, edges trace glowing lines from parent to child. The
+       camera starts over-zoomed and eases out with gentle overshoot.
+       Skippable on any interaction. */
 
     const CAT_WAVE = {
       primordial: 1, titan: 2, olympian: 3, chthonic: 3,
       sea_deity: 4, nymph_minor: 4, monster: 5, hero: 5, mortal: 5,
     }
-    const WAVE_MS = [280, 520, 880, 1200, 1480, 1700]
+    const WAVE_MS = [500, 1600, 3000, 4200, 5200, 6000]
+    const WAVE_LABEL = ['', 'PRIMORDIALS', 'TITANS', 'OLYMPIANS', 'THE SEA & THE WILD', 'HEROES & MONSTERS']
     nodes.forEach(n => { n._wave = n.id === 'chaos' ? 0 : (CAT_WAVE[n.category] ?? 5) })
 
-    /* compute resting transform, then start 15% over-zoomed */
+    /* compute resting transform, then start 20% over-zoomed */
     const _xs = nodes.map(n => n.x), _ys = nodes.map(n => n.y)
     const _x0 = Math.min(..._xs), _x1 = Math.max(..._xs)
     const _y0 = Math.min(..._ys), _y1 = Math.max(..._ys)
@@ -567,86 +594,139 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       ? Math.min((W - 72) / _bw, (H - 72) / _bh, 1.3)
       : 1
     const _cx = _x0 + _bw / 2, _cy = _y0 + _bh / 2
-    const startK = restK * 1.15
+    const startK = restK * 1.20
     const restTx  = d3.zoomIdentity.translate(W / 2 - restK  * _cx, H / 2 - restK  * _cy).scale(restK)
     const startTx = d3.zoomIdentity.translate(W / 2 - startK * _cx, H / 2 - startK * _cy).scale(startK)
+
+    /* sparkle layer for ignition particles */
+    const sparkLayer = floatXLayer.append('g').attr('class', 'sparks').attr('pointer-events', 'none')
+    /* generation title layer */
+    const genTitleLayer = zoomLayer.append('g').attr('class', 'gen-titles').attr('pointer-events', 'none')
 
     /* initial state: starfield dim, everything else invisible */
     svg.call(zoom.transform, startTx)
     bgLayer.attr('opacity', 0)
-    linkLayer.attr('opacity', 1)          // layer visible — edges hidden by dashoffset
-    nodeLayer.attr('opacity', 1)          // layer visible — individual nodes hidden
+    linkLayer.attr('opacity', 1)
+    nodeLayer.attr('opacity', 1)
     clusterLayer.attr('opacity', 1)
     clusterSel.attr('opacity', 0)
     gNode.attr('opacity', 0)
 
-    /* edges: hidden via dashoffset, slightly brighter during draw-in */
+    /* edges: hidden via dashoffset, golden during draw-in */
     linkSel
       .attr('stroke-dasharray', 2000)
       .attr('stroke-dashoffset', 2000)
-      .attr('opacity', 0.15)
+      .attr('opacity', 0.22)
 
-    /* a light bloom overlay that fades out with the parallax (over-bright) */
+    /* bloom overlay — fades with parallax */
     const bloom = zoomLayer.append('rect')
       .attr('width', W * 4).attr('height', H * 4)
       .attr('x', -W * 1.5).attr('y', -H * 1.5)
-      .attr('fill', '#1a1e2a').attr('opacity', 0.18)
+      .attr('fill', '#0e1220').attr('opacity', 0.22)
       .attr('pointer-events', 'none')
 
     let _ignitionDone = false
 
-    /* phase 1: starfield materialises */
-    bgLayer.transition('ign').duration(700).delay(80).attr('opacity', 1)
+    /* sparkle burst — spawn small gold circles that scatter outward */
+    function spawnSparks(x, y, count, r) {
+      if (_ignitionDone) return
+      const sparks = d3.range(count).map(() => {
+        const angle = Math.random() * Math.PI * 2
+        const dist  = (r + 4) + Math.random() * (r * 2.5 + 10)
+        return { sx: x, sy: y, ex: x + Math.cos(angle) * dist, ey: y + Math.sin(angle) * dist }
+      })
+      sparkLayer.selectAll(null).data(sparks).join('circle')
+        .attr('cx', d => d.sx).attr('cy', d => d.sy)
+        .attr('r', 1.0 + Math.random() * 0.8)
+        .attr('fill', '#e8d5a0')
+        .attr('opacity', 0.85)
+        .attr('filter', 'url(#glow)')
+        .transition('spark').duration(500 + Math.random() * 300)
+        .ease(d3.easeCubicOut)
+        .attr('cx', d => d.ex).attr('cy', d => d.ey)
+        .attr('opacity', 0)
+        .attr('r', 0.2)
+        .on('end', function () { d3.select(this).remove() })
+    }
 
-    /* phase 2: edges draw in — each timed to the later of its two endpoints */
+    /* phase 1: starfield materialises from black */
+    bgLayer.transition('ign').duration(1200).delay(100)
+      .ease(d3.easeCubicOut)
+      .attr('opacity', 1)
+
+    /* phase 2: generation title flashes */
+    WAVE_LABEL.forEach((label, i) => {
+      if (!label) return
+      const title = genTitleLayer.append('text')
+        .attr('class', 'genesis-title')
+        .attr('x', W / 2).attr('y', H / 2)
+        .attr('text-anchor', 'middle')
+        .attr('dominant-baseline', 'central')
+        .attr('opacity', 0)
+        .text(label)
+      title.transition('ign').duration(400).delay(WAVE_MS[i] - 200)
+        .attr('opacity', 0.5)
+        .transition('ign').duration(900)
+        .attr('opacity', 0)
+        .on('end', function () { d3.select(this).remove() })
+    })
+
+    /* phase 3: edges draw in with a golden glow that settles to neutral */
     linkSel.each(function (d) {
       const sW = d.source._wave ?? 5, tW = d.target._wave ?? 5
-      const delay = WAVE_MS[Math.max(sW, tW)] + rnd() * 180
+      const delay = WAVE_MS[Math.max(sW, tW)] + rnd() * 300
       d3.select(this)
-        .transition('ign').duration(550).delay(delay)
+        .attr('stroke', '#c9a84c')
+        .transition('ign').duration(700).delay(delay)
         .ease(d3.easeCubicOut)
         .attr('stroke-dashoffset', 0)
-        .transition('ign').duration(500)
+        .attr('opacity', 0.28)
+        .transition('ign').duration(800)
+        .attr('stroke', NEUTRAL_EDGE)
         .attr('opacity', 0.08)
         .on('end', function () {
           d3.select(this).attr('stroke-dasharray', null)
         })
     })
 
-    /* phase 3: nodes ignite in genealogical order */
+    /* phase 4: nodes ignite in genealogical waves with sparkle + flare */
     gNode.each(function (d) {
       const isHub = d.prom >= hubThreshold
-      const delay = WAVE_MS[d._wave] + (isHub ? 220 : 0) + rnd() * 100
-      d3.select(this)
-        .transition('ign').duration(380).delay(delay)
+      const stagger = isHub ? 300 : rnd() * 250
+      const delay = WAVE_MS[d._wave] + stagger
+      const g = d3.select(this)
+
+      g.transition('ign').duration(500).delay(delay)
         .ease(d3.easeCubicOut)
         .attr('opacity', 1)
-    })
+        .on('start', function () {
+          spawnSparks(d.x, d.y, isHub ? 8 : 4, radius(d))
+        })
 
-    /* hub flare: top nodes get a momentary glow boost when they ignite */
-    gNode.filter(d => d.prom >= hubThreshold).each(function (d) {
-      const delay = WAVE_MS[d._wave] + 250 + rnd() * 60
+      /* glow flare — all nodes get a brief brightness spike when born */
       d3.select(this).select('.glow')
-        .transition('ign').duration(260).delay(delay)
-        .attr('opacity', 0.3)
-        .transition('ign').duration(900).ease(d3.easeCubicOut)
-        .attr('opacity', 0.03 + d.prom * 0.08)
+        .transition('ign').duration(200).delay(delay)
+        .attr('opacity', isHub ? 0.45 : 0.22)
+        .attr('r', radius(d) * (isHub ? 2.8 : 2.2))
+        .transition('ign').duration(1100).ease(d3.easeCubicOut)
+        .attr('opacity', 0.09 + d.prom * 0.16)
+        .attr('r', radius(d) * 1.6)
     })
 
     /* cluster labels seep in once their category's nodes have arrived */
     clusterSel.each(function (c) {
       const wave = CAT_WAVE[c] ?? 5
       d3.select(this)
-        .transition('ign').duration(600).delay(WAVE_MS[wave] + 200)
+        .transition('ign').duration(800).delay(WAVE_MS[wave] + 400)
         .attr('opacity', 0.45)
     })
 
-    /* phase 4: parallax settle — ease back from over-zoom to rest */
-    svg.transition('ign').duration(1500).delay(500)
-      .ease(d3.easeBackOut.overshoot(0.35))
+    /* phase 5: parallax settle — ease back from over-zoom to rest */
+    svg.transition('ign').duration(2200).delay(1200)
+      .ease(d3.easeBackOut.overshoot(0.3))
       .call(zoom.transform, restTx)
 
-    bloom.transition('ign').duration(1600).delay(600)
+    bloom.transition('ign').duration(2000).delay(1400)
       .ease(d3.easeCubicOut)
       .attr('opacity', 0)
       .on('end', function () { d3.select(this).remove() })
@@ -660,12 +740,17 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       linkSel.interrupt('ign')
         .attr('stroke-dasharray', null)
         .attr('stroke-dashoffset', null)
+        .attr('stroke', NEUTRAL_EDGE)
         .attr('opacity', 0.08)
       gNode.interrupt('ign').attr('opacity', 1)
       gNode.selectAll('.glow').interrupt('ign')
-        .each(function (d) { d3.select(this).attr('opacity', 0.03 + d.prom * 0.08) })
+        .each(function (d) {
+          d3.select(this).attr('opacity', 0.09 + d.prom * 0.16).attr('r', radius(d) * 1.6)
+        })
       clusterSel.interrupt('ign').attr('opacity', 0.45)
       bloom.interrupt('ign').remove()
+      sparkLayer.selectAll('*').interrupt('spark').remove()
+      genTitleLayer.selectAll('*').interrupt('ign').remove()
       svg.interrupt('ign').call(zoom.transform, restTx)
 
       teardownSkip()
@@ -673,7 +758,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     function onSkipInput(e) {
       if (_ignitionDone) return
-      if (e.type === 'keydown' && e.key === 'Tab') return  // let tab work normally
+      if (e.type === 'keydown' && e.key === 'Tab') return
       finishIgnition()
     }
 
@@ -688,10 +773,24 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       window.removeEventListener('wheel',       onSkipInput, skipOpts)
     }
 
-    /* natural completion — clean up listeners once the last wave finishes */
+    /* natural completion */
     const ignitionTimer = setTimeout(() => {
       _ignitionDone = true; teardownSkip()
-    }, WAVE_MS[5] + 1600)
+    }, WAVE_MS[5] + 2400)
+
+    /* drag hint — after entrance, gently nudge a hub node to suggest dragging */
+    const dragHintTimer = setTimeout(() => {
+      const hub = nodes.slice().sort((a, b) => b.degree - a.degree)[0]
+      if (!hub) return
+      const g = gNode.filter(n => n.id === hub.id)
+      g.transition('drag-hint')
+        .duration(400).ease(d3.easeSinInOut)
+        .attr('transform', `translate(${hub.x + 8},${hub.y - 6})`)
+        .transition().duration(400).ease(d3.easeSinInOut)
+        .attr('transform', `translate(${hub.x - 5},${hub.y + 4})`)
+        .transition().duration(350).ease(d3.easeSinOut)
+        .attr('transform', `translate(${hub.x},${hub.y})`)
+    }, WAVE_MS[5] + 3600)
 
     /* ── tooltip positioning ────────────────────────────────────── */
     const tip = document.getElementById('tip')
@@ -914,7 +1013,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         const g = gNode.filter(n => n.id === id)
         const d = g.datum()
         const r = radius(d)
-        const baseOp = 0.03 + d.prom * 0.08
+        const baseOp = 0.09 + d.prom * 0.16
         g.select('.glow')
           .transition('nova').duration(180).ease(d3.easeCubicOut)
           .attr('r', r * 2.8).attr('opacity', Math.min(baseOp * 3.5, 0.45))
@@ -978,9 +1077,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
       if (tip) {
         const catLabel = categoryConfig[d.category]?.label || d.category
+        const nConn = adj[d.id]?.size || 0
         tip.innerHTML = `<span class="tip-cat" style="background:${CAT[d.category]}"></span>`
           + `<span class="tip-name">${d.name}</span>`
           + (d.epithet ? `<span class="tip-epi">${d.epithet}</span>` : '')
+          + `<span class="tip-conn">${nConn} connection${nConn !== 1 ? 's' : ''}</span>`
         tip.style.opacity = '1'
       }
     }
@@ -1146,7 +1247,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
             .attr('opacity', 0)
             .attr('filter', 'url(#trace-glow)')
           return { dot, tail, path: rp.el, reversed: rp.reversed, hop: i,
-                   startT: i * TRACE_GAP, dur: TRACE_DUR }
+                   startT: i * TRACE_GAP, dur: TRACE_DUR,
+                   pathLen: rp.el.getTotalLength() }
         })
 
         const totalT = (dots.length - 1) * TRACE_GAP + TRACE_DUR
@@ -1167,9 +1269,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
             }
             let frac = local / d.dur
             if (d.reversed) frac = 1 - frac
-            const pathEl = d.path
-            const len = pathEl.getTotalLength()
-            const pt = pathEl.getPointAtLength(frac * len)
+            const pt = d.path.getPointAtLength(frac * d.pathLen)
             const fade = frac < 0.1 ? frac / 0.1 : frac > 0.9 ? (1 - frac) / 0.1 : 1
             d.dot.attr('cx', pt.x).attr('cy', pt.y).attr('opacity', fade * 0.95)
             d.tail.attr('cx', pt.x).attr('cy', pt.y).attr('opacity', fade * 0.25)
@@ -1206,6 +1306,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     return () => {
       clearTimeout(ignitionTimer)
+      clearTimeout(dragHintTimer)
       clearTimeout(_meteorTimer)
       teardownSkip()
       state._traceActive = false

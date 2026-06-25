@@ -334,6 +334,7 @@ export default function App() {
   const [storyOpen,       setStoryOpen]       = useState(false)
   const [storyTourId,     setStoryTourId]     = useState(null)
   const [zodiacOpen,      setZodiacOpen]      = useState(false)
+  const [shortcutsOpen,   setShortcutsOpen]   = useState(false)
 
   const prevBeatFigRef = useRef(null)
 
@@ -439,6 +440,11 @@ export default function App() {
             <span style={{ fontSize:12, lineHeight:1, opacity:.8 }}>✦</span>
             ZODIAC
           </button>
+          <button
+            style={{ ...S.hbtn, width:28, height:28, padding:0, display:'grid', placeItems:'center', borderRadius:'50%', fontSize:13 }}
+            onClick={() => setShortcutsOpen(v => !v)}
+            aria-label="Keyboard shortcuts"
+          >?</button>
         </div>
       </header>
 
@@ -446,13 +452,13 @@ export default function App() {
       <main className="atlas-main" style={{ position:'relative', flex:1, overflow:'hidden' }}>
         <SkyGraph ref={graphRef} onSelect={handleNodeSelect}/>
 
-        {/* floating search (hidden while path panel is open) */}
-        {!pathOpen && (
+        {/* floating search (dimmed while path panel is open) */}
+        <div style={{ pointerEvents: pathOpen ? 'none' : 'auto', opacity: pathOpen ? 0.25 : 1, transition: 'opacity .3s' }}>
           <SearchBox
             sortedNodes={sortedNodes}
             onPick={id => { graphRef.current?.select(id, true); setHintFaded(true) }}
           />
-        )}
+        </div>
 
         {/* path panel */}
         {pathOpen && (
@@ -513,6 +519,40 @@ export default function App() {
 
       {/* tooltip anchor (position driven by mousemove in SkyGraph) */}
       <div id="tip"/>
+
+      {/* keyboard shortcuts overlay */}
+      {shortcutsOpen && (
+        <div style={{
+          position:'fixed', inset:0, zIndex:200, display:'grid', placeItems:'center',
+          background:'rgba(4,6,12,.7)', backdropFilter:'blur(4px)',
+        }} onClick={() => setShortcutsOpen(false)}>
+          <div style={{
+            background:'rgba(10,14,22,.95)', border:'1px solid #262e3c', borderRadius:14,
+            padding:'28px 36px', maxWidth:360, width:'90%', boxShadow:'0 16px 48px rgba(0,0,0,.6)',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <span style={{ fontFamily:'Cinzel, serif', fontSize:14, letterSpacing:'.18em', color:'#cdb88a' }}>SHORTCUTS</span>
+              <button onClick={() => setShortcutsOpen(false)} style={{
+                background:'none', border:'none', color:'#5c6678', fontSize:16, cursor:'pointer', padding:4,
+              }}>✕</button>
+            </div>
+            {[
+              ['Click node', 'Select & view details'],
+              ['Drag node', 'Reposition a star'],
+              ['Scroll / Pinch', 'Zoom in or out'],
+              ['Click + drag canvas', 'Pan the view'],
+              ['Esc', 'Close panel / overlay'],
+              ['← →', 'Navigate tour or zodiac'],
+              ['Space', 'Play / pause tour'],
+            ].map(([key, desc]) => (
+              <div key={key} style={{ display:'flex', justifyContent:'space-between', gap:16, padding:'7px 0', borderBottom:'1px solid #141820' }}>
+                <span style={{ fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.06em', color:'#ece6d6', whiteSpace:'nowrap' }}>{key}</span>
+                <span style={{ fontSize:13, fontStyle:'italic', color:'#5c6678', textAlign:'right' }}>{desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* guided sky — cinematic story overlay */}
       {storyOpen && (

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import ZodiacSphere from './ZodiacSphere.jsx'
 import { ZODIAC } from '../data/zodiac.js'
 
@@ -21,6 +21,19 @@ export default function ZodiacSky({ onClose }) {
   // the caption text ("AIR · …"), never colour, so no sign tints the UI purple.
   const accent = 'var(--gold)'
 
+  const autoRef = useRef(null)
+  const AUTO_MS = 6000
+
+  function resetAuto() {
+    clearInterval(autoRef.current)
+    autoRef.current = setInterval(() => setSelected(s => (s + 1) % 12), AUTO_MS)
+  }
+
+  useEffect(() => {
+    autoRef.current = setInterval(() => setSelected(s => (s + 1) % 12), AUTO_MS)
+    return () => clearInterval(autoRef.current)
+  }, [])
+
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -37,17 +50,31 @@ export default function ZodiacSky({ onClose }) {
 
   useEffect(() => {
     function onKey(e) {
-      if (e.key === 'ArrowRight') setSelected(s => (s + 1) % 12)
-      else if (e.key === 'ArrowLeft') setSelected(s => (s + 11) % 12)
+      if (e.key === 'ArrowRight') { setSelected(s => (s + 1) % 12); resetAuto() }
+      else if (e.key === 'ArrowLeft') { setSelected(s => (s + 11) % 12); resetAuto() }
       else if (e.key === 'Escape') onClose?.()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  const touchRef = useRef(null)
+  const handleTouchStart = useCallback(e => {
+    touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+  }, [])
+  const handleTouchEnd = useCallback(e => {
+    if (!touchRef.current) return
+    const dx = e.changedTouches[0].clientX - touchRef.current.x
+    const dy = e.changedTouches[0].clientY - touchRef.current.y
+    touchRef.current = null
+    if (Math.abs(dx) < 40 || Math.abs(dy) > Math.abs(dx)) return
+    if (dx < 0) { setSelected(s => (s + 1) % 12); resetAuto() }
+    else        { setSelected(s => (s + 11) % 12); resetAuto() }
+  }, [])
+
   return (
-    <div className="gs-root zs-root" style={{ '--accent': accent }}>
-      <ZodiacSphere signs={ZODIAC} selectedIndex={selected} onSelect={setSelected} />
+    <div className="gs-root zs-root" style={{ '--accent': accent }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <ZodiacSphere signs={ZODIAC} selectedIndex={selected} onSelect={i => { setSelected(i); resetAuto() }} />
 
       <div className="grade wash" />
       <div className="grade stars" />
@@ -97,7 +124,7 @@ export default function ZodiacSky({ onClose }) {
       <div className="zs-strip">
         <button
           className="zs-rail-nav"
-          onClick={() => setSelected(s => (s + 11) % 12)}
+          onClick={() => { setSelected(s => (s + 11) % 12); resetAuto() }}
           aria-label="Previous sign"
         >‹</button>
         {ZODIAC.map((z, i) => {
@@ -106,7 +133,7 @@ export default function ZodiacSky({ onClose }) {
             <button
               key={z.id}
               className={`zs-glyph-btn ${isOn ? 'on' : ''}`}
-              onClick={() => setSelected(i)}
+              onClick={() => { setSelected(i); resetAuto() }}
               aria-label={z.name}
             >
               <span className="zs-sym">{z.symbol}</span>
@@ -116,7 +143,7 @@ export default function ZodiacSky({ onClose }) {
         })}
         <button
           className="zs-rail-nav"
-          onClick={() => setSelected(s => (s + 1) % 12)}
+          onClick={() => { setSelected(s => (s + 1) % 12); resetAuto() }}
           aria-label="Next sign"
         >›</button>
       </div>

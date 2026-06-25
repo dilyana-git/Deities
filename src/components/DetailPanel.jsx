@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
 import { nodes as allNodes, links as allLinks } from '../data/mythology.js'
 import { archetypeMap } from '../data/archetypeMap.js'
 import { CAT, LCOL } from './SkyGraph.jsx'
@@ -10,6 +10,11 @@ import { deityStories } from '../data/deityStories.js'
 const _adj = {}
 allNodes.forEach(n => (_adj[n.id] = new Set()))
 allLinks.forEach(l => { _adj[l.source]?.add(l.target); _adj[l.target]?.add(l.source) })
+
+/* myths shared by 3+ nodes are "famous" — highlighted in the panel */
+const _mythFreq = {}
+allNodes.forEach(n => (n.notable_myths || []).forEach(m => (_mythFreq[m] = (_mythFreq[m] || 0) + 1)))
+const _famousMyths = new Set(Object.entries(_mythFreq).filter(([, c]) => c >= 3).map(([m]) => m))
 const _maxDeg = Math.max(...allNodes.map(n => _adj[n.id]?.size || 0))
 const _nodeMap = Object.fromEntries(allNodes.map(n => ({
   ...n,
@@ -128,6 +133,11 @@ function Section({ label, children, index = 0 }) {
    ════════════════════════════════════════════════════════════════════════ */
 export default function DetailPanel({ nodeId, onClose, onNavigate }) {
   const node = nodeId ? _nodeMap[nodeId] : null
+  const asideRef = useRef(null)
+
+  useEffect(() => {
+    if (node && asideRef.current) asideRef.current.scrollTop = 0
+  }, [nodeId])
 
   const connections = useMemo(() => {
     if (!node) return []
@@ -148,7 +158,7 @@ export default function DetailPanel({ nodeId, onClose, onNavigate }) {
   }, [node])
 
   return (
-    <aside className={`detail-panel ${node ? 'open' : ''}`}>
+    <aside ref={asideRef} className={`detail-panel ${node ? 'open' : ''}`}>
       {node && (
         <PanelContent
           key={node.id}
@@ -434,12 +444,15 @@ function PanelContent({ node, connections, onClose, onNavigate }) {
         {node.notable_myths?.length > 0 && (
           <Section label="Myths" index={sectionIdx++}>
             <ul style={{ listStyle:'none', margin:0, padding:0, display:'flex', flexDirection:'column', gap:SP.tight }}>
-              {node.notable_myths.map(m => (
-                <li key={m} style={{ display:'flex', gap:9, fontSize:14, color:'#4e5a6a', lineHeight:1.45 }}>
-                  <span style={{ color:'#4a4030', fontSize:8, marginTop:5, flexShrink:0 }}>✦</span>
-                  <span style={{ color:'#6a7585' }}>{m}</span>
-                </li>
-              ))}
+              {node.notable_myths.map(m => {
+                const famous = _famousMyths.has(m)
+                return (
+                  <li key={m} style={{ display:'flex', gap:9, fontSize:14, color:'#4e5a6a', lineHeight:1.45 }}>
+                    <span style={{ color: famous ? GOLD : '#4a4030', fontSize: famous ? 9 : 8, marginTop:5, flexShrink:0, textShadow: famous ? `0 0 6px ${GOLD}55` : 'none' }}>✦</span>
+                    <span style={{ color: famous ? '#bcc4d2' : '#6a7585' }}>{m}</span>
+                  </li>
+                )
+              })}
             </ul>
           </Section>
         )}

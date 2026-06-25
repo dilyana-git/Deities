@@ -16,13 +16,14 @@ const HALF  = Math.PI / 2
 
 const R             = 220   // sphere radius in SVG units
 const TILT          = 0.38  // ~22° ecliptic tilt for a nice oblique view
-const SPREAD        = 0.17  // radians — how wide each constellation spreads on the sphere
+const SPREAD        = 0.21  // radians — how wide each constellation spreads on the sphere (longer, airier figures)
 const BG_STAR       = 200   // background stars on the sphere
 const TWINKLE_COUNT = 30    // ~15% of bg stars flicker — asynchronous, never in unison
 const DRIFT         = 0.03  // radians/sec — perpetual slow drift, ~one full turn in 3.5 min
 const LABEL_Z       = 0.3   // only label signs this far onto the front face (no back-of-dome ghosts)
 const VIEW_DX       = 46    // shift whole dome right, into the right two-thirds (clears the text column)
-const VIEW_DY       = -54   // lift whole dome up, raising the low arc toward vertical center
+const VIEW_DY       = -88   // lift whole dome up so the active figure rides near vertical centre
+const SEL_SCALE     = 1.85  // blow the active constellation up about its centroid (hero of the frame)
 
 /* ── math helpers ────────────────────────────────────────────────────── */
 function rotY(p, a) {
@@ -74,12 +75,27 @@ class SphereEngine {
     this.svg.removeEventListener('pointerdown', this._pd)
     window.removeEventListener('pointermove', this._pm)
     window.removeEventListener('pointerup', this._pu)
+    // Tear down every element _build() appended. Without this, a StrictMode
+    // remount (or any re-init) leaves the dead engine's SVG subtree behind —
+    // frozen on its last frame, including a half-faded label that reads as a
+    // garbled ghost over the live dome. React renders <svg/> childless, so
+    // everything under it is ours to clear.
+    while (this.svg.firstChild) this.svg.removeChild(this.svg.firstChild)
   }
 
   select(i) {
     this.selected = i
     if (i < 0) { this.target = null; return }
-    this.target = (i / 12) * TAU - HALF
+    // Ease-in-out along the SHORTEST arc to the chosen sign, over a distance-scaled
+    // duration — so neither a one-step auto-advance nor a far glyph jump ever lurches.
+    const goal = (i / 12) * TAU - HALF
+    let diff = goal - this.va
+    diff = ((diff % TAU) + TAU + Math.PI) % TAU - Math.PI
+    this.rotFrom = this.va
+    this.rotTo = this.va + diff
+    this.rotT0 = performance.now()
+    this.rotDur = 700 + Math.min(900, Math.abs(diff) / Math.PI * 1500)
+    this.target = this.rotTo
   }
 
   /* ── build all SVG elements once ────────────────────────────────── */
@@ -221,9 +237,11 @@ class SphereEngine {
       })
 
       const nodes = sign.n.map((p, ni) => {
+        // A delicate figure has near-even stars — a faint, restrained accent on the
+        // marked ones, never a single blazing dot that flattens the rest.
         const isB = bright.has(ni)
-        const halo = this._circle(0, 0, isB ? 5 : 3, 'zs-halo')
-        const core = this._circle(0, 0, isB ? 2.2 : 1.4, isB ? 'zs-core bright' : 'zs-core')
+        const halo = this._circle(0, 0, isB ? 2.8 : 2.2, 'zs-halo')
+        const core = this._circle(0, 0, isB ? 1.6 : 1.25, isB ? 'zs-core bright' : 'zs-core')
         g.appendChild(halo)
         g.appendChild(core)
         return {
@@ -336,14 +354,16 @@ class SphereEngine {
     const dt = (now - (this._lastT || now)) / 1000
     this._lastT = now
 
-    // rotation: ease toward a just-selected sign, then release into a perpetual
-    // slow drift — the ecliptic band turns through the heavens forever at rest
+    // rotation: ease toward a just-selected sign, then RELEASE into a perpetual
+    // very-slow drift so the globe is always gently turning and never parks. The
+    // ease snaps to dead-centre first, so a freshly chosen sign is momentarily
+    // composed with symmetric flanks before the drift carries it on.
     if (!this.drag) {
       if (this.target != null) {
         let diff = this.target - this.va
         diff = ((diff % TAU) + TAU + Math.PI) % TAU - Math.PI
-        this.va += diff * Math.min(1, 5 * dt)
-        if (Math.abs(diff) < 0.01) this.target = null   // centred → hand back to the drift
+        this.va += diff * Math.min(1, 4 * dt)
+        if (Math.abs(diff) < 0.01) this.target = null
       } else if (!this.reduced) {
         this.va += DRIFT * dt
       }
@@ -391,12 +411,21 @@ class SphereEngine {
       const isHov = ci === this.hovered && !isSel
       const center = this._projectSign(c.signLon, 0)
 
-      // depth: a sign grows toward front-centre and shrinks toward the limb,
-      // so the band reads as a 3D dome rather than a flat strip sliding by
-      const centerDepth = Math.max(0, center.z)        // 0 at the limb → 1 at front-centre
-      const depthScale  = 0.78 + 0.4 * centerDepth
+      let positions = c.nodes.map(nd => this._projectPoint(nd.lon, nd.lat))
 
-      const positions = c.nodes.map(nd => this._projectPoint(nd.lon, nd.lat))
+      // The active figure is the hero of the right two-thirds — blow it up about
+      // its own projected centroid so it fills the frame instead of reading as a
+      // tiny cluster, while staying anchored on the ecliptic where it sits.
+      if (isSel) {
+        let sx = 0, sy = 0
+        positions.forEach(p => { sx += p.x; sy += p.y })
+        const cx = sx / positions.length, cy = sy / positions.length
+        positions = positions.map(p => ({
+          x: cx + (p.x - cx) * SEL_SCALE,
+          y: cy + (p.y - cy) * SEL_SCALE,
+          z: p.z,
+        }))
+      }
 
       // nodes
       c.nodes.forEach((nd, ni) => {
@@ -406,8 +435,8 @@ class SphereEngine {
 
         let selMul
         if (isSel) selMul = 1
-        else if (isHov) selMul = 0.65
-        else selMul = hasSel ? 0.35 : 0.55
+        else if (isHov) selMul = 0.6
+        else selMul = hasSel ? 0.25 : 0.5
 
         const o = depthFade * selMul
 
@@ -416,17 +445,20 @@ class SphereEngine {
           twinkle = 1 + 0.12 * Math.sin(t * (1.2 + ni * 0.3) + ci * 2.1)
         }
 
-        const sizeMul = (isSel ? 1.4 : isHov ? 1.15 : 0.9) * depthScale
+        // near-even, fine stars — a whisper of size on the marked ones, no blaze
+        const coreBase = nd.isB ? 1.6 : 1.25
+        const haloBase = nd.isB ? 2.8 : 2.2
+        const sizeMul  = isSel ? 1.35 : isHov ? 1.1 : 0.85
 
         nd.core.setAttribute('cx', p.x)
         nd.core.setAttribute('cy', p.y)
         nd.core.style.opacity = o.toFixed(3)
-        nd.core.setAttribute('r', ((nd.isB ? 2.2 : 1.4) * twinkle * sizeMul).toFixed(2))
+        nd.core.setAttribute('r', (coreBase * twinkle * sizeMul).toFixed(2))
 
         nd.halo.setAttribute('cx', p.x)
         nd.halo.setAttribute('cy', p.y)
-        nd.halo.style.opacity = (o * (nd.isB ? 0.55 : 0.32) * (isSel ? 1.5 : 1)).toFixed(3)
-        nd.halo.setAttribute('r', ((nd.isB ? 5 : 3) * sizeMul * 1.1).toFixed(1))
+        nd.halo.style.opacity = (o * (nd.isB ? 0.4 : 0.3) * (isSel ? 1.6 : 1)).toFixed(3)
+        nd.halo.setAttribute('r', (haloBase * sizeMul * (isSel ? 1.35 : 1.1)).toFixed(1))
       })
 
       // edges — crisp + glow layer
@@ -436,39 +468,51 @@ class SphereEngine {
         const edgeDepth = eVis ? Math.min(1, 0.2 + 0.8 * Math.max(0, Math.min(a.z, b.z))) : 0
 
         let edgeMul
-        if (isSel) edgeMul = 0.85
-        else if (isHov) edgeMul = 0.45
-        else edgeMul = hasSel ? 0.18 : 0.3
+        if (isSel) edgeMul = 0.95
+        else if (isHov) edgeMul = 0.4
+        else edgeMul = hasSel ? 0.12 : 0.25
 
         const eo = edgeDepth * edgeMul
 
         e.el.setAttribute('x1', a.x); e.el.setAttribute('y1', a.y)
         e.el.setAttribute('x2', b.x); e.el.setAttribute('y2', b.y)
         e.el.style.opacity = eo.toFixed(3)
-        e.el.style.strokeWidth = ((isSel ? 1.1 : 0.6) * depthScale).toFixed(2)
+        e.el.style.strokeWidth = isSel ? '0.9' : '0.5'   // fine threads across a long span — delicate, not heavy
 
-        // glow duplicate behind selected edges
+        // glow duplicate behind selected edges — a soft wash, not a thick halo
         const ge = c.edgeGlows[ei]
         ge.el.setAttribute('x1', a.x); ge.el.setAttribute('y1', a.y)
         ge.el.setAttribute('x2', b.x); ge.el.setAttribute('y2', b.y)
-        ge.el.style.opacity = isSel ? (eo * 0.6).toFixed(3) : '0'
+        ge.el.style.opacity = isSel ? (eo * 0.5).toFixed(3) : '0'
+        ge.el.style.strokeWidth = isSel ? '2.2' : '2'
       })
 
-      // label (unmasked layer) — only for signs well onto the front face, so no
-      // name ever floats over the back of the dome; opacity ramps in with depth.
+      // label (unmasked layer) — gated strictly to the front face so no name ever
+      // floats over the back of the dome. Because the selected sign now HOLDS dead
+      // centre, the two flanking signs sit at mirror-image depths, so this single
+      // depth-driven ramp renders them at matching opacity on both sides.
       if (center.z > LABEL_Z) {
         const d = (center.z - LABEL_Z) / (1 - LABEL_Z)   // 0 at the gate → 1 at front-centre
-        let labelO, fill
-        if (isSel)      { labelO = 0.5 + 0.5 * d;  fill = '#f6f1e3' }
-        else if (isHov) { labelO = 0.25 + 0.45 * d; fill = '#cfd5e2' }
-        else            { labelO = 0.32 * d;        fill = '#7e879c' }
+        let labelO, fill, lx = center.x, ly = center.y - 24
+        if (isSel) {
+          // seat the hero's name just above the top of its enlarged figure
+          labelO = 1; fill = '#f6f1e3'
+          let minY = Infinity, sx = 0
+          positions.forEach(p => { if (p.y < minY) minY = p.y; sx += p.x })
+          lx = sx / positions.length
+          ly = minY - 16
+        } else if (isHov) {
+          labelO = 0.3 + 0.5 * d; fill = '#cfd5e2'
+        } else {
+          labelO = 0.14 + 0.4 * d; fill = '#8b93a6'   // floor keeps the ±60° flanks legible, not ghostly
+        }
 
-        c.label.setAttribute('x', center.x)
-        c.label.setAttribute('y', center.y + (isSel ? -34 : -24))
+        c.label.setAttribute('x', lx)
+        c.label.setAttribute('y', ly)
         c.label.style.opacity = labelO.toFixed(3)
         c.label.style.fill = fill
-        c.label.setAttribute('font-size', isSel ? '14' : isHov ? '11' : '9')
-        c.label.setAttribute('font-weight', isSel ? '600' : '400')
+        c.label.setAttribute('font-size', isSel ? '18' : isHov ? '11' : '10')
+        c.label.setAttribute('font-weight', isSel ? '700' : '400')
       } else {
         c.label.style.opacity = '0'
       }
