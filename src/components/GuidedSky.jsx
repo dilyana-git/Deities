@@ -17,7 +17,7 @@ export default function GuidedSky({ initialTourId, onClose, onBeatChange }) {
   const initialIdx = Math.max(0, TOURS.findIndex(t => t.id === initialTourId))
   const [tourIdx, setTourIdx]   = useState(initialIdx)
   const [step, setStep]         = useState(0)
-  const [playing, setPlaying]   = useState(false)
+  const [playing, setPlaying]   = useState(true)
   const [talesOpen, setTalesOpen] = useState(false)
 
   const captionRef = useRef(null)
