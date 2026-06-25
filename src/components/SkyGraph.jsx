@@ -430,6 +430,30 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('x', d => radius(d) + 6).attr('y', 4)
       .text(d => d.name)
 
+    /* ── label placement — avoid overlapping nearby nodes ─────── */
+    function assignLabelSides() {
+      const labelW = 60
+      gNode.each(function (d) {
+        const r = radius(d)
+        let rightBlocked = false
+        for (const other of nodes) {
+          if (other.id === d.id) continue
+          const dx = other.x - d.x, dy = other.y - d.y
+          const ro = radius(other)
+          if (dx > -ro && dx < r + labelW + ro && Math.abs(dy) < ro + 8) {
+            rightBlocked = true
+            break
+          }
+        }
+        const side = rightBlocked ? -1 : 1
+        d._labelSide = side
+        const g = d3.select(this)
+        g.select('.node-label')
+          .attr('x', side > 0 ? r + 6 : -(r + 6))
+          .attr('text-anchor', side > 0 ? 'start' : 'end')
+      })
+    }
+
     /* ── tick ───────────────────────────────────────────────────── */
     let _tickCount = 0
 
@@ -522,6 +546,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     sim.stop()
     for (let i = 0; i < 160; i++) sim.tick()
     updateClusterLabels()
+    assignLabelSides()
     ticked()
     sim.on('tick', ticked)
     /* no warm restart — the sim idles (no per-frame DOM churn) until a drag wakes it */
@@ -924,7 +949,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         .attr('x', -r).attr('y', -r).attr('width', r * 2).attr('height', r * 2)
       g.select('.ring').transition(t).attr('r', r + 0.5)
       g.select('.sel-ring').transition(t).attr('r', r + 3)
-      g.select('.node-label').transition(t).attr('x', r + 6)
+      const side = d._labelSide || 1
+      g.select('.node-label').transition(t).attr('x', side > 0 ? r + 6 : -(r + 6))
       defs.select(`#clip-${d.id} circle`).transition(t).attr('r', r)
     }
     function enlargeSelected(id) {
