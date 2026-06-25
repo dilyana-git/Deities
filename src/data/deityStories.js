@@ -1378,8 +1378,10 @@ export const deityStories = {
         text: "But triumph swelled into pride, and at the last he dared to ride Pegasus up toward Olympus itself, to take a seat among the gods. The horse threw him." },
       { label: "The Broken Wanderer", weight: 0.65,
         text: "Bellerophon fell the whole long way back to the earth, and lived out his remaining days lamed and broken and alone, wandering the plain and shunning the paths of other men." },
+      { label: "The Letter of Death", weight: 0.7,
+        text: "Before the Chimera, Bellerophon was sent to Lycia carrying a sealed letter that asked the king to kill the bearer — the original 'Bellerophontic letter.' He survived every trial the king devised, and was given the princess instead. The hero who could not be destroyed by others was destroyed only by himself." },
     ],
-    source: "Homer, Iliad VI; Hesiod, Theogony."
+    source: "Homer, Iliad VI; Hesiod, Theogony; Apollodorus, Library."
   },
   jason: {
     story: "Jason is the captain of the Argonauts, the prince who gathered the greatest heroes of his age aboard a single ship and sailed to the world\'s end for the Golden Fleece. He is the leader who could not have triumphed alone — and whose deepest failing was that he came to forget it.\n\nAs an infant he was smuggled out of Iolcus, hidden from his usurping uncle Pelias, and given to the centaur Chiron, who raised him on the wild slopes of Mount Pelion in the old way — herbs, hunting, the lyre and the spear. He grew tall and golden and came down from the mountain with one sandal lost in a river crossing, and the sight of him fulfilled the very prophecy Pelias feared: beware the one-sandaled stranger. So the king set him an impossible errand — to sail to Colchis, at the edge of the world, and bring back the Golden Fleece from the grove where a sleepless dragon kept it.\n\nJason called out the flower of his generation and they answered: Heracles, Orpheus, the Dioscuri, Atalanta — a ship\'s company of heroes aboard the Argo, the fastest hull ever built. At Colchis the king set trials no man could survive: yoke two fire-breathing bronze bulls, plough a field, and sow it with dragon\'s teeth from which armed warriors would spring. Jason would surely have perished but for the sorceress Medea, the king\'s own daughter, who fell helplessly in love with him. By her magic he yoked the bulls, survived the sown men, and charmed asleep the sleepless serpent that guarded the prize.\n\nMedea betrayed her father and killed her own brother to carry him to safety, burning every bridge behind her for a man she believed would never let her go. Yet years afterward, his ambition outrunning his loyalty, Jason cast her aside to marry the young princess Glauce of Corinth for a crown. Medea\'s revenge was total and terrible: she sent the bride a golden robe and coronet soaked in poison that burst into flame the moment they were put on, consuming the girl and the king who rushed to save her. Then, in the final act of a fury that had eaten through every tenderness, she killed the children she herself had borne Jason — and fled on the chariot of the Sun, leaving him at the end with nothing at all but the rotting hull of the Argo, beneath which, the old stories say, he sat down and died.",
@@ -1818,8 +1820,12 @@ export const deityStories = {
         text: "Zeus found her there in the dark of the night, while Hera slept, and from their secret union Maia bore a single extraordinary child." },
       { label: "Mother of the Trickster", weight: 1.0, figures: ['hermes'],
         text: "Hermes climbed out of his cradle on the very day of his birth to invent the lyre and steal Apollo's cattle before nightfall. The retiring nymph who wanted only solitude became the mother of the cleverest of all the gods." },
+      { label: "The Stars of Atlas", weight: 0.6, figures: ['atlas'],
+        text: "The seven Pleiades were set among the stars — some say to escape the hunter Orion, some say in grief for their father Atlas, condemned to hold the sky. Maia shines brightest among them, the eldest sister lifted highest." },
+      { label: "Nurse of Arcas", weight: 0.55, figures: ['callisto'],
+        text: "After Callisto was changed into a bear, it was Maia who took in her infant son Arcas and raised him — the quiet nymph who asked nothing of the world once more made the vessel of someone else's story." },
     ],
-    source: "Homeric Hymn to Hermes; Hesiod, Theogony."
+    source: "Homeric Hymn to Hermes; Hesiod, Theogony; Apollodorus, Library."
   },
   callirrhoe: {
     story: "Callirrhoe — her name means 'beautiful flowing' — is an Oceanid, one of the three thousand daughters of Oceanus and Tethys, a nymph of fresh and lovely running water. Her own myth is almost nothing but her lineage; she is one of those quiet figures whose meaning lies entirely in what flows out of her.\n\nFor the clear sweet water is also, in the old logic of the myths, the spring that can feed monstrous roots. Callirrhoe joined with Chrysaor, the golden warrior born from Medusa's severed neck, and bore him the three-bodied giant Geryon, whom Heracles would one day cross the whole world to kill. So from the most nourishing of elements came one of the great monsters of the west — beauty flowing, as it sometimes does in these stories, straight on into terror.",
@@ -1830,8 +1836,12 @@ export const deityStories = {
         text: "Callirrhoe joined with Chrysaor, the golden warrior born from Medusa's severed neck, and bore him the three-bodied giant Geryon." },
       { label: "Sweetness into Terror", weight: 1.0, figures: ['geryon', 'heracles'],
         text: "From the most nourishing of elements came one of the great monsters of the west — Geryon, whom Heracles would cross the whole world to kill. Beauty flowing, as it sometimes does in these stories, straight on into terror." },
+      { label: "The Island at the World's End", weight: 0.6, figures: ['geryon'],
+        text: "Geryon kept his great herds of red cattle on the island of Erytheia, at the very edge of the western ocean where the sun sets. Even the journey there was a labor in itself — Heracles had to borrow the golden cup of Helios to sail across." },
+      { label: "Springs and Sorrows", weight: 0.5, figures: ['oceanus', 'tethys'],
+        text: "The Oceanids were not all gentle. From the same waters that gave Callirrhoe her name came Styx, whose river bound the oaths of gods, and Metis, whom Zeus swallowed whole. The beautiful flowing carried every kind of fate." },
     ],
-    source: "Hesiod, Theogony."
+    source: "Hesiod, Theogony; Apollodorus, Library."
   },
   glaucus: {
     story: "Glaucus began as a mortal fisherman and became a god almost by accident — one of the few to cross from the human world into the divine not through birth or punishment but through simple curiosity. He is the green-bearded merman of the open sea, a minor prophet of the waves with a sorrow at the heart of him.\n\nOne day, laying his catch on a strange meadow by the shore, he saw the dead fish twitch and leap back into the water at the touch of a certain herb; and when he tasted the plant himself a longing seized him, and he plunged into the sea, his legs fusing into a fish's tail, and rose again immortal. But his new godhood brought him no joy, for he fell hopelessly in love with the nymph Scylla, who fled him in horror; and when he begged the sorceress Circe for a love-charm, she desired him herself, and in her jealousy poisoned Scylla into a monster. So the fisherman who gained eternity gained an eternal grief with it — to have been, however unwillingly, the ruin of the very thing he loved.",
@@ -1842,8 +1852,12 @@ export const deityStories = {
         text: "His new godhood brought him no joy, for he fell hopelessly in love with the nymph Scylla, who fled him in horror; and when he begged the sorceress Circe for a love-charm, she desired him herself." },
       { label: "The Ruin He Caused", weight: 1.0, figures: ['circe', 'scylla'],
         text: "In her jealousy Circe poisoned Scylla into a monster. So the fisherman who gained eternity gained an eternal grief with it — to have been, however unwillingly, the ruin of the very thing he loved." },
+      { label: "The Prophet of Storms", weight: 0.6,
+        text: "In later tales Glaucus became a minor prophet of the waves, warning sailors of coming tempests. His sea-green beard and fish-scale skin made him strange even among the gods of the deep — an immortal who never stopped looking mortal." },
+      { label: "The Argo's Helmsman", weight: 0.55, figures: ['jason'],
+        text: "Some say Glaucus appeared to the Argonauts during their voyage, rising from the waves to prophesy their course. Even in service to heroes he remained the outsider — the god who had once been a man, and who never quite forgot it." },
     ],
-    source: "Ovid, Metamorphoses XIII–XIV. Further reading: Ted Hughes, Tales from Ovid."
+    source: "Ovid, Metamorphoses XIII–XIV; Apollonius, Argonautica. Further reading: Ted Hughes, Tales from Ovid."
   },
   stheno: {
     story: "Stheno is the eldest of the three Gorgon sisters and, the old tales say, the most murderous of them all — credited with slaying more men than both her sisters together. Where Medusa is remembered with a kind of pity, Stheno is remembered only with dread: winged, serpent-haired, and deathless.\n\nA daughter of the ancient sea-gods Phorcys and Ceto, she shares Medusa's snakes and stone-turning glare but not her mortality, and so could never be slain. When Perseus came and struck the head from her sleeping sister, Stheno woke with Euryale and rose shrieking into the air after him — but the hero was already vanishing on his winged sandals beyond their reach. Robbed of her vengeance, she remained at the world's edge, immortal and furious and grieving: the terror that outlived the one story everyone remembers, and was left with nothing to do but mourn.",
@@ -1854,8 +1868,12 @@ export const deityStories = {
         text: "When Perseus struck the head from her sleeping sister, Stheno woke with Euryale and rose shrieking into the air after him — but the hero was already vanishing on his winged sandals beyond their reach." },
       { label: "Left to Mourn", weight: 0.7, figures: ['euryale'],
         text: "Robbed of her vengeance, she remained at the world's edge, immortal and furious and grieving: the terror that outlived the one story everyone remembers, left with nothing to do but mourn." },
+      { label: "Blood of the Gorgons", weight: 0.6, figures: ['medusa'],
+        text: "The blood of the Gorgons held strange power — one vein's blood was a deadly poison, another's could raise the dead. Athena gave vials of it to Asclepius, and even in death the sisters' lineage carried both cure and ruin." },
+      { label: "The Deathless Sentinels", weight: 0.5,
+        text: "Stheno and Euryale remained together at the edge of the world, beyond the reach of Ocean — twin immortals left to guard what was no longer there, a vigil without end over their sister's empty place." },
     ],
-    source: "Hesiod, Theogony; Apollodorus, Library."
+    source: "Hesiod, Theogony; Apollodorus, Library; Euripides, Ion."
   },
   euryale: {
     story: "Euryale is the second of the three Gorgon sisters, the 'wide-roaming' one — immortal like Stheno and terrible like all her kind, winged and snake-haired, with a glare that turns the living to stone. But she is remembered most for a single, almost human thing: the sound of her grief.\n\nA daughter of Phorcys and Ceto, she could not be killed, and when Perseus beheaded their mortal sister Medusa, it was Euryale's cry that filled the world — a bellow of mourning so vast and so anguished that the poets said it gave music its first lament, the mournful double-piped tune invented in imitation of her wail. She roamed the wide earth after her sister's killer and never caught him; and so the immortal monster became, strangely, the first voice of sorrow, the deathless sister left to howl forever for the one who could die.",
@@ -1866,8 +1884,12 @@ export const deityStories = {
         text: "When Perseus beheaded their mortal sister Medusa, it was Euryale's cry that filled the world — a bellow of mourning so vast that the poets said it gave music its first lament, the mournful double-piped tune invented in imitation of her wail." },
       { label: "The Deathless Sister", weight: 0.8, figures: ['stheno'],
         text: "She roamed the wide earth after her sister's killer and never caught him — the immortal monster who became, strangely, the first voice of sorrow, the deathless sister left to howl forever for the one who could die." },
+      { label: "The Aulos Born of Grief", weight: 0.65, figures: ['athena'],
+        text: "Pindar tells us that Athena, hearing Euryale's wail, fashioned the aulos — the double-pipe — in imitation of it, so that mortals might carry a shadow of that grief in their music. The first instrument of mourning was modeled on a monster's cry." },
+      { label: "Beyond the Sunset", weight: 0.5,
+        text: "The Gorgons' home lay past the edge of Ocean, in the land where the sun does not reach. Euryale dwells there still in the oldest tellings — wide-roaming in name, but rooted forever to the place where her mortal sister once slept." },
     ],
-    source: "Hesiod, Theogony; Pindar, Pythian 12."
+    source: "Hesiod, Theogony; Pindar, Pythian 12; Apollodorus, Library."
   },
   polyphemus: {
     story: "Polyphemus is the most famous of the Cyclopes — a one-eyed giant, a son of Poseidon, who herds his fat sheep in a cave on a wild island and answers to no law but his own enormous appetite. He is brute force without hospitality, the savage who devours his own guests.\n\nWhen Odysseus and his men sheltered in his cave, Polyphemus rolled a great stone across the mouth and began to eat them two at a time. But the cunning hero gave the giant strong wine until he slept, told him his name was 'Nobody,' and then drove a burning, sharpened stake into the single eye. Blinded, the Cyclops roared for help — but when his neighbours called to ask who was harming him, he could only bellow that 'Nobody' was killing him, and they left him to it. Odysseus and his survivors escaped clinging beneath the bellies of the sheep; yet the hero could not resist shouting back his true name as he sailed, and so Polyphemus prayed to his father Poseidon for vengeance, and bought Odysseus ten more years of wandering with a single proud boast.",
@@ -1878,8 +1900,12 @@ export const deityStories = {
         text: "Odysseus gave the giant strong wine until he slept, told him his name was 'Nobody,' then drove a burning stake into the single eye. When Polyphemus roared for help his neighbours heard only that 'Nobody' was killing him, and left him to it." },
       { label: "The Proud Boast", weight: 0.85, figures: ['odysseus', 'poseidon'],
         text: "Odysseus could not resist shouting back his true name as he sailed, and so Polyphemus prayed to his father Poseidon for vengeance — buying the hero ten more years of wandering with a single proud boast." },
+      { label: "The Lovesick Giant", weight: 0.55,
+        text: "In gentler tellings Polyphemus was not always savage — he loved the sea-nymph Galatea with a clumsy tenderness, singing to her from the clifftops and bringing her wild gifts. But she loved the youth Acis, and the giant crushed him beneath a boulder in his jealousy." },
+      { label: "Poseidon's Wrath", weight: 0.7, figures: ['poseidon', 'odysseus'],
+        text: "The prayer was answered. Poseidon raised storm after storm against Odysseus, wrecking every ship and drowning every companion — ten years of divine fury for one blinded eye. The father's love for his monstrous son reshaped the whole of the Odyssey." },
     ],
-    source: "Homer, Odyssey IX."
+    source: "Homer, Odyssey IX; Theocritus, Idylls XI; Ovid, Metamorphoses XIII."
   },
   hydra: {
     story: "The Hydra of Lerna is the deathless terror of the marsh — a water-serpent of many heads that rises from the bog with venom in its breath, and whose dreadful secret is that it cannot simply be cut down: strike off one head and two grow at once from the wound, so that every blow only makes it stronger.\n\nBred by Typhon and Echidna and raised, the poets say, by Hera herself to be a snare for Heracles, the Hydra was the hero's second labor. He learned the hard way that the sword alone could never win, and called his nephew Iolaus to his side; together they made a method of it, Heracles lopping each head while Iolaus seared the raw stump with a torch before it could double. The one immortal head, which no fire could kill, he buried still hissing beneath a boulder — and dipped his arrows in the monster's black gall, carrying away a poison that would serve him through a lifetime of labors and, at the very last, bring about his own death.",
@@ -1890,6 +1916,10 @@ export const deityStories = {
         text: "Heracles learned the hard way, watching heads double under his blade — until his nephew Iolaus caught up a torch, and the two worked as one: severing each neck and searing the raw stump with fire before it could sprout anew." },
       { label: "The Poison That Returns", weight: 0.75,
         text: "The one immortal head he buried still hissing beneath a boulder; and in the Hydra's gall he dipped his arrows, making a poison so deadly it would one day become the death of Heracles himself." },
+      { label: "Hera's Design", weight: 0.65, figures: ['hera'],
+        text: "The Hydra was raised by Hera herself to be a snare for Heracles — one of the goddess's many instruments against the son of Zeus. Even the labor that followed was tainted: Eurystheus refused to count it, since the hero had needed his nephew's help." },
+      { label: "The Swamp That Never Healed", weight: 0.5,
+        text: "The marshes of Lerna never lost their poison. Long after the Hydra was gone, the springs remained deadly, and the ground where it had lain was said to open onto the underworld itself — a wound in the earth that refused to close." },
     ],
     source: "Hesiod, Theogony; Apollodorus, Library."
   },
@@ -1922,8 +1952,12 @@ export const deityStories = {
         text: "Of that union Heracles was born — the mightiest of all heroes, the child of Zeus and a mortal woman whose beauty and wisdom none in her age surpassed." },
       { label: "Hera's Shadow", weight: 0.8, figures: ['hera'],
         text: "The child of Zeus drew down upon his mother the undying jealousy of Hera, and much of Alcmene's life was spent in fear and flight, shielding the boy from the goddess's wrath." },
+      { label: "The Long Night", weight: 0.6, figures: ['zeus'],
+        text: "Zeus lengthened the night of Heracles' conception to three times its natural span — so eager was the god that he held back the dawn itself. Amphitryon returned the next day and knew nothing, and the twin births that followed bore one mortal child and one half-divine." },
+      { label: "The Honoured Dead", weight: 0.55,
+        text: "After her death, some say Alcmene was taken to the Islands of the Blessed, where she married Rhadamanthys the just judge of the dead. The mortal woman who bore the greatest hero was given, at the last, a quieter kind of eternity." },
     ],
-    source: "Hesiod, Shield of Heracles; Apollodorus, Library."
+    source: "Hesiod, Shield of Heracles; Apollodorus, Library; Diodorus Siculus."
   },
   danae: {
     story: "Danaë is the bronze-towered princess and the mother of Perseus — a woman shut away from the world to thwart a prophecy, who became the very channel through which that prophecy worked itself out. Her story is one of imprisonment turned, against all a fearful father's care, into destiny.\n\nFor an oracle had warned King Acrisius of Argos that his daughter's son would one day kill him, and so he locked Danaë in a chamber of bronze where no man could reach her. But no wall keeps out a god: Zeus came to her as a shower of golden rain that poured down through the roof into her lap, and she conceived and bore Perseus. Enraged and still afraid, Acrisius sealed mother and infant in a wooden chest and cast them into the sea — yet they did not drown, but washed safe to a far island, where Perseus grew into the hero who would slay Medusa. And the prophecy came true in the end, gently and by accident, long years later: so the locked tower and the floating chest only carried fate the longer way around to the same door.",
@@ -1934,8 +1968,12 @@ export const deityStories = {
         text: "Acrisius sealed mother and infant in a wooden chest and cast them into the sea — yet they washed safe to a far island, where Perseus grew into the hero who would slay Medusa." },
       { label: "Fate the Longer Way Around", weight: 0.7,
         text: "The prophecy came true in the end, gently and by accident, long years later — the locked tower and the floating chest only carried fate the longer way around to the same door." },
+      { label: "The Fisherman's Net", weight: 0.6, figures: ['perseus'],
+        text: "On the island of Seriphos a fisherman named Dictys hauled the chest from the sea and took in mother and child. Perseus grew up on the shore, raised among nets and boats, until the king of the island desired Danae and sent her son on a quest meant to kill him." },
+      { label: "The Golden Rain", weight: 0.55, figures: ['zeus'],
+        text: "Of all Zeus's disguises, the shower of gold is the strangest and the most beautiful — not a bull or a swan but light itself, pouring through a crack in the bronze ceiling into the lap of a girl who had never been allowed to see the sky." },
     ],
-    source: "Apollodorus, Library; Ovid, Metamorphoses IV."
+    source: "Apollodorus, Library; Ovid, Metamorphoses IV; Pindar, Pythian 12."
   },
   andromeda: {
     story: "Andromeda is the princess chained to the rock — the Ethiopian king's daughter offered up to a sea-monster, and saved at the last instant by a passing hero, whose rescue became one of the great love-stories and one of the great constellations of the sky.\n\nHer peril was not of her own making. Her mother, Queen Cassiopeia, boasted that Andromeda was lovelier than the sea-nymphs, and the offended Nereids sent the monster Cetus to ravage the coast; the only way to appease it, the oracle said, was to chain the princess to a seaside cliff as its prey. There she hung, waiting to be devoured — until Perseus, flying home with the head of Medusa, saw her, fell in love at the sight, and turned the rising monster to stone. He freed her and married her, and at the end of their lives the gods set Andromeda among the stars beside her husband and her parents: the chained maiden raised forever into the night.",
@@ -1946,8 +1984,12 @@ export const deityStories = {
         text: "Perseus, flying home with the head of Medusa, saw her chained and fell in love at the sight; he turned the rising monster to stone, freed her, and married her." },
       { label: "Raised into the Stars", weight: 0.7,
         text: "At the end of their lives the gods set Andromeda among the stars beside her husband and her parents: the chained maiden raised forever into the night." },
+      { label: "The Wedding Battle", weight: 0.75, figures: ['perseus', 'medusa'],
+        text: "At the wedding feast her former suitor Phineus came with an army to reclaim her by force. Perseus held up the Gorgon's head and turned them all to stone — the rescue that began on a cliff ended in a banquet hall full of statues." },
+      { label: "A Dynasty of Heroes", weight: 0.55, figures: ['perseus'],
+        text: "From Andromeda and Perseus descended the kings of Mycenae, and through them Heracles himself. The chained princess who waited on the rock became the ancestor of the mightiest bloodline in all the myths." },
     ],
-    source: "Ovid, Metamorphoses IV; Apollodorus, Library."
+    source: "Ovid, Metamorphoses IV–V; Apollodorus, Library."
   },
   humanity: {
     story: "Humanity is the strangest creature in the whole of the Theogony — the only beings who age and sicken and know that they must die, who feel the cold and the dark closing in, and who nonetheless raise cities, sing songs, and shape gods in their own image. The entire divine drama circles, in the end, the question of what to do with them.\n\nThey were made, the stories say, from clay and water by the Titan Prometheus, who loved them, and given the stolen fire of heaven that set them apart from the beasts — the spark of craft and warmth and ruinous ambition all at once. For that gift Prometheus suffered, and through Pandora's opened jar came every sorrow that mortal flesh is heir to, with only Hope left shut inside. Fragile, doomed, and unaccountably defiant, humankind is the audience and the prize of every myth: the short-lived clay that learned to look up at the stars and give them names.",
@@ -1958,8 +2000,12 @@ export const deityStories = {
         text: "For that gift Prometheus suffered, and through Pandora's opened jar came every sorrow that mortal flesh is heir to, with only Hope left shut inside." },
       { label: "The Short-Lived Clay", weight: 0.7,
         text: "Fragile, doomed, and unaccountably defiant, humankind is the audience and the prize of every myth: the short-lived clay that learned to look up at the stars and give them names." },
+      { label: "The Five Ages", weight: 0.6, figures: ['zeus'],
+        text: "Hesiod says there were five ages of man — Gold, Silver, Bronze, Heroic, Iron — each worse than the last. The golden race lived like gods without sorrow; the iron race, which is ours, will never rest from labor and grief. The decline is the story." },
+      { label: "The Trick at Mecone", weight: 0.65, figures: ['prometheus', 'zeus'],
+        text: "At Mecone, Prometheus divided an ox into two portions and invited Zeus to choose — one heap of gleaming fat hiding bare bones, the other of scraps hiding the best meat. Zeus chose the fat, and was tricked; and the anger of that trick shaped everything that followed for humanity." },
     ],
-    source: "Hesiod, Works and Days; Theogony."
+    source: "Hesiod, Works and Days; Theogony; Apollodorus, Library."
   },
   daedalus: {
     story: "Daedalus is the master craftsman of myth — the inventor, architect, and maker whose cleverness could build anything the mind could imagine, and whose story is a long warning about the things a brilliant maker should perhaps refuse to build. He is genius without the wisdom to govern it.\n\nIt was Daedalus who built the Labyrinth to hold the Minotaur, and Daedalus who had earlier made the very device by which the monster was conceived; and when King Minos imprisoned him to keep his secrets, the craftsman simply invented escape, fashioning wings of feathers and wax for himself and his son Icarus. But genius cannot always protect what it loves: Icarus, exulting in flight, soared too near the sun against his father's warning, and the wax melted, and the boy fell into the sea while Daedalus flew helplessly on. Long before, in envy, he had murdered his own gifted nephew for surpassing him. The maker of wonders carried to his grave the knowledge that his cleverness had cost him both a rival and a son.",
@@ -1970,8 +2016,12 @@ export const deityStories = {
         text: "Imprisoned on Crete, the craftsman fashioned wings of feathers and wax for himself and his son Icarus. But the boy soared too near the sun, the wax melted, and Icarus fell into the sea while Daedalus flew helplessly on." },
       { label: "The Murdered Nephew", weight: 0.8, figures: ['perdix'],
         text: "Long before, in envy, he had murdered his own gifted nephew Perdix for surpassing him. The maker of wonders carried to his grave the knowledge that his cleverness had cost him both a rival and a son." },
+      { label: "The Wooden Cow", weight: 0.65,
+        text: "It was Daedalus who built the hollow wooden cow in which Queen Pasiphaë hid herself to mate with the bull — the device that conceived the Minotaur. The craftsman made the problem and then was asked to build the prison for it." },
+      { label: "Refuge in Sicily", weight: 0.55,
+        text: "After Icarus fell, Daedalus flew on alone to Sicily, where he built temples and engineering marvels for King Cocalus. When Minos pursued him there, the women of the court killed the Cretan king with boiling water — the craftsman's last protectors, finishing what his genius could not." },
     ],
-    source: "Ovid, Metamorphoses VIII; Apollodorus, Library."
+    source: "Ovid, Metamorphoses VIII; Apollodorus, Library; Diodorus Siculus."
   },
   icarus: {
     story: "Icarus is the boy who flew too high — the son of the great craftsman Daedalus, whose name has become the very word for a bright ambition that climbs past its limit and falls. His whole story lasts only a single morning, and ends in the sea.\n\nImprisoned with his father on Crete, Icarus was given wings of feathers and wax that Daedalus had made for their escape, with a single careful warning: fly the middle way, neither so low that the sea-spray clogs the feathers nor so high that the sun melts the wax. But once aloft, drunk on the sheer joy of flight, the boy forgot the warning and rose higher and higher toward the sun — until the wax softened, the feathers loosed one by one, and he fell out of the bright sky into the water that bears his name to this day. His father flew on alone. Icarus is the eternal image of youth and rapture and ruin: the fall that came not from failure, but from flying.",
@@ -1982,6 +2032,10 @@ export const deityStories = {
         text: "Once aloft, drunk on the sheer joy of flight, the boy forgot the warning and rose higher and higher toward the sun — until the wax softened, the feathers loosed, and he fell from the bright sky." },
       { label: "The Sea That Bears His Name", weight: 0.8, figures: ['daedalus'],
         text: "He fell into the water that bears his name to this day, and his father flew on alone. Icarus is the eternal image of youth and rapture and ruin: the fall that came not from failure, but from flying." },
+      { label: "The Middle Way", weight: 0.6, figures: ['daedalus'],
+        text: "Daedalus told his son to fly the middle way — not so low the spray would clog the feathers, not so high the sun would melt the wax. It is the most famous piece of fatherly advice ever given, and the most famously ignored." },
+      { label: "The Burial", weight: 0.55,
+        text: "A partridge watched from a low branch as Daedalus buried his son on the island that would bear the boy's name — and the bird clapped its wings in satisfaction, remembering its own fall. Ovid makes the cruelty explicit: even grief was shadowed by an older crime." },
     ],
     source: "Ovid, Metamorphoses VIII; Apollodorus, Library."
   },
@@ -1994,6 +2048,10 @@ export const deityStories = {
         text: "His uncle, consumed with envy that the pupil should surpass the teacher, lured the boy to the height of the Acropolis and threw him down." },
       { label: "The Low-Flying Bird", weight: 0.85, figures: ['athena'],
         text: "Athena caught him as he fell and changed him into a partridge — and to this day the partridge flies low and nests in hedgerows, as though the bird still remembers the fall and will never again trust the heights." },
+      { label: "The Saw and the Compass", weight: 0.6,
+        text: "He invented the saw from a fish's spine, the compass from two iron rods — tools so fundamental they seem like they must have always existed. Perdix's genius was practical where Daedalus's was visionary, and that was exactly what his uncle could not bear." },
+      { label: "Revenge of the Partridge", weight: 0.55, figures: ['daedalus', 'icarus'],
+        text: "When Icarus fell from the sky and Daedalus wept over the grave, a partridge watched from a low branch and clapped its wings — the transformed nephew, remembering his own fall, taking grim satisfaction in his uncle's grief." },
     ],
     source: "Ovid, Metamorphoses VIII; Apollodorus, Library."
   }
