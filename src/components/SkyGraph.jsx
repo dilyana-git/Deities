@@ -4,17 +4,22 @@ import { nodes as rawNodes, links as rawLinks } from '../data/mythology.js'
 import { linkTypeConfig } from '../data/linkTypeConfig.js'
 import { categoryConfig } from '../data/categoryConfig.js'
 
-/* ── muted OKLCH palettes (matching atlas-core.js) ────────────────────── */
+/* ── category palettes (OKLCH) ─────────────────────────────────────────
+   Each of the 9 families gets a distinct hue with enough chroma to read as
+   its own colour region on the map. The hues are spread around the wheel so
+   neighbouring constellations never read as the same family; `chthonic` and
+   `mortal` stay deliberately desaturated (dusk-grey / plain) but keep just
+   enough tint to separate from one another. */
 const CAT = {
-  primordial : 'oklch(0.64 0.062 300)',
-  titan      : 'oklch(0.70 0.060 75)',
-  olympian   : 'oklch(0.66 0.058 250)',
-  chthonic   : 'oklch(0.62 0.018 285)',
-  monster    : 'oklch(0.62 0.078 25)',
-  hero       : 'oklch(0.68 0.058 150)',
-  sea_deity  : 'oklch(0.68 0.055 220)',
-  nymph_minor: 'oklch(0.68 0.052 330)',
-  mortal     : 'oklch(0.66 0.012 250)',
+  primordial : 'oklch(0.66 0.115 300)',   // violet
+  titan      : 'oklch(0.72 0.115 75)',    // amber-gold
+  olympian   : 'oklch(0.68 0.115 250)',   // sky-blue
+  chthonic   : 'oklch(0.60 0.055 290)',   // dusk grey-violet
+  monster    : 'oklch(0.63 0.140 25)',    // ember-red
+  hero       : 'oklch(0.70 0.115 150)',   // laurel-green
+  sea_deity  : 'oklch(0.70 0.110 220)',   // teal
+  nymph_minor: 'oklch(0.70 0.105 330)',   // rose-magenta
+  mortal     : 'oklch(0.68 0.022 250)',   // plain near-grey
 }
 
 const LCOL = {
@@ -176,6 +181,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const celestialRotate = zoomLayer.append('g').attr('class','celestial-rotate')
     const floatYLayer  = celestialRotate.append('g').attr('class','float-y')
     const floatXLayer  = floatYLayer.append('g').attr('class','float-x')
+    const catHaloLayer = floatXLayer.append('g').attr('class','cat-halos').attr('pointer-events','none')
     const clusterLayer = floatXLayer.append('g').attr('class','clusters')
     const linkLayer    = floatXLayer.append('g').attr('class','links')
     const traceLayer   = floatXLayer.append('g').attr('class','traces')
@@ -320,6 +326,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('class', 'cluster-label')
       .attr('text-anchor', 'middle')
       .attr('opacity', 0)
+      .style('fill', c => CAT[c])
       .text(c => CAT_LABEL[c] || c)
 
     /* Densest-sub-blob anchoring + mutual de-collision (computed every tick,
@@ -339,6 +346,39 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     })
     const labelPos  = new Map()
     const catNodes  = new Map(cats.map(c => [c, nodes.filter(n => n.category === c)]))
+
+    /* ── category territory halos ───────────────────────────────────
+       A soft radial colour field behind each cluster, tinted with the
+       family colour, so every category occupies its own glowing region of
+       sky. Geometry (centre + radius) is recomputed from each category's
+       node spread alongside the cluster labels; `screen` blending lets
+       overlapping fields add luminously rather than muddy out. */
+    cats.forEach(c => {
+      const g = defs.append('radialGradient').attr('id', `cat-halo-${c}`)
+      g.append('stop').attr('offset', '0%').attr('stop-color', CAT[c]).attr('stop-opacity', 0.22)
+      g.append('stop').attr('offset', '55%').attr('stop-color', CAT[c]).attr('stop-opacity', 0.08)
+      g.append('stop').attr('offset', '100%').attr('stop-color', CAT[c]).attr('stop-opacity', 0)
+    })
+    const haloSel = catHaloLayer.selectAll('ellipse').data(cats).join('ellipse')
+      .attr('class', 'cat-halo')
+      .attr('fill', c => `url(#cat-halo-${c})`)
+
+    function updateCatHalos() {
+      for (const c of cats) {
+        const ms = catNodes.get(c)
+        if (!ms || !ms.length) continue
+        const cx = d3.mean(ms, n => n.x), cy = d3.mean(ms, n => n.y)
+        let maxd = 0
+        for (const n of ms) {
+          const dx = n.x - cx, dy = n.y - cy
+          const d = Math.sqrt(dx * dx + dy * dy)
+          if (d > maxd) maxd = d
+        }
+        const r = Math.max(maxd + 75, 95)
+        haloSel.filter(d => d === c)
+          .attr('cx', cx).attr('cy', cy).attr('rx', r).attr('ry', r * 0.82)
+      }
+    }
 
     /* ── nodes ──────────────────────────────────────────────────── */
     /* hub-only labels at default zoom: only the top ~10 most-connected figures
@@ -383,7 +423,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     gNode.append('circle').attr('class','core')
       .attr('r',       d => radius(d))
-      .attr('fill',    '#ece6d6')
+      .attr('fill',    d => `color-mix(in oklab, ${CAT[d.category]} 32%, #f0ead9)`)
       .attr('opacity', d => 0.72 + d.prom * 0.28)
 
     /* head portrait — clipped to the node circle */
@@ -414,8 +454,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('r',            d => radius(d) + 0.5)
       .attr('fill',         'none')
       .attr('stroke',       d => CAT[d.category])
-      .attr('stroke-width', 0.8)
-      .attr('opacity',      0.55)
+      .attr('stroke-width', 1.2)
+      .attr('opacity',      0.72)
 
     /* gold pulse ring — invisible until the node has `.selected`, then the
        CSS animation kicks in. The ring sits outside the category ring. */
@@ -533,7 +573,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       })
       gNode.attr('transform', d => `translate(${d.x},${d.y})`)
 
-      if (++_tickCount % 8 === 0) updateClusterLabels()
+      if (++_tickCount % 8 === 0) { updateClusterLabels(); updateCatHalos() }
 
       if (!linkLabelLayer.selectAll('text').empty()) positionEdgeLabels()
     }
@@ -546,6 +586,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     sim.stop()
     for (let i = 0; i < 160; i++) sim.tick()
     updateClusterLabels()
+    updateCatHalos()
     assignLabelSides()
     ticked()
     sim.on('tick', ticked)
@@ -629,6 +670,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     /* initial state: starfield dim, everything else invisible */
     svg.call(zoom.transform, startTx)
     bgLayer.attr('opacity', 0)
+    catHaloLayer.attr('opacity', 0)
     linkLayer.attr('opacity', 1)
     nodeLayer.attr('opacity', 1)
     clusterLayer.attr('opacity', 1)
@@ -674,6 +716,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* phase 1: starfield materialises from black */
     bgLayer.transition('ign').duration(1200).delay(100)
+      .ease(d3.easeCubicOut)
+      .attr('opacity', 1)
+
+    /* category territory halos seep in just after the starfield */
+    catHaloLayer.transition('ign').duration(1800).delay(600)
       .ease(d3.easeCubicOut)
       .attr('opacity', 1)
 
@@ -760,6 +807,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       _ignitionDone = true
 
       bgLayer.interrupt('ign').attr('opacity', 1)
+      catHaloLayer.interrupt('ign').attr('opacity', 1)
       linkSel.interrupt('ign')
         .attr('stroke-dasharray', null)
         .attr('stroke-dashoffset', null)

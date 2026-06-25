@@ -54,17 +54,30 @@ body {
 }
 #sky.paused .depth-haze { animation-play-state: paused; }
 
-/* cluster label — watermark style, far back */
+/* category territory halos — soft colour fields grouping each cluster.
+   `screen` blending makes overlapping family colours add luminously. */
+.cat-halo {
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* cluster label — family-coloured constellation name, watermark style.
+   Fill is set per-category inline in SkyGraph; opacity is driven by the
+   ignition/zoom logic (no fixed value here, so those fades take effect). A
+   soft shadow lifts the tinted text off the dark sky. */
 .cluster-label {
   font-family: 'Cinzel', serif;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 13px;
   letter-spacing: .65em;
-  fill: #1e2838;
-  opacity: 0.45;
+  fill: #46566f;
   pointer-events: none;
   text-transform: uppercase;
   transition: opacity .4s ease;
+  paint-order: stroke;
+  stroke: #05070d;
+  stroke-width: 2.4px;
+  stroke-linejoin: round;
 }
 
 /* ── Flaring stars ─────────────────────────────────────────────────────────
