@@ -21,8 +21,8 @@ const BG_STAR       = 200   // background stars on the sphere
 const TWINKLE_COUNT = 30    // ~15% of bg stars flicker — asynchronous, never in unison
 const DRIFT         = 0.03  // radians/sec — perpetual slow drift, ~one full turn in 3.5 min
 const LABEL_Z       = 0.3   // only label signs this far onto the front face (no back-of-dome ghosts)
-const VIEW_DX       = 46    // shift whole dome right, into the right two-thirds (clears the text column)
-const VIEW_DY       = -88   // lift whole dome up so the active figure rides near vertical centre
+const VIEW_DX       = 78    // shift whole dome right, into the right two-thirds (clears the text column)
+const VIEW_DY       = -18   // lift the dome slightly so the active figure rides near vertical centre while the band still fills the lower frame
 const SEL_SCALE     = 1.85  // blow the active constellation up about its centroid (hero of the frame)
 
 /* ── math helpers ────────────────────────────────────────────────────── */
