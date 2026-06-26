@@ -928,6 +928,7 @@ body {
 }
 .zs-caption .gs-name { font-size: 52px; }
 .zs-caption .gs-narration { font-size: 18px; line-height: 1.55; max-width: 38ch; }
+.zs-caption .gs-narration + .gs-narration { margin-top: .8em; }
 .zs-caption .gs-epithet { letter-spacing: .03em; }
 
 /* ── glyph rail: a quiet, compact index (the sky is the hero) ──
