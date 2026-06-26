@@ -12,6 +12,19 @@ import { ZODIAC } from '../data/zodiac.js'
    caption panel shows the selected sign's myth.
    ════════════════════════════════════════════════════════════════════════ */
 
+/* Break a single myth string into 2-sentence paragraphs so the caption reads
+   as a few short stanzas rather than one dense block. Splits only at a period
+   followed by whitespace and a capital/opening quote, so mid-sentence dots
+   (and the em-dash asides these myths favour) stay intact. */
+function toParagraphs(text) {
+  const sentences = text.split(/(?<=\.)\s+(?=[“"A-Z])/)
+  const paras = []
+  for (let i = 0; i < sentences.length; i += 2) {
+    paras.push(sentences.slice(i, i + 2).join(' '))
+  }
+  return paras
+}
+
 export default function ZodiacSky({ onClose }) {
   const [selected, setSelected] = useState(0)   // Aries leads on open — sign 01 of the zodiac year
   const captionRef = useRef(null)
@@ -107,7 +120,9 @@ export default function ZodiacSky({ onClose }) {
             {sign.name}
           </h1>
           <div className="gs-epithet" style={{ color: accent }}>{sign.figure}</div>
-          <p className="gs-narration">{sign.text}</p>
+          {toParagraphs(sign.text).map((para, i) => (
+            <p key={i} className="gs-narration">{para}</p>
+          ))}
         </div>
       ) : (
         <div className="gs-caption zs-caption" ref={captionRef}>
