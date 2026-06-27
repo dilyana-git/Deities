@@ -426,9 +426,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('fill',    d => `color-mix(in oklab, ${CAT[d.category]} 32%, #f0ead9)`)
       .attr('opacity', d => 0.72 + d.prom * 0.28)
 
-    /* head portrait — clipped to the node circle */
+    /* head portrait — clipped to the node circle. The `href` is set LATER, by
+       loadPortraits(), so ~100 mostly-missing portraits don't fire ~390 failed
+       requests + onerror DOM churn during the opening ignition (that contention
+       was a main source of load-time jank). */
     gNode.append('image')
-      .attr('href',               d => `/portraits/${d.id}-head.webp`)
       .attr('x',                  d => -radius(d))
       .attr('y',                  d => -radius(d))
       .attr('width',              d => radius(d) * 2)
@@ -449,6 +451,18 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         if (i < chain.length) el.attr('href', chain[i])
         else el.remove()
       })
+
+    /* Kick off portrait loading. Called once the entrance has finished (or the
+       moment the user interacts, via finishIgnition) so the request/404 storm
+       lands on an idle main thread instead of mid-animation. The onerror
+       fallback chain above still resolves .png / -full variants per the
+       drop-in-by-id convention. */
+    let _portraitsLoaded = false
+    function loadPortraits() {
+      if (_portraitsLoaded) return
+      _portraitsLoaded = true
+      gNode.select('image').attr('href', d => `/portraits/${d.id}-head.webp`)
+    }
 
     gNode.append('circle').attr('class','ring')
       .attr('r',            d => radius(d) + 0.5)
@@ -561,16 +575,21 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       clusterSel.attr('x', c => labelPos.get(c).x).attr('y', c => labelPos.get(c).y)
     }
 
+    /* edge curve path — a gentle quadratic bow so parallel relations don't
+       overlap. Extracted so the full ticked() and hover's partial tickSubset()
+       share one definition. */
+    function edgePath(d) {
+      const sx = d.source.x, sy = d.source.y, tx = d.target.x, ty = d.target.y
+      const dx = tx - sx, dy = ty - sy
+      const len = Math.sqrt(dx * dx + dy * dy) || 1
+      const off = Math.min(len * 0.12, 14)
+      const mx = (sx + tx) / 2 - (dy / len) * off
+      const my = (sy + ty) / 2 + (dx / len) * off
+      return `M${sx},${sy}Q${mx},${my} ${tx},${ty}`
+    }
+
     function ticked() {
-      linkSel.attr('d', d => {
-        const sx = d.source.x, sy = d.source.y, tx = d.target.x, ty = d.target.y
-        const dx = tx - sx, dy = ty - sy
-        const len = Math.sqrt(dx * dx + dy * dy) || 1
-        const off = Math.min(len * 0.12, 14)
-        const mx = (sx + tx) / 2 - (dy / len) * off
-        const my = (sy + ty) / 2 + (dx / len) * off
-        return `M${sx},${sy}Q${mx},${my} ${tx},${ty}`
-      })
+      linkSel.attr('d', edgePath)
       gNode.attr('transform', d => `translate(${d.x},${d.y})`)
 
       if (++_tickCount % 8 === 0) { updateClusterLabels(); updateCatHalos() }
@@ -824,6 +843,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       genTitleLayer.selectAll('*').interrupt('ign').remove()
       svg.interrupt('ign').call(zoom.transform, restTx)
 
+      loadPortraits()
       teardownSkip()
     }
 
@@ -846,7 +866,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* natural completion */
     const ignitionTimer = setTimeout(() => {
-      _ignitionDone = true; teardownSkip()
+      _ignitionDone = true; loadPortraits(); teardownSkip()
     }, WAVE_MS[5] + 2400)
 
     /* drag hint — after entrance, gently nudge a hub node to suggest dragging */
@@ -877,6 +897,17 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     const srcId = l => (typeof l.source === 'object' ? l.source.id : l.source)
     const tgtId = l => (typeof l.target === 'object' ? l.target.id : l.target)
+
+    /* Partial re-render for hover's magnetic lean: reposition ONLY the nudged
+       nodes and the edges incident to them, instead of the global ticked()
+       (which rewrites all 208 edge paths + 116 transforms and can trip the
+       80-iteration cluster-label relax). Keeps hover smooth on the dense field. */
+    function tickSubset(movedNodes) {
+      const moved = new Set(movedNodes.map(n => n.id))
+      if (!moved.size) return
+      gNode.filter(d => moved.has(d.id)).attr('transform', d => `translate(${d.x},${d.y})`)
+      linkSel.filter(l => moved.has(srcId(l)) || moved.has(tgtId(l))).attr('d', edgePath)
+    }
 
     /* edge labels — short relationship names riding the selected node's lit edges */
     const MAX_EDGE_LABELS = 10
@@ -1127,7 +1158,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         nb.y += (dy / dist) * nudge
         _hoverNudges.push({ node: nb, ox, oy })
       })
-      ticked()
+      tickSubset(_hoverNudges.map(h => h.node))
 
       /* ripple: stagger edge transitions outward from the hovered node */
       linkSel.each(function(l) {
@@ -1169,11 +1200,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
       /* release magnetic lean — spring nodes back */
       if (_hoverNudges) {
+        const moved = _hoverNudges.map(h => h.node)
         for (const { node, ox, oy } of _hoverNudges) {
           node.x = ox; node.y = oy
         }
         _hoverNudges = null
-        ticked()
+        tickSubset(moved)
       }
 
       /* cancel any in-flight ripple transitions */
