@@ -93,11 +93,13 @@ export default function ZodiacSky({ onClose }) {
       <div className="grade stars" />
       <div className="grade vig" />
 
-      {/* header bar */}
+      {/* left-edge scrim — grounds the text column so it reads as "panel | sky" */}
+      <div className="zs-textscrim" />
+
+      {/* header bar — pure chrome: close, section title, count */}
       <div className="zs-header">
         <button className="gs-exit" onClick={onClose} aria-label="Close zodiac view">✕</button>
         <div className="zs-header-text">
-          <div className="gs-kicker">Twelve Tales Written in Stars</div>
           <div className="gs-storytitle">The Zodiac</div>
         </div>
         {sign && (
@@ -112,13 +114,14 @@ export default function ZodiacSky({ onClose }) {
       {/* caption — intro prompt until a sign is chosen */}
       {sign ? (
         <div className="gs-caption zs-caption" ref={captionRef}>
-          <div className="gs-cat" style={{ color: accent }}>
-            {sign.element.toUpperCase()} · {sign.dates}
-          </div>
+          <div className="zs-cap-kicker">Twelve Tales Written in Stars</div>
           <h1 className="gs-name">
             <span className="zs-glyph" style={{ color: accent }}>{sign.symbol}</span>
             {sign.name}
           </h1>
+          <div className="gs-cat" style={{ color: accent }}>
+            {sign.element.toUpperCase()} · {sign.dates}
+          </div>
           <div className="gs-epithet" style={{ color: accent }}>{sign.figure}</div>
           {toParagraphs(sign.text).map((para, i) => (
             <p key={i} className="gs-narration">{para}</p>

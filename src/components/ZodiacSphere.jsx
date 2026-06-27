@@ -21,9 +21,9 @@ const BG_STAR       = 200   // background stars on the sphere
 const TWINKLE_COUNT = 30    // ~15% of bg stars flicker — asynchronous, never in unison
 const DRIFT         = 0.03  // radians/sec — perpetual slow drift, ~one full turn in 3.5 min
 const LABEL_Z       = 0.3   // only label signs this far onto the front face (no back-of-dome ghosts)
-const VIEW_DX       = 78    // shift whole dome right, into the right two-thirds (clears the text column)
+const VIEW_DX       = 150   // shift whole dome further right so the figure forms a clear right mass, balancing the left text column with open sky between
 const VIEW_DY       = -18   // lift the dome slightly so the active figure rides near vertical centre while the band still fills the lower frame
-const SEL_SCALE     = 1.85  // blow the active constellation up about its centroid (hero of the frame)
+const SEL_SCALE     = 1.5   // blow the active constellation up about its centroid — the hero mass of the right two-thirds, sized to fill without crowding the frame
 
 /* ── math helpers ────────────────────────────────────────────────────── */
 function rotY(p, a) {
@@ -220,6 +220,9 @@ class SphereEngine {
 
       const signLon = (si / 12) * TAU
       const bright = new Set(sign.b || [])
+      // the one named star of the figure (Spica for Virgo) — defaults to the
+      // first bright star. It alone burns gold while its sign is active.
+      const heroIdx = sign.hero != null ? sign.hero : (sign.b && sign.b.length ? sign.b[0] : -1)
 
       // edge glow layer (behind crisp edges, visible only for selected)
       const edgeGlows = sign.e.map(([a, b]) => {
@@ -238,14 +241,17 @@ class SphereEngine {
 
       const nodes = sign.n.map((p, ni) => {
         // A delicate figure has near-even stars — a faint, restrained accent on the
-        // marked ones, never a single blazing dot that flattens the rest.
+        // marked ones, never a single blazing dot that flattens the rest. The lone
+        // exception is the hero star, which the active sign lights gold (see CSS).
         const isB = bright.has(ni)
-        const halo = this._circle(0, 0, isB ? 2.8 : 2.2, 'zs-halo')
-        const core = this._circle(0, 0, isB ? 1.6 : 1.25, isB ? 'zs-core bright' : 'zs-core')
+        const isHero = ni === heroIdx
+        const halo = this._circle(0, 0, isB ? 2.8 : 2.2, isHero ? 'zs-halo zs-hero' : 'zs-halo')
+        const core = this._circle(0, 0, isB ? 1.6 : 1.25,
+          (isB ? 'zs-core bright' : 'zs-core') + (isHero ? ' zs-hero' : ''))
         g.appendChild(halo)
         g.appendChild(core)
         return {
-          localX: p[0], localY: p[1], isB, halo, core,
+          localX: p[0], localY: p[1], isB, isHero, halo, core,
           lon: signLon + (p[0] / 100) * SPREAD,
           lat: (-p[1] / 100) * SPREAD,
         }
@@ -445,20 +451,23 @@ class SphereEngine {
           twinkle = 1 + 0.12 * Math.sin(t * (1.2 + ni * 0.3) + ci * 2.1)
         }
 
-        // near-even, fine stars — a whisper of size on the marked ones, no blaze
+        // near-even, fine stars — a whisper of size on the marked ones, no blaze.
+        // The hero star is the exception, but only while its sign holds the frame:
+        // it swells and brightens so the gold core (CSS) reads as the named star.
         const coreBase = nd.isB ? 1.6 : 1.25
         const haloBase = nd.isB ? 2.8 : 2.2
         const sizeMul  = isSel ? 1.35 : isHov ? 1.1 : 0.85
+        const heroLit  = isSel && nd.isHero
 
         nd.core.setAttribute('cx', p.x)
         nd.core.setAttribute('cy', p.y)
         nd.core.style.opacity = o.toFixed(3)
-        nd.core.setAttribute('r', (coreBase * twinkle * sizeMul).toFixed(2))
+        nd.core.setAttribute('r', (coreBase * twinkle * sizeMul * (heroLit ? 1.5 : 1)).toFixed(2))
 
         nd.halo.setAttribute('cx', p.x)
         nd.halo.setAttribute('cy', p.y)
-        nd.halo.style.opacity = (o * (nd.isB ? 0.4 : 0.3) * (isSel ? 1.6 : 1)).toFixed(3)
-        nd.halo.setAttribute('r', (haloBase * sizeMul * (isSel ? 1.35 : 1.1)).toFixed(1))
+        nd.halo.style.opacity = (o * (nd.isB ? 0.4 : 0.3) * (isSel ? 1.6 : 1) * (heroLit ? 1.5 : 1)).toFixed(3)
+        nd.halo.setAttribute('r', (haloBase * sizeMul * (isSel ? 1.35 : 1.1) * (heroLit ? 1.7 : 1)).toFixed(1))
       })
 
       // edges — crisp + glow layer

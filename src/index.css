@@ -866,8 +866,7 @@ body {
   position: static; width: 36px; height: 36px; font-size: 14px; flex-shrink: 0;
 }
 .zs-header-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.zs-header-text .gs-kicker { font-size: 9.5px; letter-spacing: .35em; }
-.zs-header-text .gs-storytitle { font-size: 16px; }
+.zs-header-text .gs-storytitle { font-size: 16px; letter-spacing: .14em; }
 .zs-progress {
   margin-left: auto; font-family: Cinzel, serif;
   display: flex; align-items: baseline; gap: 2px; flex-shrink: 0;
@@ -875,6 +874,16 @@ body {
 .zs-step { font-size: 20px; font-weight: 600; color: var(--gold); }
 .zs-slash { font-size: 13px; color: var(--faint); margin: 0 2px; }
 .zs-total { font-size: 13px; color: var(--ink-dim); }
+
+/* ── text scrim ──
+   A soft dark-to-transparent wash down the left edge so the caption sits on a
+   ground (not the bare sky). Above the sphere + colour grades (z-index 1–2),
+   below the caption (z-index 7). Fades out by ~40% to keep the dome open. */
+.zs-textscrim {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 44%; z-index: 3;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(5,7,13,.86) 0%, rgba(5,7,13,.46) 40%, transparent 100%);
+}
 
 /* ── sphere canvas ── */
 .zs-sphere {
@@ -915,21 +924,43 @@ body {
 .zs-selected .zs-core { fill: #f1ead6; }
 .zs-selected .zs-core.bright { fill: #f6efdc; filter: drop-shadow(0 0 4px rgba(205,184,138,.65)); }
 
+/* the one named star — Spica for Virgo — burns gold while its sign is active, so
+   the art pays off the myth's closing line. Placed after .bright to win on equal
+   specificity; scoped to .zs-selected so the eleven dim signs stay neutral. */
+.zs-selected .zs-core.zs-hero {
+  fill: var(--gold);
+  filter: drop-shadow(0 0 6px rgba(205,184,138,.95)) drop-shadow(0 0 2px rgba(255,255,255,.85));
+}
+
 .zs-label {
   font-family: Cinzel, serif; fill: #7e879c; text-anchor: middle;
   dominant-baseline: auto; pointer-events: none;
   font-size: 9px; letter-spacing: .06em;
 }
 
-/* ── caption: vertically centered against the dome ── */
+/* ── caption: a calm rectangle, vertically centred against the dome ──
+   A wide measure (≈50ch) keeps the body short and rectangular instead of a
+   cramped, tall ribbon — and a short block lets translateY(-50%) actually
+   read as centred, with equal air above and below. Group order:
+   kicker → glyph+title → element·dates → figure → body. */
 .zs-caption {
   bottom: auto; top: 50%; transform: translateY(-50%);
-  z-index: 7; max-width: 400px;
+  z-index: 7; max-width: 600px; padding: 0 40px 0 56px;
+}
+.zs-cap-kicker {
+  font-family: Cinzel, serif; font-size: 10px; letter-spacing: .38em;
+  text-transform: uppercase; color: var(--gold-dim); margin-bottom: 16px;
 }
 .zs-caption .gs-name { font-size: 52px; }
-.zs-caption .gs-narration { font-size: 18px; line-height: 1.55; max-width: 38ch; }
-.zs-caption .gs-narration + .gs-narration { margin-top: .8em; }
-.zs-caption .gs-epithet { letter-spacing: .03em; }
+/* dates pulled down under the title — a tight metadata line, not a top eyebrow */
+.zs-caption .gs-cat { margin: 15px 0 11px; }
+.zs-caption .gs-epithet { margin: 0 0 20px; letter-spacing: .03em; }
+.zs-caption .gs-narration { font-size: 18px; line-height: 1.62; max-width: 50ch; }
+.zs-caption .gs-narration + .gs-narration { margin-top: .85em; }
+
+/* kicker joins the staggered fade-in when the sign changes */
+.zs-caption .zs-cap-kicker { opacity: 1; transition: opacity .6s, transform .6s cubic-bezier(.2,.7,.2,1); }
+.zs-caption.enter .zs-cap-kicker { opacity: 0; transform: translateY(16px); }
 
 /* ── glyph rail: a quiet, compact index (the sky is the hero) ──
    Glyph-only at rest; the name floats in above a mark only when hovered or
@@ -989,7 +1020,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .gs-caption .gs-cat, .gs-caption .gs-name, .gs-caption .gs-epithet, .gs-caption .gs-narration,
-  .gs-tales-btn .car, .grade.wash { transition: none; }
+  .zs-caption .zs-cap-kicker, .gs-tales-btn .car, .grade.wash { transition: none; }
 }
 
 @media (max-width: 760px) {
@@ -1011,8 +1042,12 @@ body {
   .zs-header .gs-exit { width: 32px; height: 32px; font-size: 12px; }
   .zs-header-text .gs-kicker { font-size: 8px; }
   .zs-header-text .gs-storytitle { font-size: 14px; }
+  .zs-textscrim { display: none; }
   .zs-caption { top: auto; bottom: 72px; transform: none; padding: 0 20px; max-width: 100%; }
+  .zs-caption .zs-cap-kicker { font-size: 8.5px; letter-spacing: .3em; margin-bottom: 10px; }
   .zs-caption .gs-name { font-size: 32px; }
+  .zs-caption .gs-cat { margin: 10px 0 9px; }
+  .zs-caption .gs-epithet { margin: 0 0 14px; }
   .zs-caption .gs-narration { font-size: 15px; max-width: 100%; }
   .zs-strip { gap: 2px; padding: 10px 8px 14px; }
   .zs-glyph-btn { padding: 6px 8px; }
