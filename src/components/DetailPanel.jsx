@@ -223,7 +223,11 @@ function StorySpine({ beats, catColor, source, onNavigate, nodeId }) {
       {beats.map((b, i) => {
         const w = b.weight ?? 0.7
         const fig = b.figures?.[0]
-        const specKey = fig || `${nodeId || 'beat'}-${i}`
+        // a figure shows its bespoke emblem on first mention; repeat mentions
+        // (and figure-less beats) get a unique per-beat pattern so no two
+        // constellations in one story panel look identical
+        const firstUse = fig && beats.findIndex(x => x.figures?.[0] === fig) === i
+        const specKey = firstUse ? fig : `${nodeId || 'beat'}-${i}`
         const spec = getConstellation(specKey)
         const nav = (fig && onNavigate) ? () => onNavigate(fig) : null
         return (
