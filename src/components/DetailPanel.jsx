@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { nodes as allNodes, links as allLinks } from '../data/mythology.js'
 import { archetypeMap } from '../data/archetypeMap.js'
-import { CAT, LCOL } from './SkyGraph.jsx'
+import { CAT, LCOL, portraitSources } from './SkyGraph.jsx'
 import { linkTypeConfig } from '../data/linkTypeConfig.js'
 import { categoryConfig } from '../data/categoryConfig.js'
 import { deityStories } from '../data/deityStories.js'
@@ -171,13 +171,7 @@ function HoloSigil({ node, catColor }) {
 
 /* ── portrait image with fallback chain ──────────────────────────────── */
 function Portrait({ nodeId, onLoaded }) {
-  const chain = [
-    `/portraits/${nodeId}-full.webp`,
-    `/portraits/${nodeId}-full.png`,
-    `/portraits/${nodeId}-head.webp`,
-    `/portraits/${nodeId}-head.png`,
-    `/portraits/${nodeId}.webp`,
-  ]
+  const chain = portraitSources(nodeId, true)
   const [idx, setIdx] = useState(0)
   const [gone, setGone] = useState(false)
   if (gone || idx >= chain.length) return null

@@ -47,10 +47,11 @@ src/
     └── archetypeMap.js            # Jungian archetypes: { description, color } + archetypeOrder
 
 public/
-└── portraits/                     # Drop portraits here — resolved by id, no code changes needed
-    ├── {id}-head.webp             # Tight bust — clipped to the node circle on the graph
-    └── {id}-full.webp             # Full-body — shown at the top of the DetailPanel
-                                   # .png variants are accepted as fallbacks (see fallback chain below)
+├── portraits/                     # Drop portraits here — resolved by id, no code changes needed
+│   ├── {id}-head.webp             # Tight bust — clipped to the node circle on the graph
+│   └── {id}-full.webp             # Full-body — shown at the top of the DetailPanel
+│                                  # .png/.jpg and bare {id}.* also accepted (see portraitSources)
+└── deities/                       # Legacy portrait folder — same conventions, still scanned
 ```
 
 > **Color source of truth:** graph/category/link colors live in the `CAT` and `LCOL` OKLCH maps exported from `SkyGraph.jsx` — **not** in `categoryConfig`/`linkTypeConfig`, which now provide only display labels and ordering. `DetailPanel` and `App` import `CAT`/`LCOL` from `SkyGraph` to stay consistent.
@@ -131,12 +132,15 @@ SkyGraph ──onSelect(id) callback──▶ App.setSelectedId(id) ──▶ <D
 **Selection/hover are CSS-class driven.** SkyGraph toggles `lit` / `faded` / `selected` / `route` / `focusing` classes on node `<g>` and link `<line>` selections; `index.css` styles the rest. `pathLock` (path-finder active) and `tourLock` (guided tour active) suppress hover so those modes stay stable.
 
 **Force config** (`SkyGraph.jsx`):
-- `forceLink` distance **46**, strength **0.25**
-- `forceManyBody` strength **-150**, `distanceMax` 360
-- **`clusterForce` 0.09** — custom force pulling each node toward its category's `ANCHOR` position (fraction of the 1200×740 canvas), so categories settle into constellations
-- `forceCollide` radius + 13, strength 0.85
+- `forceLink` distance **66**, strength **0.23**
+- `forceManyBody` strength **-250**, `distanceMax` 480
+- **`clusterForce` 0.065** — custom force pulling each node toward its category's anchor, so categories settle into constellations
+- **`domeForce` 0.6** — soft ellipse containment: nodes past ρ 0.92 of the `DOME` ellipse get pulled back, keeping the field's silhouette circular
+- `forceCollide` radius + 26, strength 0.92
 - `alphaDecay` 0.028
-- Pre-settles with 160 synchronous `sim.tick()`s, then `restart()`s for slow ambient drift
+- Pre-settles with 160 synchronous `sim.tick()`s, then the sim idles (a drag re-energises it)
+
+**Celestial dome** (`DOME` in `SkyGraph.jsx`): the start-page field is shaped like a night sky projected on a sphere. Category `ANCHOR`s are remapped onto an ellipse (`DOME_ANCHOR`, outermost at ρ ≈ 0.8), `domeForce` keeps the silhouette elliptical, and after the pre-settle a **fisheye bake** (`ρ' = sin(ρA)/sin(A)`, A = 1.15) is written into `d.x/d.y` once — the mid-field bulges and the rim compresses like a star globe seen face-on. Because the warp is baked into positions, every consumer (camera, hover, drag, labels, tours, path-finder) works in one coordinate space. A `dome-grid` layer draws the planisphere furniture: sky glow, declination rings, meridian spokes, glowing horizon ring with degree ticks, and a tilted dashed gold ecliptic.
 
 **Renown / node size:** `prom = sqrt(degree) / sqrt(maxDegree)`; `radius = 2.4 + Math.pow(prom, 1.3) * 17`. More-connected figures are larger and brighter. This formula is recomputed wherever needed (SkyGraph, DetailPanel, App's autocomplete) — keep them in sync if you change it.
 
@@ -147,7 +151,8 @@ All inside `<svg id="sky">`, bottom to top:
 1. **Container gradient** — dark radial background (`#06080e` root)
 2. **`bg` star layer** — 420 procedurally-seeded background stars; the brightest also get a blurred glow `flare` that twinkles (`@keyframes star-flare`, randomized `--flare-peak/-dur/-delay` CSS vars)
 3. **`float-y` → `float-x` nested groups** — two transform-only animations (a ~bob and a slower ~drift) compose into gentle organic floating; GPU-composited, leaves physics positions untouched
-4. **`clusters` / `links` / `nodes` layers** — cluster labels, relationship lines, node glyphs
+4. **`dome-grid` layer** — the celestial-sphere furniture (sky glow, declination rings, meridian spokes, horizon ring, ecliptic) that frames the field as a night-sky dome
+5. **`clusters` / `links` / `nodes` layers** — cluster labels, relationship lines, node glyphs
 
 Adding `.paused` to the `<svg>` halts twinkle/flow animations; a `visibilitychange` listener applies it when the tab is hidden.
 
@@ -155,8 +160,8 @@ Adding `.paused` to the `<svg>` halts twinkle/flow animations; a `visibilitychan
 
 Each node `<g>` stacks: a blurred `glow` circle (`#glow` filter), a pale `core` circle, a clipped portrait `<image>`, a category-colored `ring`, and a `node-label` text.
 
-- The portrait `<image>` loads `/portraits/{id}-head.webp`, clipped to a per-node `clipPath` (`id="clip-{id}"`).
-- An `onerror` handler walks a **fallback chain**: `head.webp → head.png → full.webp → full.png`, then removes the `<image>` (leaving the bare star) if none exist.
+- The portrait `<image>` is clipped to a per-node `clipPath` (`id="clip-{id}"`) and stays at opacity 0 until a candidate actually loads (otherwise the browser paints a broken-image glyph while the chain walks its 404s).
+- Candidate URLs come from **`portraitSources(id, preferFull)`** (exported from `SkyGraph.jsx`, shared with `DetailPanel`): both folders (`/portraits/` and the legacy `/deities/`) × three name styles (`{id}-head`, `{id}-full`, `{id}`) × three formats (`.webp`, `.png`, `.jpg`). An `onerror` handler walks the chain, then removes the `<image>` (leaving the bare star) if none exist.
 - Always-on; no toggle. Nodes with `degree === 0` get `.nolabel`; `prom > 0.55` get `.prominent` (brighter label).
 
 ## Detail Panel
