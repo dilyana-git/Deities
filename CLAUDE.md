@@ -163,7 +163,7 @@ Each node `<g>` stacks: a blurred `glow` circle (`#glow` filter), a pale `core` 
 
 `DetailPanel` is a right-hand slide-in `<aside class="detail-panel">` (off-canvas via `translateX`, `.open` slides it in). It renders for the selected node and is the only detail surface (there is no modal/lightbox). Scrolls to top automatically when navigating to a new deity.
 
-- **Hero:** the full-body `Portrait` (with a gradient overlay carrying the name/epithet/category badge) **or**, if no portrait exists, a generated **`Sigil`** — an SVG "constellation" of the node plus its top neighbors, sized by their renown.
+- **Hero:** a holographic stage (`.holo-*` classes in `index.css`) — cursor-tracking 3D perspective tilt, ambient float, opacity flicker, scanlines, and a category-tinted light sweep, with a "materialize" entrance on every node change. Inside it: the full-body `Portrait` (with a gradient overlay carrying the name/epithet/category badge) **or**, if no portrait exists, a **`HoloSigil`** — a rotating 3D constellation of the node's top neighbors (perspective-projected, depth-sorted, rAF-driven; pauses when the tab is hidden) hovering above an emitter dais with a projection cone.
 - **Sections (in order):** Archetype (color + description from `archetypeMap`), Origins/Story Spine (`deityStories` prose + source, falling back to `description`; entries with `beats` render as a vertical constellation), Domains, Myths, Symbols, Connections.
 - **Connections** are clickable buttons → `onNavigate(id)`, which re-selects + flies the graph to that node and scrolls the panel to top. Direction-aware labels use `linkTypeConfig`'s `label` (→) vs `inverseLabel` (←).
 
