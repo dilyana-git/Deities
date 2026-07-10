@@ -3,6 +3,7 @@ import SkyGraph, { CAT, LCOL } from './components/SkyGraph.jsx'
 import DetailPanel from './components/DetailPanel.jsx'
 import GuidedSky from './components/GuidedSky.jsx'
 import ZodiacSky from './components/ZodiacSky.jsx'
+import StoryOrbit from './components/StoryOrbit.jsx'
 import { nodes as allNodes, links as allLinks } from './data/mythology.js'
 import { categoryConfig, categoryOrder } from './data/categoryConfig.js'
 import { linkTypeConfig, linkTypeOrder } from './data/linkTypeConfig.js'
@@ -334,6 +335,7 @@ export default function App() {
   const [storyOpen,       setStoryOpen]       = useState(false)
   const [storyTourId,     setStoryTourId]     = useState(null)
   const [zodiacOpen,      setZodiacOpen]      = useState(false)
+  const [orbitOpen,       setOrbitOpen]       = useState(false)
   const [shortcutsOpen,   setShortcutsOpen]   = useState(false)
 
   const prevBeatFigRef = useRef(null)
@@ -488,6 +490,7 @@ export default function App() {
             graphRef.current?.select(id, true)
             setSelectedId(id)
           }}
+          onOpenOrbit={() => setOrbitOpen(true)}
         />
 
         {/* hint */}
@@ -565,6 +568,19 @@ export default function App() {
 
       {/* zodiac sky — standalone cinematic zodiac view */}
       {zodiacOpen && <ZodiacSky onClose={() => setZodiacOpen(false)} />}
+
+      {/* story orbit — the selected deity's tale as floating planets */}
+      {orbitOpen && selectedId && (
+        <StoryOrbit
+          nodeId={selectedId}
+          onClose={() => setOrbitOpen(false)}
+          onNavigate={id => {
+            setOrbitOpen(false)
+            graphRef.current?.select(id, true)
+            setSelectedId(id)
+          }}
+        />
+      )}
     </div>
   )
 }

@@ -132,7 +132,7 @@ function Section({ label, children, index = 0 }) {
 /* ════════════════════════════════════════════════════════════════════════
    DetailPanel
    ════════════════════════════════════════════════════════════════════════ */
-export default function DetailPanel({ nodeId, onClose, onNavigate }) {
+export default function DetailPanel({ nodeId, onClose, onNavigate, onOpenOrbit }) {
   const node = nodeId ? _nodeMap[nodeId] : null
   const asideRef = useRef(null)
 
@@ -167,6 +167,7 @@ export default function DetailPanel({ nodeId, onClose, onNavigate }) {
           connections={connections}
           onClose={onClose}
           onNavigate={onNavigate}
+          onOpenOrbit={onOpenOrbit}
         />
       )}
     </aside>
@@ -260,7 +261,7 @@ function StorySpine({ beats, catColor, source, onNavigate, nodeId }) {
 }
 
 /* ── main panel body ─────────────────────────────────────────────────── */
-function PanelContent({ node, connections, onClose, onNavigate }) {
+function PanelContent({ node, connections, onClose, onNavigate, onOpenOrbit }) {
   const catCfg   = categoryConfig[node.category] || {}
   const archetype = archetypeMap[node.jungian_archetype]
   const catColor = CAT[node.category] || '#888'
@@ -438,7 +439,31 @@ function PanelContent({ node, connections, onClose, onNavigate }) {
 
         {(story?.beats?.length || storyText) && (
           <Section label={story?.beats?.length ? 'The Story in Stars' : 'Origins'} index={sectionIdx++}>
-            {story?.beats?.length ? (
+            {story?.beats?.length && onOpenOrbit ? (
+              /* teaser + launcher — the full tale lives in the Story Orbit overlay */
+              <>
+                <p className="story-text" style={{ margin:0, fontSize:15, lineHeight:1.6, color:'#bcc4d2' }}>
+                  {story.beats[0].text}
+                </p>
+                <button
+                  onClick={onOpenOrbit}
+                  style={{
+                    marginTop:14, width:'100%', padding:'10px 14px', cursor:'pointer',
+                    fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.18em',
+                    color:GOLD, background:'rgba(205,184,138,.05)',
+                    border:'1px solid rgba(205,184,138,.35)', borderRadius:8,
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:9,
+                    transition:'border-color .2s, background .2s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor=GOLD; e.currentTarget.style.background='rgba(205,184,138,.1)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(205,184,138,.35)'; e.currentTarget.style.background='rgba(205,184,138,.05)' }}
+                >
+                  <span style={{ fontSize:12 }}>✦</span>
+                  ENTER THE STORY
+                  <span style={{ fontSize:9, opacity:.6 }}>{story.beats.length} chapters</span>
+                </button>
+              </>
+            ) : story?.beats?.length ? (
               <StorySpine beats={story.beats} catColor={catColor} source={storySource} onNavigate={onNavigate} nodeId={node.id}/>
             ) : (
               <>
