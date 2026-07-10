@@ -137,6 +137,7 @@ All ambient, slow, asynchronous, and reduced-motion aware. Representative timing
 | Star flare | `@keyframes star-flare` | ~2.4s, quick bloom (peak 18%) → long fade, randomized phase |
 | Star shimmer | `@keyframes star-shimmer` | 3–7s, ~15% of bg stars, never in unison |
 | Node twinkle / hub-breath | `.node .glow` | ~6s twinkle + ~4s hub pulse on major gods |
+| Selection gold bloom | `@keyframes gold-bloom` on `.sel-halo` | 2.4s opacity-only breathing of the blurred gold disc behind the selected star |
 | Float (bob + drift) | `.float-y` / `.float-x` | 14s bob, 70s drift — composed organic float |
 | Celestial rotate / parallax | `.celestial-rotate` / `.bg-drift` | 130s / 180s — two-layer depth |
 | Zodiac sphere drift | `ZodiacSphere DRIFT` | 0.03 rad/s, ~1 turn / 3.5 min |
@@ -162,7 +163,7 @@ Rules:
 
 ## 6. Iconography & glyphs
 
-- **Stars are the primary glyph.** A node = blurred glow + pale core + clipped portrait + category ring + label. Renown drives size and brightness (`prom = sqrt(degree)/sqrt(maxDegree)`; bigger, brighter = more connected).
+- **Stars are the primary glyph.** A node = blurred glow + gold selection halo + pale core + frameless portrait + label. Portraits are never cropped to a circle or ringed — they spread past the star and dissolve into the sky through a radial CSS mask, back-lit by the category-tinted core. Renown drives size and brightness (`prom = sqrt(degree)/sqrt(maxDegree)`; bigger, brighter = more connected).
 - **Zodiac symbols** (♈♉♊…) rendered as text glyphs, gold, `font-variant-emoji: text` (never the OS emoji rendering).
 - Controls use restrained line marks (`‹ ›`, `✕`) over filled icons.
 

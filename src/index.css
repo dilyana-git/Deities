@@ -232,6 +232,7 @@ body {
 #sky.paused .float-x,
 #sky.paused .node .glow,
 #sky.paused .node .glow.hub-breath,
+#sky.paused .node .sel-halo,
 #sky.paused .link-transformed,
 #sky.paused .link-cursed {
   animation-play-state: paused;
@@ -256,9 +257,18 @@ body {
 #sky.zoomed-mid .node.mid-label .node-label { opacity: .52; }
 #sky.zoomed-in  .node.mid-label .node-label { opacity: .68; }
 
+/* portrait soft fade — dissolves each portrait's edges into the sky so the
+   figure floats frameless over its star (no circular crop, no ring). A CSS
+   mask (not an SVG one) because it re-rasterizes at paint resolution and so
+   stays smooth at any zoom level. */
+.node image {
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%);
+}
+
 /* node interaction states */
 .node .core { transition: opacity .2s; }
-.node .ring { transition: stroke .2s, stroke-width .2s, opacity .2s; }
+.node .sel-halo { transition: opacity .3s; }
 .node { transition: opacity .22s; }
 
 .nodes.focusing .node.faded   { opacity: .16; }
@@ -274,8 +284,6 @@ body {
 }
 .node.receded .node-label { opacity: 0 !important; }
 
-.node.lit    .ring { stroke-width: 1px; opacity: .75; }
-
 /* A selected node's leaf neighbours grow + brighten so the constellation of
    nodes reads as strongly as the lit edges radiating to them. Scale the inner
    star elements (NOT the <g>, whose translate transform D3 rewrites each tick)
@@ -283,7 +291,7 @@ body {
    effect auto-reverts when `.lit` is removed, so no JS bookkeeping is needed.
    Excludes `.selected` so the gold central node keeps its own treatment. */
 .nodes.focusing .node.lit:not(.selected) .core,
-.nodes.focusing .node.lit:not(.selected) .ring {
+.nodes.focusing .node.lit:not(.selected) image {
   transform: scale(1.4);
   transform-origin: center;
   transform-box: fill-box;
@@ -298,13 +306,15 @@ body {
 .nodes.focusing .node.lit:not(.selected) .core { opacity: 1; }
 
 /* subtle scale on hover for immediate feedback */
-.node:hover .core { transform: scale(1.08); transform-origin: center; transform-box: fill-box; }
+.node:hover .core,
+.node:hover image { transform: scale(1.08); transform-origin: center; transform-box: fill-box; }
 
-.node.selected .ring  { stroke: #cdb88a !important; stroke-width: 1.2px; opacity: 0.9; }
+/* selection = light, not a frame: the gold halo blooms behind the figure and
+   breathes; gold leaks through the portrait's fading edges as a rim-light */
 .node.selected .core  { opacity: 1; }
-.node.selected .sel-ring { opacity: 1; animation: gold-pulse 2s ease-in-out infinite; }
+.node.selected .sel-halo { animation: gold-bloom 2.4s ease-in-out infinite; }
 .node.selected .node-label { opacity: 1 !important; fill: #cdb88a !important; }
-.node.route   .ring  { stroke: #cdb88a !important; stroke-width: 1px; opacity: 0.85; }
+.node.route   .sel-halo { opacity: .3; }
 .node.route   .core  { opacity: 1; }
 .node.route   .node-label { opacity: 1 !important; fill: #cdb88a !important; }
 .node.nolabel .node-label { opacity: 0 !important; }
@@ -477,8 +487,8 @@ body {
 /* ── Breathing links ───────────────────────────────────────────────────────
    Marching dashes read as a progress-bar/loading-spinner convention — too
    "technical" against this painterly mythic palette. Breathing instead pulses
-   opacity + stroke-width on the link itself, echoing the existing gold-pulse
-   selection-ring language. --breathe-delay (set per element in SkyGraph)
+   opacity + stroke-width on the link itself, echoing the gold-bloom
+   selection language. --breathe-delay (set per element in SkyGraph)
    keeps the ~13 transformation/curse links from pulsing in lockstep. */
 @keyframes link-breathe {
   0%, 100% { opacity: 0.22; stroke-width: 1.1px; }
@@ -499,14 +509,16 @@ body {
   .link-transformed, .link-cursed { animation: none; opacity: 0.4; }
 }
 
-/* ── Selected node gold pulse ────────────────────────────────────────────── */
-@keyframes gold-pulse {
-  0%, 100% { stroke-opacity: 0.2; stroke-width: 1.5px; }
-  50%       { stroke-opacity: 0.7; stroke-width: 3px;   }
+/* ── Selected node gold bloom ────────────────────────────────────────────
+   Opacity-only breathing of the blurred `.sel-halo` disc behind the selected
+   node — light swelling and settling, per the "no hard strokes" principle. */
+@keyframes gold-bloom {
+  0%, 100% { opacity: 0.18; }
+  50%       { opacity: 0.5;  }
 }
 
-.node-selected-ring {
-  animation: gold-pulse 2s ease-in-out infinite;
+@media (prefers-reduced-motion: reduce) {
+  .node.selected .sel-halo { animation: none; opacity: 0.35; }
 }
 
 /* ── Prevent text selection during drag ─────────────────────────────────── */
