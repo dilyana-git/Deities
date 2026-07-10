@@ -389,6 +389,13 @@ body {
   animation: panelFadeIn 0.38s ease both;
 }
 
+/* ── Story teaser (panel) — uniform height, long openers fade out ─────────── */
+.story-teaser { max-height: 138px; overflow: hidden; }
+.story-teaser.clamped {
+  -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent 97%);
+  mask-image: linear-gradient(180deg, #000 62%, transparent 97%);
+}
+
 /* ── Story drop cap ────────────────────────────────────────────────────────── */
 .story-text::first-letter {
   font-family: 'Cinzel', serif;

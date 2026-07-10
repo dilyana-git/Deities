@@ -61,6 +61,14 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
     })
   }, [beats, accent])
 
+  /* reserve room for the story's longest beat so the caption never jumps
+     while stepping through — ~72 chars per line at the caption's width */
+  const capMinHeight = useMemo(() => {
+    const maxLen = Math.max(0, ...beats.map(b => b.text.length))
+    const anyFigs = beats.some(b => b.figures?.length)
+    return Math.ceil(maxLen / 72) * 23 + (anyFigs ? 38 : 0)
+  }, [beats])
+
   const next = useCallback(() => setCur(c => (c + 1) % beats.length), [beats.length])
   const prev = useCallback(() => setCur(c => (c - 1 + beats.length) % beats.length), [beats.length])
 
@@ -155,7 +163,7 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
           <span className="l">{beat.label}</span>
           <span className="c">{cur + 1} / {beats.length}</span>
         </div>
-        <div className="so-cap-body" key={cur}>
+        <div className="so-cap-body" key={cur} style={{ minHeight: capMinHeight }}>
           <p>{beat.text}</p>
           {beat.figures?.length > 0 && (
             <div className="so-figs">

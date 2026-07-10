@@ -442,7 +442,10 @@ function PanelContent({ node, connections, onClose, onNavigate, onOpenOrbit }) {
             {story?.beats?.length && onOpenOrbit ? (
               /* teaser + launcher — the full tale lives in the Story Orbit overlay */
               <>
-                <p className="story-text" style={{ margin:0, fontSize:15, lineHeight:1.6, color:'#bcc4d2' }}>
+                <p
+                  className={`story-text story-teaser ${story.beats[0].text.length > 230 ? 'clamped' : ''}`}
+                  style={{ margin:0, fontSize:15, lineHeight:1.6, color:'#bcc4d2' }}
+                >
                   {story.beats[0].text}
                 </p>
                 <button
