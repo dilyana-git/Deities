@@ -7,6 +7,23 @@ import { CAT } from './SkyGraph.jsx'
 const NUMERALS = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ', 'Ⅷ', 'Ⅸ', 'Ⅹ']
 const _nodeMap = Object.fromEntries(allNodes.map(n => [n.id, n]))
 
+/* figure chip with a tiny portrait — falls back to the coloured dot */
+function FigChip({ fig, color, onNavigate }) {
+  const other = _nodeMap[fig]
+  const [src, setSrc] = useState(`/portraits/${fig}-head.webp`)
+  if (!other) return null
+  return (
+    <button className="so-chip" style={{ '--chip': color }}
+      title={`Fly to ${other.name}`} onClick={() => onNavigate?.(fig)}>
+      {src
+        ? <img className="face" src={src} alt="" draggable="false"
+            onError={() => setSrc(s => s.endsWith('.webp') ? `/portraits/${fig}-head.png` : null)}/>
+        : <span className="dot"/>}
+      {other.name}<span className="fly">⤢</span>
+    </button>
+  )
+}
+
 /* orbital plane: sun centre + the two rings planets alternate between,
    all in % of the stage so the layout is resolution-independent */
 const CX = 50, CY = 40
@@ -24,6 +41,7 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
   const beats = story?.beats || []
   const accent = CAT[node?.category] || '#cdb88a'
   const [cur, setCur] = useState(0)
+  const [taleOpen, setTaleOpen] = useState(false)
   const [portrait, setPortrait] = useState(`/portraits/${nodeId}-head.webp`)
 
   /* lock page scroll while the overlay is open */
@@ -74,13 +92,14 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
 
   useEffect(() => {
     function onKey(e) {
+      if (e.key === 'Escape') { taleOpen ? setTaleOpen(false) : onClose?.(); return }
+      if (taleOpen) return
       if (e.key === 'ArrowRight') next()
       else if (e.key === 'ArrowLeft') prev()
-      else if (e.key === 'Escape') onClose?.()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [next, prev, onClose])
+  }, [next, prev, onClose, taleOpen])
 
   if (!node || !beats.length) return null
   const beat = beats[cur]
@@ -89,6 +108,7 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
 
   return (
     <div className="so-root" style={{ '--accent': accent }}>
+      <div className="so-wash"/>
       {bgStars.map((s, i) => (
         <div key={i} className="so-star" style={{
           left: `${s.left}%`, top: `${s.top}%`, width: s.size, height: s.size,
@@ -161,24 +181,22 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
         <div className="so-cap-head">
           <span className="n">{NUMERALS[cur] || cur + 1}</span>
           <span className="l">{beat.label}</span>
+          {story.story && (
+            <button className="so-tale-btn" onClick={() => setTaleOpen(true)}>
+              ❧ Full tale
+            </button>
+          )}
           <span className="c">{cur + 1} / {beats.length}</span>
         </div>
         <div className="so-cap-body" key={cur} style={{ minHeight: capMinHeight }}>
           <p>{beat.text}</p>
           {beat.figures?.length > 0 && (
             <div className="so-figs">
-              {beat.figures.map(fig => {
-                const other = _nodeMap[fig]
-                if (!other) return null
-                const c = CAT[other.category] || accent
-                return (
-                  <button key={fig} className="so-chip" style={{ '--chip': c }}
-                    title={`Fly to ${other.name}`}
-                    onClick={() => onNavigate?.(fig)}>
-                    <span className="dot"/>{other.name}<span className="fly">⤢</span>
-                  </button>
-                )
-              })}
+              {beat.figures.map(fig => (
+                <FigChip key={fig} fig={fig}
+                  color={CAT[_nodeMap[fig]?.category] || accent}
+                  onNavigate={onNavigate}/>
+              ))}
             </div>
           )}
         </div>
@@ -194,6 +212,25 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
           <button className="so-nav-btn" onClick={next} aria-label="Next beat">›</button>
         </div>
       </div>
+
+      {/* full tale — the complete prose retelling as a reading panel */}
+      {taleOpen && (
+        <div className="so-tale-veil" onClick={() => setTaleOpen(false)}>
+          <div className="so-tale" onClick={e => e.stopPropagation()}>
+            <div className="so-tale-head">
+              <span className="k">The Full Tale</span>
+              <span className="t">{node.name}</span>
+              <button className="x" onClick={() => setTaleOpen(false)} aria-label="Close tale">✕</button>
+            </div>
+            <div className="so-tale-body">
+              {story.story.split('\n\n').map((para, i) => (
+                <p key={i} className={i === 0 ? 'story-text' : ''}>{para}</p>
+              ))}
+              {story.source && <p className="src">— {story.source}</p>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1072,6 +1072,15 @@ body {
 }
 .so-root button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 
+/* nebula wash — each story bathes in its deity's colour */
+.so-wash {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(58% 52% at 50% 38%, color-mix(in oklch, var(--accent) 16%, transparent) 0%, transparent 64%),
+    radial-gradient(40% 46% at 82% 78%, color-mix(in oklch, var(--accent) 8%, transparent) 0%, transparent 70%);
+  mix-blend-mode: screen;
+}
+
 .so-star {
   position: absolute; border-radius: 50%; background: #ece6d6; pointer-events: none;
   animation: so-twinkle var(--dur) ease-in-out var(--delay) infinite alternate;
@@ -1155,7 +1164,14 @@ body {
 .so-cap-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 7px; }
 .so-cap-head .n { font-family: Cinzel, serif; font-size: 10px; color: rgba(205,184,138,.55); }
 .so-cap-head .l { font-family: Cinzel, serif; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: #cdb88a; }
-.so-cap-head .c { margin-left: auto; font-family: Cinzel, serif; font-size: 9px; letter-spacing: .12em; color: #3a4354; }
+.so-cap-head .c { font-family: Cinzel, serif; font-size: 9px; letter-spacing: .12em; color: #3a4354; }
+.so-tale-btn {
+  margin-left: auto; margin-right: 10px;
+  font-family: Cinzel, serif; font-size: 9.5px; letter-spacing: .14em;
+  color: #8c7d59; padding: 2px 8px; border-radius: 12px;
+  border: 1px solid transparent; transition: color .15s, border-color .15s;
+}
+.so-tale-btn:hover { color: #cdb88a; border-color: rgba(205,184,138,.35); }
 .so-cap-body { min-height: 96px; animation: so-cap-in .45s ease both; }
 @keyframes so-cap-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .so-cap-body p { margin: 0; font-size: 15px; line-height: 1.55; color: #c2cad8; }
@@ -1172,6 +1188,11 @@ body {
 .so-chip .dot {
   width: 5px; height: 5px; border-radius: 50%;
   background: var(--chip); box-shadow: 0 0 5px var(--chip);
+}
+.so-chip .face {
+  width: 18px; height: 18px; border-radius: 50%; object-fit: cover;
+  border: 1px solid color-mix(in oklch, var(--chip) 60%, transparent);
+  box-shadow: 0 0 6px color-mix(in oklch, var(--chip) 35%, transparent);
 }
 .so-chip:hover, .so-chip:focus-visible {
   border-color: var(--chip);
@@ -1195,9 +1216,40 @@ body {
 .so-dot.on { background: #cdb88a; transform: scale(1.3); box-shadow: 0 0 6px rgba(205,184,138,.6); }
 .so-src { font-style: italic; font-size: 11px; color: #3a4354; white-space: nowrap; }
 
+/* full tale — a quiet reading room over the orbit */
+.so-tale-veil {
+  position: absolute; inset: 0; z-index: 10; display: grid; place-items: center;
+  background: rgba(4,6,12,.72); backdrop-filter: blur(6px);
+  animation: so-cap-in .3s ease both;
+}
+.so-tale {
+  width: min(640px, calc(100% - 40px)); max-height: min(72vh, 640px);
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #0c1019, #090c13);
+  border: 1px solid rgba(205,184,138,.25); border-radius: 14px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.6);
+}
+.so-tale-head {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 18px 24px 12px; border-bottom: 1px solid #19202d;
+}
+.so-tale-head .k { font-family: Cinzel, serif; font-size: 9.5px; letter-spacing: .28em; color: #8c7d59; text-transform: uppercase; }
+.so-tale-head .t { font-family: Cinzel, serif; font-size: 15px; letter-spacing: .1em; color: #ece6d6; }
+.so-tale-head .x { margin-left: auto; color: #5c6678; font-size: 14px; padding: 2px 6px; align-self: center; transition: color .15s; }
+.so-tale-head .x:hover { color: #cdb88a; }
+.so-tale-body {
+  overflow-y: auto; padding: 20px 24px 24px;
+  scrollbar-width: thin; scrollbar-color: #19202d transparent;
+}
+.so-tale-body::-webkit-scrollbar { width: 8px; }
+.so-tale-body::-webkit-scrollbar-thumb { background: #19202d; border-radius: 4px; }
+.so-tale-body p { margin: 0 0 1em; font-size: 15.5px; line-height: 1.66; color: #c2cad8; }
+.so-tale-body p:last-child { margin-bottom: 0; }
+.so-tale-body .src { font-style: italic; font-size: 12px; color: #5c6678; margin-top: 6px; }
+
 @media (prefers-reduced-motion: reduce) {
   .so-star, .so-float, .so-sun-orb { animation: none; }
-  .so-cap-body { animation: none; }
+  .so-cap-body, .so-tale-veil { animation: none; }
   .so-orb, .so-planet.on .so-orb { transition: none; }
 }
 @media (max-width: 760px) {
