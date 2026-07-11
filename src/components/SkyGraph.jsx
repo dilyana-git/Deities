@@ -101,6 +101,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        stars stay small — the hierarchy reads instantly across the field. */
     const radius = n => 4 + Math.pow(n.prom, 1.4) * 22
 
+    /* portrait half-width as a multiple of the node radius — portraits spread
+       beyond the star and fade into the sky (see the `portrait-mask` in defs)
+       instead of being cropped to a circle. */
+    const IMG_SCALE = 1.45
+
     /* ── birth-order generation (BFS along parent_of / birthed edges) ── */
     const childAdj = {}
     nodes.forEach(n => (childAdj[n.id] = []))
@@ -144,15 +149,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const tFm = tFlt.append('feMerge')
     tFm.append('feMergeNode').attr('in','b')
     tFm.append('feMergeNode').attr('in','SourceGraphic')
-
-    /* circular clip path per node for portrait images */
-    defs.selectAll('.node-clip')
-      .data(nodes)
-      .join('clipPath')
-      .attr('class', 'node-clip')
-      .attr('id', d => `clip-${d.id}`)
-      .append('circle')
-      .attr('r', d => radius(d))
 
     const zoomLayer    = svg.append('g').attr('class','zoom')
 
@@ -421,21 +417,35 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .style('--breath-dur',    () => `${(3.5 + rnd() * 1.5).toFixed(2)}s`)
       .style('--breath-delay',  () => `-${(rnd() * 5).toFixed(2)}s`)
 
+    /* gold selection bloom — a blurred gold disc BEHIND the star, invisible
+       until the node has `.selected` (or `.route`). It back-lights the
+       portrait so gold leaks through the fading edges as a rim-light aura —
+       the frameless replacement for the old stroked selection ring. */
+    gNode.append('circle').attr('class','sel-halo')
+      .attr('r',       d => radius(d) * 1.45)
+      .attr('fill',    '#cdb88a')
+      .attr('filter',  'url(#glow)')
+      .attr('opacity', 0)
+
     gNode.append('circle').attr('class','core')
       .attr('r',       d => radius(d))
       .attr('fill',    d => `color-mix(in oklab, ${CAT[d.category]} 32%, #f0ead9)`)
       .attr('opacity', d => 0.72 + d.prom * 0.28)
 
-    /* head portrait — clipped to the node circle. The `href` is set LATER, by
-       loadPortraits(), so ~100 mostly-missing portraits don't fire ~390 failed
-       requests + onerror DOM churn during the opening ignition (that contention
-       was a main source of load-time jank). */
+    /* head portrait — unframed. Drawn ~45% larger than the star and softened
+       into the sky by a CSS radial-gradient mask (`.node image` in index.css;
+       CSS masks re-rasterize at paint resolution, so the fade stays smooth at
+       any zoom — an SVG objectBoundingBox mask pixelates when zoomed). The
+       figure floats over its category-tinted core like an apparition — no
+       circular crop or ring competing with the artwork. The `href` is set
+       LATER, by loadPortraits(), so ~100 mostly-missing portraits don't fire
+       ~390 failed requests + onerror DOM churn during the opening ignition
+       (that contention was a main source of load-time jank). */
     gNode.append('image')
-      .attr('x',                  d => -radius(d))
-      .attr('y',                  d => -radius(d))
-      .attr('width',              d => radius(d) * 2)
-      .attr('height',             d => radius(d) * 2)
-      .attr('clip-path',          d => `url(#clip-${d.id})`)
+      .attr('x',                  d => -radius(d) * IMG_SCALE)
+      .attr('y',                  d => -radius(d) * IMG_SCALE)
+      .attr('width',              d => radius(d) * 2 * IMG_SCALE)
+      .attr('height',             d => radius(d) * 2 * IMG_SCALE)
       .attr('preserveAspectRatio','xMidYMid slice')
       .attr('opacity', 0.95)
       .on('error', function(_, d) {
@@ -463,22 +473,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       _portraitsLoaded = true
       gNode.select('image').attr('href', d => `/portraits/${d.id}-head.webp`)
     }
-
-    gNode.append('circle').attr('class','ring')
-      .attr('r',            d => radius(d) + 0.5)
-      .attr('fill',         'none')
-      .attr('stroke',       d => CAT[d.category])
-      .attr('stroke-width', 1.2)
-      .attr('opacity',      0.72)
-
-    /* gold pulse ring — invisible until the node has `.selected`, then the
-       CSS animation kicks in. The ring sits outside the category ring. */
-    gNode.append('circle').attr('class','sel-ring')
-      .attr('r',            d => radius(d) + 3)
-      .attr('fill',         'none')
-      .attr('stroke',       '#cdb88a')
-      .attr('stroke-width', 1.2)
-      .attr('opacity',      0)
 
     gNode.append('text').attr('class','node-label')
       .attr('x', d => radius(d) + 6).attr('y', 4)
@@ -1010,9 +1004,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     }
 
     /* grow the clicked node above the field. Every sized piece of the glyph —
-       glow, core, clipped portrait, ring, label offset — plus the portrait's
-       clipPath circle in <defs> is rescaled off one shared transition so they
-       enlarge in lockstep (the clip MUST move too or the portrait overflows it).
+       glow, gold halo, core, portrait, label offset — is rescaled off one
+       shared transition so they enlarge in lockstep. The portrait's soft-fade
+       CSS mask is sized in percentages, so it follows the image for free.
        Physics radius is left alone, so the layout doesn't reflow. */
     const SEL_GROW = 1.7
     let _grownId = null
@@ -1023,14 +1017,13 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const r = radius(d) * scale
       const t = d3.transition().duration(280).ease(d3.easeCubicOut)
       g.select('.glow').transition(t).attr('r', r * 1.25)
+      g.select('.sel-halo').transition(t).attr('r', r * 1.45)
       g.select('.core').transition(t).attr('r', r)
       g.select('image').transition(t)
-        .attr('x', -r).attr('y', -r).attr('width', r * 2).attr('height', r * 2)
-      g.select('.ring').transition(t).attr('r', r + 0.5)
-      g.select('.sel-ring').transition(t).attr('r', r + 3)
+        .attr('x', -r * IMG_SCALE).attr('y', -r * IMG_SCALE)
+        .attr('width', r * 2 * IMG_SCALE).attr('height', r * 2 * IMG_SCALE)
       const side = d._labelSide || 1
       g.select('.node-label').transition(t).attr('x', side > 0 ? r + 6 : -(r + 6))
-      defs.select(`#clip-${d.id} circle`).transition(t).attr('r', r)
     }
     function enlargeSelected(id) {
       if (_grownId === id) return            // already correct — skip redundant transitions
@@ -1139,11 +1132,15 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       gNode.classed('faded', n => n.id !== d.id && !near.has(n.id))
            .classed('lit',   n => n.id === d.id || near.has(n.id))
 
-      /* ring shimmer: the hovered node's ring briefly flares brighter */
-      const hg = gNode.filter(n => n.id === d.id)
-      hg.select('.ring')
-        .transition('ring-shimmer').duration(140).ease(d3.easeCubicOut)
-        .attr('opacity', 0.9).attr('stroke-width', 1.2)
+      /* glow flare: the hovered node's category glow swells and brightens.
+         Brightness rides through --glow-base (the twinkle keyframes read it),
+         so it works even while the CSS twinkle animation owns `opacity`. */
+      if (d.id !== _grownId) {
+        gNode.filter(n => n.id === d.id).select('.glow')
+          .style('--glow-base', Math.min((0.07 + d.prom * 0.14) * 2.2, 0.4).toFixed(3))
+          .transition('glow-shimmer').duration(140).ease(d3.easeCubicOut)
+          .attr('r', radius(d) * 1.6)
+      }
 
       /* magnetic lean: temporarily nudge neighbors toward the hovered node */
       _hoverNudges = []
@@ -1193,10 +1190,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       if (state.pathLock || state.tourLock) return
       if (tip) tip.style.opacity = '0'
 
-      /* restore ring from hover shimmer */
-      gNode.selectAll('.ring').interrupt('ring-shimmer')
-        .transition('ring-restore').duration(220).ease(d3.easeCubicOut)
-        .attr('opacity', 0.45).attr('stroke-width', 0.8)
+      /* restore glow from hover flare (leave the grown/selected node alone —
+         sizeNode owns its glow radius) */
+      gNode.filter(n => n.id !== _grownId).select('.glow').interrupt('glow-shimmer')
+        .style('--glow-base', d => (0.07 + d.prom * 0.14).toFixed(3))
+        .transition('glow-restore').duration(220).ease(d3.easeCubicOut)
+        .attr('r', d => radius(d) * 1.25)
 
       /* release magnetic lean — spring nodes back */
       if (_hoverNudges) {

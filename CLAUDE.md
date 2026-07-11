@@ -153,10 +153,11 @@ Adding `.paused` to the `<svg>` halts twinkle/flow animations; a `visibilitychan
 
 ## Node Glyphs & Portraits
 
-Each node `<g>` stacks: a blurred `glow` circle (`#glow` filter), a pale `core` circle, a clipped portrait `<image>`, a category-colored `ring`, and a `node-label` text.
+Each node `<g>` stacks: a blurred `glow` circle (`#glow` filter), a gold `sel-halo` bloom circle (invisible until `.selected`/`.route`), a pale `core` circle, a **frameless** portrait `<image>`, and a `node-label` text.
 
-- The portrait `<image>` loads `/portraits/{id}-head.webp`, clipped to a per-node `clipPath` (`id="clip-{id}"`).
-- An `onerror` handler walks a **fallback chain**: `head.webp → head.png → full.webp → full.png`, then removes the `<image>` (leaving the bare star) if none exist.
+- Portraits are **not** cropped to a circle and have **no ring** — the `<image>` spans `IMG_SCALE` (1.45×) the node radius and dissolves into the sky via a CSS radial-gradient mask (`.node image` in `index.css`). A CSS mask (not an SVG one) is deliberate: it re-rasterizes at paint resolution, so the fade stays smooth at any zoom.
+- Selection/route emphasis is **light, not a frame**: `.sel-halo` (a blurred gold disc behind the core) breathes via `@keyframes gold-bloom` and leaks through the portrait's faded edges as a rim-light.
+- The portrait `<image>` loads `/portraits/{id}-head.webp`. An `onerror` handler walks a **fallback chain**: `head.webp → head.png → full.webp → full.png`, then removes the `<image>` (leaving the bare star) if none exist.
 - Always-on; no toggle. Nodes with `degree === 0` get `.nolabel`; `prom > 0.55` get `.prominent` (brighter label).
 
 ## Detail Panel
@@ -235,7 +236,7 @@ Edit `src/data/mythology.js` (nodes/links) and optionally add a matching `src/da
 | `.story-text::first-letter` | Drop-cap on the Origins prose |
 | `.tourbar` (+ `.open`) | Bottom guided-tour caption bar |
 | `.pop-in` | Quick scale/fade entrance for popovers (legend, path, tour menu) |
-| `.node-selected-ring` | Gold pulse animation (`@keyframes gold-pulse`) |
+| `.sel-halo` | Gold selection bloom behind the star (`@keyframes gold-bloom`) |
 | `.gs-root` / `.gs-caption` / `.gs-name` | GuidedSky + ZodiacSky shared cinematic overlay classes |
 | `.zs-root` / `.zs-strip` / `.zs-glyph-btn` | ZodiacSky-specific: root, glyph strip, sign buttons |
 | `.zs-selected` / `.zs-hovered` | ZodiacSphere constellation highlight states (gold edges/halos) |
