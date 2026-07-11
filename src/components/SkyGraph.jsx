@@ -59,6 +59,20 @@ const LINK_DASH = {
 
 const W = 1200, H = 740
 
+/* Portrait URL candidates for a node id, most- to least-preferred. Tries both
+   image folders (`/portraits/` per the current convention, `/deities/` kept
+   from the legacy system), three name styles, and three formats, so drop-in
+   images are found regardless of which convention they follow. */
+function portraitSources(id, preferFull = false) {
+  const names = preferFull ? [`${id}-full`, `${id}-head`, id] : [`${id}-head`, `${id}-full`, id]
+  const out = []
+  for (const dir of ['portraits', 'deities'])
+    for (const name of names)
+      for (const ext of ['webp', 'png', 'jpg'])
+        out.push(`/${dir}/${name}.${ext}`)
+  return out
+}
+
 /* ════════════════════════════════════════════════════════════════════════
    SkyGraph — D3 celestial-atlas graph, exposed as an imperative React ref
    ════════════════════════════════════════════════════════════════════════ */
@@ -177,6 +191,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const celestialRotate = zoomLayer.append('g').attr('class','celestial-rotate')
     const floatYLayer  = celestialRotate.append('g').attr('class','float-y')
     const floatXLayer  = floatYLayer.append('g').attr('class','float-x')
+    const domeLayer    = floatXLayer.append('g').attr('class','dome-grid').attr('pointer-events','none')
     const catHaloLayer = floatXLayer.append('g').attr('class','cat-halos').attr('pointer-events','none')
     const clusterLayer = floatXLayer.append('g').attr('class','clusters')
     const linkLayer    = floatXLayer.append('g').attr('class','links')
@@ -277,9 +292,91 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     }
     spawnMeteor()
 
+    /* ── celestial dome ────────────────────────────────────────────
+       The field is shaped into an elliptical "sky disc" so the start page
+       reads as a night sky projected on a sphere: anchors are remapped onto
+       the disc, a soft containment force keeps the silhouette circular, and
+       after the pre-settle a gentle fisheye bake bulges the centre and
+       compresses the rim like a star globe seen face-on. */
+    const DOME = { cx: W / 2, cy: H / 2, rx: W * 0.465, ry: H * 0.47 }
+    /* normalized ellipse-metric distance from dome centre: 1 = on the horizon */
+    const domeRho = (x, y) => Math.hypot((x - DOME.cx) / DOME.rx, (y - DOME.cy) / DOME.ry)
+
+    /* remap category anchors: uniformly scale the anchor constellation about
+       the dome centre so the outermost anchor lands at ρ ≈ 0.8 — clusters keep
+       their relative arrangement but settle inside the disc, not a rectangle */
+    const maxAnchorRho = Math.max(...Object.values(ANCHOR).map(([fx, fy]) => domeRho(fx * W, fy * H)))
+    const anchorScale = maxAnchorRho > 0 ? 0.8 / maxAnchorRho : 1
+    const DOME_ANCHOR = Object.fromEntries(Object.entries(ANCHOR).map(([c, [fx, fy]]) => [c, [
+      (DOME.cx + (fx * W - DOME.cx) * anchorScale) / W,
+      (DOME.cy + (fy * H - DOME.cy) * anchorScale) / H,
+    ]]))
+
+    /* dome furniture — planisphere-style celestial grid behind the field:
+       a soft sky glow, concentric declination rings, meridian spokes, a
+       glowing horizon ring with degree ticks, and a tilted dashed ecliptic */
+    {
+      const { cx, cy, rx, ry } = DOME
+      const GRID = 'rgb(130,155,205)'
+
+      const skyGrad = defs.append('radialGradient').attr('id', 'sky-dome-glow')
+        .attr('cx', '50%').attr('cy', '50%').attr('r', '50%')
+      skyGrad.append('stop').attr('offset', '0%').attr('stop-color', '#16223a').attr('stop-opacity', 0.30)
+      skyGrad.append('stop').attr('offset', '72%').attr('stop-color', '#101a2e').attr('stop-opacity', 0.14)
+      skyGrad.append('stop').attr('offset', '100%').attr('stop-color', '#0a1020').attr('stop-opacity', 0)
+      domeLayer.append('ellipse')
+        .attr('cx', cx).attr('cy', cy).attr('rx', rx).attr('ry', ry)
+        .attr('fill', 'url(#sky-dome-glow)')
+
+      /* declination rings */
+      for (const k of [0.35, 0.62, 0.85]) {
+        domeLayer.append('ellipse')
+          .attr('cx', cx).attr('cy', cy).attr('rx', rx * k).attr('ry', ry * k)
+          .attr('fill', 'none').attr('stroke', GRID)
+          .attr('stroke-width', 0.6).attr('opacity', 0.10)
+      }
+
+      /* meridian spokes — from the inner ring out to the horizon */
+      for (let i = 0; i < 24; i++) {
+        const a = (i / 24) * Math.PI * 2
+        domeLayer.append('line')
+          .attr('x1', cx + Math.cos(a) * rx * 0.35).attr('y1', cy + Math.sin(a) * ry * 0.35)
+          .attr('x2', cx + Math.cos(a) * rx).attr('y2', cy + Math.sin(a) * ry)
+          .attr('stroke', GRID).attr('stroke-width', 0.5).attr('opacity', 0.06)
+      }
+
+      /* horizon ring: blurred under-glow + crisp line + degree ticks */
+      domeLayer.append('ellipse')
+        .attr('cx', cx).attr('cy', cy).attr('rx', rx).attr('ry', ry)
+        .attr('fill', 'none').attr('stroke', GRID)
+        .attr('stroke-width', 2.4).attr('opacity', 0.12).attr('filter', 'url(#glow)')
+      domeLayer.append('ellipse')
+        .attr('cx', cx).attr('cy', cy).attr('rx', rx).attr('ry', ry)
+        .attr('fill', 'none').attr('stroke', GRID)
+        .attr('stroke-width', 1).attr('opacity', 0.28)
+      for (let i = 0; i < 36; i++) {
+        const a = (i / 36) * Math.PI * 2
+        const major = i % 3 === 0
+        domeLayer.append('line')
+          .attr('x1', cx + Math.cos(a) * rx * (major ? 0.975 : 0.985))
+          .attr('y1', cy + Math.sin(a) * ry * (major ? 0.975 : 0.985))
+          .attr('x2', cx + Math.cos(a) * rx * 1.012)
+          .attr('y2', cy + Math.sin(a) * ry * 1.012)
+          .attr('stroke', GRID).attr('stroke-width', major ? 0.9 : 0.5)
+          .attr('opacity', major ? 0.22 : 0.12)
+      }
+
+      /* ecliptic — the sun's path, a tilted dashed gold band */
+      domeLayer.append('ellipse')
+        .attr('cx', cx).attr('cy', cy).attr('rx', rx * 0.97).attr('ry', ry * 0.34)
+        .attr('transform', `rotate(-16 ${cx} ${cy})`)
+        .attr('fill', 'none').attr('stroke', '#cdb88a')
+        .attr('stroke-width', 0.7).attr('stroke-dasharray', '4 8').attr('opacity', 0.13)
+    }
+
     /* initial positions — cluster anchors + jitter */
     nodes.forEach(n => {
-      const a = ANCHOR[n.category] || [0.5, 0.5]
+      const a = DOME_ANCHOR[n.category] || [0.5, 0.5]
       n.ax = a[0]; n.ay = a[1]
       n.x  = a[0] * W + (Math.random() - 0.5) * 120
       n.y  = a[1] * H + (Math.random() - 0.5) * 120
@@ -296,11 +393,31 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       return force
     }
 
+    /* dome containment — nodes drifting past the horizon (ρ > 0.92) get a
+       soft linear pull back toward the centre, keeping the field's silhouette
+       an ellipse rather than the charge force's rectangle-filling spread */
+    function domeForce(strength) {
+      let ns
+      function force(alpha) {
+        const k = strength * alpha
+        for (const n of ns) {
+          const rho = domeRho(n.x, n.y)
+          if (rho <= 0.92) continue
+          const f = (rho - 0.92) / rho * k
+          n.vx -= (n.x - DOME.cx) * f
+          n.vy -= (n.y - DOME.cy) * f
+        }
+      }
+      force.initialize = _ => (ns = _)
+      return force
+    }
+
     /* ── simulation ─────────────────────────────────────────────── */
     const sim = d3.forceSimulation(nodes)
       .force('link',    d3.forceLink(links).id(d => d.id).distance(66).strength(0.23))
       .force('charge',  d3.forceManyBody().strength(-250).distanceMax(480))
       .force('cluster', clusterForce(0.065))
+      .force('dome',    domeForce(0.6))
       .force('collide', d3.forceCollide().radius(d => radius(d) + 26).strength(0.92))
       .alpha(1).alphaDecay(0.028)
 
@@ -447,15 +564,13 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('width',              d => radius(d) * 2 * IMG_SCALE)
       .attr('height',             d => radius(d) * 2 * IMG_SCALE)
       .attr('preserveAspectRatio','xMidYMid slice')
-      .attr('opacity', 0.95)
+      /* invisible until a candidate actually loads — otherwise the browser
+         paints a broken-image glyph while the fallback chain walks its 404s */
+      .attr('opacity', 0)
+      .on('load', function() { d3.select(this).attr('opacity', 0.95) })
       .on('error', function(_, d) {
         const el = d3.select(this)
-        const chain = [
-          `/portraits/${d.id}-head.webp`,
-          `/portraits/${d.id}-head.png`,
-          `/portraits/${d.id}-full.webp`,
-          `/portraits/${d.id}-full.png`,
-        ]
+        const chain = portraitSources(d.id)
         const i = +(el.attr('data-fb') || 0) + 1
         el.attr('data-fb', i)
         if (i < chain.length) el.attr('href', chain[i])
@@ -471,7 +586,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     function loadPortraits() {
       if (_portraitsLoaded) return
       _portraitsLoaded = true
-      gNode.select('image').attr('href', d => `/portraits/${d.id}-head.webp`)
+      gNode.select('image').attr('href', d => portraitSources(d.id)[0])
     }
 
     gNode.append('text').attr('class','node-label')
@@ -598,6 +713,24 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        CSS float layers instead. A drag re-energises the sim; it then cools to rest. */
     sim.stop()
     for (let i = 0; i < 160; i++) sim.tick()
+
+    /* spherical bake — remap the settled layout through a mild fisheye:
+       ρ' = sin(ρA)/sin(A) expands the mid-field and compresses spacing toward
+       the horizon, the signature foreshortening of a sphere seen face-on.
+       Baked into d.x/d.y once so every downstream consumer (camera, labels,
+       hover, drag) keeps working in a single coordinate space. */
+    const DOME_A = 1.15
+    nodes.forEach(n => {
+      const ex = (n.x - DOME.cx) / DOME.rx
+      const ey = (n.y - DOME.cy) / DOME.ry
+      const rho = Math.hypot(ex, ey)
+      if (rho < 1e-6) return
+      const warped = rho <= 1 ? Math.sin(rho * DOME_A) / Math.sin(DOME_A) : 1 + (rho - 1) * 0.3
+      const s = warped / rho
+      n.x = DOME.cx + ex * s * DOME.rx
+      n.y = DOME.cy + ey * s * DOME.ry
+    })
+
     updateClusterLabels()
     updateCatHalos()
     assignLabelSides()
@@ -683,6 +816,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     /* initial state: starfield dim, everything else invisible */
     svg.call(zoom.transform, startTx)
     bgLayer.attr('opacity', 0)
+    domeLayer.attr('opacity', 0)
     catHaloLayer.attr('opacity', 0)
     linkLayer.attr('opacity', 1)
     nodeLayer.attr('opacity', 1)
@@ -729,6 +863,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* phase 1: starfield materialises from black */
     bgLayer.transition('ign').duration(1200).delay(100)
+      .ease(d3.easeCubicOut)
+      .attr('opacity', 1)
+
+    /* the celestial grid etches in just behind the starfield */
+    domeLayer.transition('ign').duration(1600).delay(400)
       .ease(d3.easeCubicOut)
       .attr('opacity', 1)
 
@@ -820,6 +959,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       _ignitionDone = true
 
       bgLayer.interrupt('ign').attr('opacity', 1)
+      domeLayer.interrupt('ign').attr('opacity', 1)
       catHaloLayer.interrupt('ign').attr('opacity', 1)
       linkSel.interrupt('ign')
         .attr('stroke-dasharray', null)
@@ -1431,4 +1571,4 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 })
 
 export default SkyGraph
-export { CAT, LCOL }
+export { CAT, LCOL, portraitSources }

@@ -406,6 +406,49 @@ body {
   mask-image: linear-gradient(180deg, #000 62%, transparent 97%);
 }
 
+/* ── Holographic hero (DetailPanel) ─────────────────────────────────────────
+   Layer order inside .holo-stage: .holo-materialize (entrance, finite) >
+   .holo-float (ambient bob) > .holo-tilt.holo-flicker (cursor perspective +
+   opacity flicker). Each transform/opacity animation lives on its own element
+   so they compose instead of overriding. --holo carries the category color. */
+.holo-stage { overflow: hidden; }
+.holo-materialize { animation: holo-materialize 0.7s cubic-bezier(.2,.7,.3,1) both; }
+.holo-float { animation: holo-float 7s ease-in-out infinite; will-change: transform; }
+.holo-tilt {
+  transform: perspective(900px);
+  transform-style: preserve-3d;
+  transition: transform 0.22s ease-out;
+}
+.holo-flicker { animation: holo-flicker 9s steps(1) infinite; }
+.holo-scanlines {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background: repeating-linear-gradient(to bottom,
+    rgba(255,255,255,.04) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+}
+.holo-sweep {
+  position: absolute; left: 0; right: 0; height: 34px; z-index: 3; pointer-events: none;
+  background: linear-gradient(to bottom,
+    transparent,
+    color-mix(in oklab, var(--holo, #cdb88a) 14%, transparent),
+    transparent);
+  animation: holo-scan 5.5s linear infinite;
+}
+.holo-ring { animation: holo-dash 4s linear infinite; }
+@keyframes holo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes holo-scan { 0% { top: -16%; } 100% { top: 104%; } }
+@keyframes holo-dash { to { stroke-dashoffset: -36; } }
+@keyframes holo-flicker {
+  0%, 100% { opacity: 1; }
+  6%  { opacity: .93; }  7%  { opacity: 1; }
+  34% { opacity: .96; }  36% { opacity: 1; }
+  58% { opacity: .9; }   59% { opacity: .99; }
+  82% { opacity: .95; }  84% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .holo-materialize, .holo-float, .holo-flicker, .holo-sweep, .holo-ring { animation: none; }
+}
+
 /* ── Story drop cap ────────────────────────────────────────────────────────── */
 .story-text::first-letter {
   font-family: 'Cinzel', serif;

@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { nodes as allNodes, links as allLinks } from '../data/mythology.js'
 import { archetypeMap } from '../data/archetypeMap.js'
-import { CAT, LCOL } from './SkyGraph.jsx'
+import { CAT, LCOL, portraitSources } from './SkyGraph.jsx'
 import { linkTypeConfig } from '../data/linkTypeConfig.js'
 import { categoryConfig } from '../data/categoryConfig.js'
 import { deityStories } from '../data/deityStories.js'
@@ -34,67 +34,144 @@ const SP = {
   padX:   18,   // horizontal padding — constant across the panel
 }
 
-/* ── sigil ───────────────────────────────────────────────────────────── */
-function Sigil({ node, catColor }) {
-  const W = 320, H = 172, cx = W / 2, cy = H / 2 + 10
-  const near = [...(_adj[node.id] || [])].map(id => _nodeMap[id]).filter(Boolean)
-    .sort((a, b) => b.degree - a.degree).slice(0, 9)
-  const R = 54
-  const gid = `sg-${node.id}`
+/* ── holographic sigil ───────────────────────────────────────────────────
+   Rotating 3D constellation projected above an emitter dais. The hero star
+   sits at the axis; its top neighbors orbit on a slowly spinning ring with
+   varying heights, perspective-projected and depth-sorted each frame.
+   Follows the SkyGraph pattern: the SVG DOM is owned imperatively inside a
+   single effect (rAF loop) — React never re-renders per frame. */
+function HoloSigil({ node, catColor }) {
+  const layerRef = useRef(null)
 
-  const lines = near.map((m, i) => {
-    const ang = (-90 + (360 / Math.max(near.length, 1)) * i) * Math.PI / 180
-    const x = cx + Math.cos(ang) * (R + (i % 2) * 16)
-    const y = cy + Math.sin(ang) * (R * 0.6 + (i % 2) * 10)
-    return <line key={'l'+i} x1={cx} y1={cy} x2={x.toFixed(1)} y2={y.toFixed(1)}
-      stroke={CAT[m.category]} strokeWidth="0.7" opacity="0.32" strokeDasharray="1 5"/>
-  })
+  useEffect(() => {
+    const layer = layerRef.current
+    if (!layer) return
+    const NS = 'http://www.w3.org/2000/svg'
+    const cx = 160, cy = 104, F = 340
+    const near = [...(_adj[node.id] || [])].map(id => _nodeMap[id]).filter(Boolean)
+      .sort((a, b) => b.degree - a.degree).slice(0, 10)
 
-  const dots = near.map((m, i) => {
-    const ang = (-90 + (360 / Math.max(near.length, 1)) * i) * Math.PI / 180
-    const x = cx + Math.cos(ang) * (R + (i % 2) * 16)
-    const y = cy + Math.sin(ang) * (R * 0.6 + (i % 2) * 10)
-    const r = 1.8 + m.prom * 2.8
-    return (
-      <g key={'d'+i}>
-        <circle cx={x.toFixed(1)} cy={y.toFixed(1)} r={r}
-          fill="#ece6d6" opacity={0.38 + m.prom * 0.5}/>
-        <circle cx={x.toFixed(1)} cy={y.toFixed(1)} r={r + 2}
-          fill="none" stroke={CAT[m.category]} strokeWidth="0.8" opacity="0.4"/>
-      </g>
-    )
-  })
+    const mk = (tag, attrs) => {
+      const el = document.createElementNS(NS, tag)
+      for (const k in attrs) el.setAttribute(k, attrs[k])
+      return el
+    }
 
-  const cr = 5 + node.prom * 5.5
+    const stars = near.map((m, i) => {
+      const col  = CAT[m.category] || '#888'
+      const g    = mk('g', {})
+      const line = mk('line', { stroke: col, 'stroke-dasharray': '1 5' })
+      const halo = mk('circle', { fill: col })
+      const dot  = mk('circle', { fill: '#ece6d6' })
+      const ring = mk('circle', { fill: 'none', stroke: col })
+      g.append(line, halo, dot, ring)
+      layer.appendChild(g)
+      return {
+        g, line, halo, dot, ring, prom: m.prom,
+        ang: (Math.PI * 2 / near.length) * i,
+        R: 62 + (i % 3) * 11,        // orbit radius — three interleaved shells
+        h: -34 + (i % 5) * 15,       // orbit height above/below the hero
+      }
+    })
+
+    const cr = 5 + node.prom * 5.5
+    const heroG    = mk('g', {})
+    const heroGlow = mk('circle', { cx, cy, fill: catColor })
+    const heroCore = mk('circle', { cx, cy, fill: '#f3eede' })
+    const heroGold = mk('circle', { cx, cy, fill: 'none', stroke: GOLD, 'stroke-width': 1.1, opacity: 0.9 })
+    const heroCat  = mk('circle', { cx, cy, fill: 'none', stroke: catColor, 'stroke-width': 0.5, opacity: 0.35 })
+    heroG.append(heroGlow, heroCore, heroGold, heroCat)
+    layer.appendChild(heroG)
+
+    let raf
+    const t0 = performance.now()
+    const frame = now => {
+      const t = (now - t0) / 1000
+      const spin = t * 0.4
+      const order = [{ z: 0, el: heroG }]
+
+      stars.forEach(s => {
+        const a  = s.ang + spin
+        const z3 = Math.sin(a) * s.R
+        const k  = F / (F + z3)                 // perspective scale
+        const x  = cx + Math.cos(a) * s.R * k
+        const y  = cy + (s.h + Math.sin(t * 0.9 + s.ang * 3) * 3) * k
+        const front = (1 - z3 / s.R) / 2        // 0 = far side, 1 = near side
+        const r = (1.9 + s.prom * 2.9) * k
+        s.line.setAttribute('x1', cx); s.line.setAttribute('y1', cy)
+        s.line.setAttribute('x2', x.toFixed(1)); s.line.setAttribute('y2', y.toFixed(1))
+        s.line.setAttribute('stroke-width', (0.7 * k).toFixed(2))
+        s.line.setAttribute('opacity', (0.12 + front * 0.3).toFixed(2))
+        for (const el of [s.halo, s.dot, s.ring]) {
+          el.setAttribute('cx', x.toFixed(1)); el.setAttribute('cy', y.toFixed(1))
+        }
+        s.halo.setAttribute('r', (r + 3).toFixed(1))
+        s.halo.setAttribute('opacity', (0.05 + front * 0.12).toFixed(2))
+        s.dot.setAttribute('r', r.toFixed(1))
+        s.dot.setAttribute('opacity', (0.25 + front * (0.3 + s.prom * 0.4)).toFixed(2))
+        s.ring.setAttribute('r', (r + 2).toFixed(1))
+        s.ring.setAttribute('stroke-width', (0.8 * k).toFixed(2))
+        s.ring.setAttribute('opacity', (0.12 + front * 0.35).toFixed(2))
+        order.push({ z: z3, el: s.g })
+      })
+
+      const pulse = 1 + Math.sin(t * 1.6) * 0.05
+      heroGlow.setAttribute('r', (cr * 2.6 * pulse).toFixed(1))
+      heroGlow.setAttribute('opacity', (0.11 + Math.sin(t * 1.6) * 0.04).toFixed(2))
+      heroCore.setAttribute('r', (cr * pulse).toFixed(1))
+      heroGold.setAttribute('r', (cr * pulse + 2.4).toFixed(1))
+      heroCat.setAttribute('r', (cr * pulse + 6).toFixed(1))
+
+      order.sort((a, b) => b.z - a.z).forEach(o => layer.appendChild(o.el))  // paint far → near
+      raf = requestAnimationFrame(frame)
+    }
+    raf = requestAnimationFrame(frame)
+
+    const onVis = () => {
+      cancelAnimationFrame(raf)
+      if (!document.hidden) raf = requestAnimationFrame(frame)
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      cancelAnimationFrame(raf)
+      document.removeEventListener('visibilitychange', onVis)
+      layer.replaceChildren()
+    }
+  }, [node.id])
+
+  const bgId   = `holo-bg-${node.id}`
+  const coneId = `holo-cone-${node.id}`
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width:'100%', height:'auto', display:'block' }}
+    <svg viewBox="0 0 320 224" style={{ width:'100%', height:'auto', display:'block' }}
       preserveAspectRatio="xMidYMid meet">
       <defs>
-        <radialGradient id={gid} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={catColor} stopOpacity="0.16"/>
+        <radialGradient id={bgId} cx="50%" cy="46%" r="55%">
+          <stop offset="0%" stopColor={catColor} stopOpacity="0.12"/>
           <stop offset="100%" stopColor={catColor} stopOpacity="0"/>
         </radialGradient>
+        <linearGradient id={coneId} x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stopColor={catColor} stopOpacity="0.2"/>
+          <stop offset="55%" stopColor={catColor} stopOpacity="0.06"/>
+          <stop offset="100%" stopColor={catColor} stopOpacity="0"/>
+        </linearGradient>
       </defs>
-      <ellipse cx={cx} cy={cy} rx={W * 0.46} ry={H * 0.42} fill={`url(#${gid})`}/>
-      {lines}
-      {dots}
-      <circle cx={cx} cy={cy} r={cr * 2.6} fill={catColor} opacity="0.1"/>
-      <circle cx={cx} cy={cy} r={cr} fill="#f3eede"/>
-      <circle cx={cx} cy={cy} r={cr + 2.4} fill="none" stroke="#cdb88a" strokeWidth="1.1" opacity="0.9"/>
-      <circle cx={cx} cy={cy} r={cr + 6} fill="none" stroke={catColor} strokeWidth="0.5" opacity="0.35"/>
+      <ellipse cx="160" cy="104" rx="150" ry="96" fill={`url(#${bgId})`}/>
+      {/* projection cone rising from the emitter */}
+      <path d="M 134 196 L 68 30 L 252 30 L 186 196 Z" fill={`url(#${coneId})`}/>
+      {/* emitter dais */}
+      <ellipse className="holo-ring" cx="160" cy="196" rx="64" ry="13" fill="none"
+        stroke={catColor} strokeWidth="0.8" opacity="0.45" strokeDasharray="3 6"/>
+      <ellipse cx="160" cy="196" rx="42" ry="8.5" fill="none" stroke={GOLD} strokeWidth="0.7" opacity="0.3"/>
+      <ellipse cx="160" cy="196" rx="26" ry="5.5" fill={catColor} opacity="0.13"/>
+      <ellipse cx="160" cy="196" rx="13" ry="3.2" fill={catColor} opacity="0.5"/>
+      <g ref={layerRef}/>
     </svg>
   )
 }
 
 /* ── portrait image with fallback chain ──────────────────────────────── */
 function Portrait({ nodeId, onLoaded }) {
-  const chain = [
-    `/portraits/${nodeId}-full.webp`,
-    `/portraits/${nodeId}-full.png`,
-    `/portraits/${nodeId}-head.webp`,
-    `/portraits/${nodeId}-head.png`,
-    `/portraits/${nodeId}.webp`,
-  ]
+  const chain = portraitSources(nodeId, true)
   const [idx, setIdx] = useState(0)
   const [gone, setGone] = useState(false)
   if (gone || idx >= chain.length) return null
@@ -270,24 +347,51 @@ function PanelContent({ node, connections, onClose, onNavigate, onOpenOrbit }) {
   const storyText = story?.story || node.description
   const storySource = story?.source || null
 
+  /* hologram tilt — perspective follows the cursor, written straight to the
+     element (no per-move React state) */
+  const heroTilt = useRef(null)
+  const onTilt = e => {
+    const el = heroTilt.current
+    if (!el) return
+    const r = e.currentTarget.getBoundingClientRect()
+    const px = (e.clientX - r.left) / r.width - 0.5
+    const py = (e.clientY - r.top) / r.height - 0.5
+    el.style.transform =
+      `perspective(900px) rotateY(${(px * 14).toFixed(2)}deg) rotateX(${(-py * 10).toFixed(2)}deg)`
+  }
+  const offTilt = () => { if (heroTilt.current) heroTilt.current.style.transform = '' }
+
   let sectionIdx = 0
 
   return (
     <div style={{ fontFamily:"'Crimson Pro', Georgia, serif", minHeight:'100%' }}>
 
-      {/* ── Hero: portrait + overlay OR sigil + header ──────────────── */}
-      <div style={{ position:'relative', flexShrink:0 }}>
-        <Portrait nodeId={node.id} onLoaded={() => setHasPortrait(true)}/>
-
-        {/* Sigil shown while no portrait (or forever if none exists) */}
-        {!hasPortrait && (
-          <div style={{
-            background: `radial-gradient(ellipse at 50% 42%, ${catColor}16, #060810 72%)`,
-            borderBottom: '1px solid #19202d',
-          }}>
-            <Sigil node={node} catColor={catColor}/>
+      {/* ── Hero: holographic portrait OR 3D sigil hologram ─────────── */}
+      <div
+        className="holo-stage"
+        style={{
+          position:'relative', flexShrink:0, '--holo': catColor,
+          background:`radial-gradient(ellipse at 50% 42%, ${catColor}10, #060810 74%)`,
+          borderBottom:'1px solid #19202d',
+        }}
+        onMouseMove={onTilt}
+        onMouseLeave={offTilt}
+      >
+        {/* materialize / float / flicker+tilt each own their layer so their
+            transform & opacity animations don't override one another */}
+        <div className="holo-materialize">
+          <div className="holo-float">
+            <div ref={heroTilt} className="holo-tilt holo-flicker">
+              <Portrait nodeId={node.id} onLoaded={() => setHasPortrait(true)}/>
+              {/* 3D sigil hologram shown while no portrait (or forever if none exists) */}
+              {!hasPortrait && <HoloSigil node={node} catColor={catColor}/>}
+            </div>
           </div>
-        )}
+        </div>
+
+        {/* holographic chrome — static over the floating content */}
+        <div className="holo-scanlines"/>
+        <div className="holo-sweep"/>
 
         {/* Close button — top-right, frosted */}
         <button
