@@ -389,6 +389,13 @@ body {
   animation: panelFadeIn 0.38s ease both;
 }
 
+/* ── Story teaser (panel) — uniform height, long openers fade out ─────────── */
+.story-teaser { max-height: 138px; overflow: hidden; }
+.story-teaser.clamped {
+  -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent 97%);
+  mask-image: linear-gradient(180deg, #000 62%, transparent 97%);
+}
+
 /* ── Story drop cap ────────────────────────────────────────────────────────── */
 .story-text::first-letter {
   font-family: 'Cinzel', serif;
@@ -1054,4 +1061,203 @@ body {
   .zs-sym { font-size: 20px; }
   .zs-sname { display: none; }
   .zs-rail-nav { display: none; }
+}
+
+/* ── Story Orbit — one deity's tale as floating planets ───────────────────── */
+.so-root {
+  position: fixed; inset: 0; z-index: 1000; overflow: hidden;
+  background: radial-gradient(120% 100% at 50% 30%, #0d1220 0%, #080a12 55%, #04060c 100%);
+  font-family: 'Crimson Pro', Georgia, serif; color: #d6dbe6;
+  user-select: none;
+}
+.so-root button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+/* nebula wash — each story bathes in its deity's colour */
+.so-wash {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(58% 52% at 50% 38%, color-mix(in oklch, var(--accent) 16%, transparent) 0%, transparent 64%),
+    radial-gradient(40% 46% at 82% 78%, color-mix(in oklch, var(--accent) 8%, transparent) 0%, transparent 70%);
+  mix-blend-mode: screen;
+}
+
+.so-star {
+  position: absolute; border-radius: 50%; background: #ece6d6; pointer-events: none;
+  animation: so-twinkle var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+@keyframes so-twinkle { from { opacity: var(--lo); } to { opacity: var(--hi); } }
+
+.so-ring {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  border: 1px dashed color-mix(in oklch, var(--accent) 22%, transparent);
+}
+.so-thread { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+/* the deity sun */
+.so-sun { position: absolute; transform: translate(-50%, -50%); text-align: center; pointer-events: none; z-index: 3; }
+.so-sun-orb {
+  width: 74px; height: 74px; border-radius: 50%; margin: 0 auto; overflow: hidden;
+  background: radial-gradient(circle at 36% 32%, #fdf8ea, #ecd9a8 45%, #b28f5a 78%, #6b5638);
+  box-shadow:
+    0 0 28px rgba(205,184,138,.55),
+    0 0 100px rgba(205,184,138,.26),
+    0 0 180px color-mix(in oklch, var(--accent) 25%, transparent);
+  animation: so-breathe 7s ease-in-out infinite alternate;
+}
+.so-sun-orb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@keyframes so-breathe {
+  from { box-shadow: 0 0 28px rgba(205,184,138,.5), 0 0 100px rgba(205,184,138,.22), 0 0 180px color-mix(in oklch, var(--accent) 18%, transparent); }
+  to   { box-shadow: 0 0 36px rgba(205,184,138,.7), 0 0 120px rgba(205,184,138,.34), 0 0 210px color-mix(in oklch, var(--accent) 30%, transparent); }
+}
+.so-sun-name {
+  font-family: Cinzel, serif; font-size: 16px; letter-spacing: .22em; text-transform: uppercase;
+  color: #f0ecdf; margin-top: 13px; text-shadow: 0 2px 14px rgba(0,0,0,.9);
+}
+.so-sun-epithet { font-style: italic; font-size: 12.5px; color: #5c6678; margin-top: 2px; }
+
+/* beat planets */
+.so-planet { position: absolute; transform: translate(-50%, -50%); text-align: center; z-index: 4; padding: 0; }
+.so-float { display: block; animation: so-float var(--fdur) ease-in-out var(--fdelay) infinite alternate; }
+@keyframes so-float { from { transform: translateY(-6px); } to { transform: translateY(6px); } }
+.so-orb {
+  display: block; width: var(--sz); height: var(--sz); border-radius: 50%; margin: 0 auto; position: relative;
+  background: radial-gradient(circle at 34% 30%,
+    color-mix(in oklch, var(--mid-c) 45%, #f6f0e0),
+    var(--mid-c) 52%,
+    color-mix(in oklch, var(--mid-c) 42%, #06080e) 86%);
+  box-shadow: 0 0 16px color-mix(in oklch, var(--mid-c) 45%, transparent);
+  transition: transform .35s cubic-bezier(.34,1.4,.5,1), box-shadow .35s, opacity .35s;
+}
+.so-orb.ringed::after {
+  content: ''; position: absolute; inset: 32% -26%; border-radius: 50%;
+  border: 1.5px solid color-mix(in oklch, var(--mid-c) 55%, #f6f0e0);
+  transform: rotate(-16deg);
+}
+.so-tag {
+  display: block; margin-top: 9px; font-family: Cinzel, serif; font-size: 9px;
+  letter-spacing: .16em; text-transform: uppercase; color: #5c6678;
+  transition: color .3s, opacity .3s; max-width: 150px;
+}
+.so-tag .n { color: rgba(205,184,138,.6); margin-right: 5px; }
+.so-planet:hover .so-orb { transform: scale(1.12); }
+.so-planet:hover .so-tag { color: #c2cad8; }
+.so-planet:focus-visible { outline: none; }
+.so-planet:focus-visible .so-orb { box-shadow: 0 0 0 2px rgba(205,184,138,.6), 0 0 16px color-mix(in oklch, var(--mid-c) 45%, transparent); }
+.so-planet.on .so-orb {
+  transform: scale(1.28);
+  box-shadow:
+    0 0 0 2px rgba(205,184,138,.85),
+    0 0 10px 3px rgba(205,184,138,.3),
+    0 0 34px color-mix(in oklch, var(--mid-c) 60%, transparent);
+}
+.so-planet.on .so-tag { color: #cdb88a; }
+.so-planet:not(.on):not(:hover) .so-orb { opacity: .6; }
+.so-planet:not(.on):not(:hover) .so-tag { opacity: .7; }
+
+/* caption — one beat at a time, fixed footprint */
+.so-caption {
+  position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+  width: min(680px, calc(100% - 36px)); z-index: 6;
+  background: rgba(9,12,19,.82); backdrop-filter: blur(10px);
+  border: 1px solid #262e3c; border-radius: 12px; padding: 16px 22px 14px;
+}
+.so-cap-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 7px; }
+.so-cap-head .n { font-family: Cinzel, serif; font-size: 10px; color: rgba(205,184,138,.55); }
+.so-cap-head .l { font-family: Cinzel, serif; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: #cdb88a; }
+.so-cap-head .c { font-family: Cinzel, serif; font-size: 9px; letter-spacing: .12em; color: #3a4354; }
+.so-tale-btn {
+  margin-left: auto; margin-right: 10px;
+  font-family: Cinzel, serif; font-size: 9.5px; letter-spacing: .14em;
+  color: #8c7d59; padding: 2px 8px; border-radius: 12px;
+  border: 1px solid transparent; transition: color .15s, border-color .15s;
+}
+.so-tale-btn:hover { color: #cdb88a; border-color: rgba(205,184,138,.35); }
+.so-cap-body { min-height: 96px; animation: so-cap-in .45s ease both; }
+@keyframes so-cap-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.so-cap-body p { margin: 0; font-size: 15px; line-height: 1.55; color: #c2cad8; }
+
+.so-figs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.so-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: Cinzel, serif; font-size: 10px; letter-spacing: .08em;
+  color: var(--chip); background: rgba(6,8,14,.5);
+  border: 1px solid color-mix(in oklch, var(--chip) 35%, transparent);
+  border-radius: 20px; padding: 3px 11px 3px 8px;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.so-chip .dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--chip); box-shadow: 0 0 5px var(--chip);
+}
+.so-chip .face {
+  width: 18px; height: 18px; border-radius: 50%; object-fit: cover;
+  border: 1px solid color-mix(in oklch, var(--chip) 60%, transparent);
+  box-shadow: 0 0 6px color-mix(in oklch, var(--chip) 35%, transparent);
+}
+.so-chip:hover, .so-chip:focus-visible {
+  border-color: var(--chip);
+  box-shadow: 0 0 10px color-mix(in oklch, var(--chip) 30%, transparent);
+  transform: translateY(-1px); outline: none;
+}
+.so-chip .fly { opacity: .45; font-size: 9px; }
+
+.so-cap-nav { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.so-nav-btn {
+  border: 1px solid #262e3c; border-radius: 6px; color: #5c6678; font-size: 13px;
+  width: 28px; height: 26px; display: grid; place-items: center; transition: .15s;
+}
+.so-nav-btn:hover { color: #cdb88a; border-color: rgba(205,184,138,.5); }
+.so-dots { display: flex; gap: 7px; margin: 0 auto; }
+.so-dot {
+  width: 6px; height: 6px; border-radius: 50%; padding: 0;
+  background: #4c5668; transition: background .2s, transform .2s;
+}
+.so-dot:hover { background: #7a8496; }
+.so-dot.on { background: #cdb88a; transform: scale(1.3); box-shadow: 0 0 6px rgba(205,184,138,.6); }
+.so-src { font-style: italic; font-size: 11px; color: #3a4354; white-space: nowrap; }
+
+/* full tale — a quiet reading room over the orbit */
+.so-tale-veil {
+  position: absolute; inset: 0; z-index: 10; display: grid; place-items: center;
+  background: rgba(4,6,12,.72); backdrop-filter: blur(6px);
+  animation: so-cap-in .3s ease both;
+}
+.so-tale {
+  width: min(640px, calc(100% - 40px)); max-height: min(72vh, 640px);
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #0c1019, #090c13);
+  border: 1px solid rgba(205,184,138,.25); border-radius: 14px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.6);
+}
+.so-tale-head {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 18px 24px 12px; border-bottom: 1px solid #19202d;
+}
+.so-tale-head .k { font-family: Cinzel, serif; font-size: 9.5px; letter-spacing: .28em; color: #8c7d59; text-transform: uppercase; }
+.so-tale-head .t { font-family: Cinzel, serif; font-size: 15px; letter-spacing: .1em; color: #ece6d6; }
+.so-tale-head .x { margin-left: auto; color: #5c6678; font-size: 14px; padding: 2px 6px; align-self: center; transition: color .15s; }
+.so-tale-head .x:hover { color: #cdb88a; }
+.so-tale-body {
+  overflow-y: auto; padding: 20px 24px 24px;
+  scrollbar-width: thin; scrollbar-color: #19202d transparent;
+}
+.so-tale-body::-webkit-scrollbar { width: 8px; }
+.so-tale-body::-webkit-scrollbar-thumb { background: #19202d; border-radius: 4px; }
+.so-tale-body p { margin: 0 0 1em; font-size: 15.5px; line-height: 1.66; color: #c2cad8; }
+.so-tale-body p:last-child { margin-bottom: 0; }
+.so-tale-body .src { font-style: italic; font-size: 12px; color: #5c6678; margin-top: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .so-star, .so-float, .so-sun-orb { animation: none; }
+  .so-cap-body, .so-tale-veil { animation: none; }
+  .so-orb, .so-planet.on .so-orb { transition: none; }
+}
+@media (max-width: 760px) {
+  .so-tag { font-size: 8px; max-width: 90px; }
+  .so-sun-orb { width: 56px; height: 56px; }
+  .so-sun-name { font-size: 13px; }
+  .so-caption { bottom: 14px; padding: 13px 16px 12px; }
+  .so-cap-body { min-height: 120px; }
+  .so-cap-body p { font-size: 14px; }
+  .so-src { display: none; }
 }
