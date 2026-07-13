@@ -1392,12 +1392,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const s = Math.min(rect.width / W, rect.height / H) || 1   // screen px per viewBox unit
 
       // Reserve screen space for whatever chrome covers the graph, then fit the
-      // cluster into the UNcovered region. Normal selection: the 356px right
+      // cluster into the UNcovered region. Normal selection: the 420px right
       // detail panel. Tour step: the panel is hidden, but the bottom caption
       // bar is, so reserve height there instead. Both insets convert px →
       // viewBox via the meet scale s, and the centre shifts away from the
       // covered side by half the inset (same derivation on each axis).
-      const rightPx  = opts.tour ? 0 : (document.querySelector('.detail-panel')?.getBoundingClientRect().width || 356)
+      const rightPx  = opts.tour ? 0 : (document.querySelector('.detail-panel')?.getBoundingClientRect().width || 420)
       const bottomPx = opts.tour ? 188 : 0   // clear the (now taller) tour caption bar
       const rightV   = rightPx  / s
       const bottomV  = bottomPx / s

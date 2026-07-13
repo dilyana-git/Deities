@@ -3,3 +3,5 @@ dist/
 .DS_Store
 *.local
 public/
+# high-res portrait originals; served webp tiers are generated into public/portraits
+portraits-src/

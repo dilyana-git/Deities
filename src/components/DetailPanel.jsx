@@ -178,6 +178,7 @@ function Portrait({ nodeId, onLoaded }) {
   return (
     <img
       key={chain[idx]}
+      className="holo-portrait"
       src={chain[idx]}
       alt=""
       onLoad={onLoaded}

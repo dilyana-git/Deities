@@ -34,6 +34,7 @@ src/
 │   ├── DetailPanel.jsx            # Right-hand slide-in detail view (opens on node select)
 │   ├── GuidedSky.jsx              # Full-screen cinematic guided tour overlay (autoplay/manual, chapter scrubber, tale picker)
 │   ├── ConstellationStage.jsx     # Imperative SVG engine for abstract constellation animations (used by GuidedSky)
+│   ├── StoryOrbit.jsx             # Full-screen story overlay — the selected deity's tale as beat-planets on orbits; a gold thread traces told chapters into a constellation; autoplay (▶/space) + full-tale reader
 │   ├── ZodiacSky.jsx              # Full-screen zodiac view — auto-advancing carousel with caption panel + glyph strip
 │   └── ZodiacSphere.jsx           # Interactive 3D-projected celestial globe of all 12 zodiac constellations
 └── data/
@@ -217,6 +218,7 @@ hintFaded        — fades the "click a star" hint after first interaction / 9s
 storyOpen        — GuidedSky cinematic overlay visible
 storyTourId      — which tour the GuidedSky overlay opened with
 zodiacOpen       — ZodiacSky overlay visible
+orbitOpen        — StoryOrbit overlay visible (opened from DetailPanel's "Enter the story"; needs selectedId)
 ```
 
 Selection is push-based: graph → `onSelect` → `selectedId`; App → `graphRef` imperative calls → graph. Opening Path or starting a Tour clears the current selection so modes don't overlap.

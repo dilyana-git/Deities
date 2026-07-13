@@ -351,7 +351,7 @@ body {
 
 /* ── Panel slide-in ────────────────────────────────────────────────────────── */
 .detail-panel {
-  position: absolute; top: 0; right: 0; height: 100%; width: 356px; z-index: 28;
+  position: absolute; top: 0; right: 0; height: 100%; width: 420px; max-width: 100%; z-index: 28;
   background: linear-gradient(180deg, #0c1019, #090c13);
   border-left: 1px solid #262e3c;
   transform: translateX(100%);
@@ -368,7 +368,7 @@ body {
   left: 50%; bottom: 22px;
   transform: translateX(-50%) translateY(20px);
   z-index: 25;
-  width: min(560px, calc(100% - 392px));
+  width: min(560px, calc(100% - 456px)); /* clears the 420px detail panel + margin */
   background: rgba(9,12,19,.94);
   border: 1px solid #262e3c;
   border-radius: 13px;
@@ -412,6 +412,12 @@ body {
    opacity flicker). Each transform/opacity animation lives on its own element
    so they compose instead of overriding. --holo carries the category color. */
 .holo-stage { overflow: hidden; }
+/* the portrait's left edge dissolves into the stage — the seam against the
+   star map reads as one surface, echoing the graph's frameless portraits */
+.holo-portrait {
+  -webkit-mask-image: linear-gradient(to right, transparent, rgba(0,0,0,.55) 9%, #000 26%);
+          mask-image: linear-gradient(to right, transparent, rgba(0,0,0,.55) 9%, #000 26%);
+}
 .holo-materialize { animation: holo-materialize 0.7s cubic-bezier(.2,.7,.3,1) both; }
 .holo-float { animation: holo-float 7s ease-in-out infinite; will-change: transform; }
 .holo-tilt {
@@ -1125,7 +1131,9 @@ body {
   font-family: 'Crimson Pro', Georgia, serif; color: #d6dbe6;
   user-select: none;
 }
-.so-root button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+/* :where keeps the reset at zero specificity so styled buttons
+   (.so-nav-btn, .so-dot, .so-chip, …) actually win their border/background */
+:where(.so-root button) { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 
 /* nebula wash — each story bathes in its deity's colour */
 .so-wash {
@@ -1134,6 +1142,19 @@ body {
     radial-gradient(58% 52% at 50% 38%, color-mix(in oklch, var(--accent) 16%, transparent) 0%, transparent 64%),
     radial-gradient(40% 46% at 82% 78%, color-mix(in oklch, var(--accent) 8%, transparent) 0%, transparent 70%);
   mix-blend-mode: screen;
+  animation: so-fade-in 1.2s ease .1s backwards;
+}
+
+/* ── opening ignition — every keyframe set is from-only, so the base rule is
+   the final state and reduced-motion can simply switch the animation off ── */
+@keyframes so-fade-in  { from { opacity: 0; } }
+@keyframes so-sun-in   { from { opacity: 0; filter: blur(10px) brightness(2); } }
+@keyframes so-ring-in  { from { opacity: 0; transform: scale(.955); } }
+@keyframes so-ignite   { from { opacity: 0; filter: blur(6px) brightness(2.6); } }
+@keyframes so-cap-rise { from { opacity: 0; transform: translate(-50%, 14px); } }
+
+.so-root .gs-exit, .so-root .gs-top, .so-root .gs-hint {
+  animation: so-fade-in .8s ease .75s backwards;
 }
 
 .so-star {
@@ -1145,11 +1166,27 @@ body {
 .so-ring {
   position: absolute; border-radius: 50%; pointer-events: none;
   border: 1px dashed color-mix(in oklch, var(--accent) 22%, transparent);
+  animation: so-ring-in .9s ease .35s backwards;
 }
 .so-thread { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
+/* the traced tale — each segment draws itself when its chapter is reached.
+   Width is in viewBox units (the svg stretches to the viewport): ≈1px on a
+   laptop. No non-scaling-stroke — Chrome would render the dash pattern in
+   screen space and the pathLength-normalised draw would break into dots. */
+.so-trace {
+  stroke: rgba(205,184,138,.5); stroke-width: .1;
+  stroke-dasharray: 1; stroke-dashoffset: 0;
+  animation: so-trace-draw .55s ease-out var(--tstag, 0s) backwards;
+}
+@keyframes so-trace-draw { from { stroke-dashoffset: 1; } }
+
 /* the deity sun */
-.so-sun { position: absolute; transform: translate(-50%, -50%); text-align: center; pointer-events: none; z-index: 3; }
+.so-sun {
+  position: absolute; transform: translate(-50%, -50%); text-align: center;
+  pointer-events: none; z-index: 3;
+  animation: so-sun-in .9s ease .12s backwards;
+}
 .so-sun-orb {
   width: 74px; height: 74px; border-radius: 50%; margin: 0 auto; overflow: hidden;
   background: radial-gradient(circle at 36% 32%, #fdf8ea, #ecd9a8 45%, #b28f5a 78%, #6b5638);
@@ -1170,8 +1207,12 @@ body {
 }
 .so-sun-epithet { font-style: italic; font-size: 12.5px; color: #5c6678; margin-top: 2px; }
 
-/* beat planets */
-.so-planet { position: absolute; transform: translate(-50%, -50%); text-align: center; z-index: 4; padding: 0; }
+/* beat planets — ignite in story order when the orbit opens */
+.so-planet {
+  position: absolute; transform: translate(-50%, -50%); text-align: center;
+  z-index: 4; padding: 0;
+  animation: so-ignite .65s ease var(--ig, 0s) backwards;
+}
 .so-float { display: block; animation: so-float var(--fdur) ease-in-out var(--fdelay) infinite alternate; }
 @keyframes so-float { from { transform: translateY(-6px); } to { transform: translateY(6px); } }
 .so-orb {
@@ -1183,6 +1224,12 @@ body {
   box-shadow: 0 0 16px color-mix(in oklch, var(--mid-c) 45%, transparent);
   transition: transform .35s cubic-bezier(.34,1.4,.5,1), box-shadow .35s, opacity .35s;
 }
+.so-orb .face {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; display: block; border-radius: 50%;
+}
+/* portrait-backed orb keeps a faint category rim from the gradient underneath */
+.so-orb.has-face { box-shadow: 0 0 16px color-mix(in oklch, var(--mid-c) 50%, transparent); }
 .so-orb.ringed::after {
   content: ''; position: absolute; inset: 32% -26%; border-radius: 50%;
   border: 1.5px solid color-mix(in oklch, var(--mid-c) 55%, #f6f0e0);
@@ -1206,8 +1253,14 @@ body {
     0 0 34px color-mix(in oklch, var(--mid-c) 60%, transparent);
 }
 .so-planet.on .so-tag { color: #cdb88a; }
-.so-planet:not(.on):not(:hover) .so-orb { opacity: .6; }
-.so-planet:not(.on):not(:hover) .so-tag { opacity: .7; }
+/* told chapters stay lit in the constellation; ones ahead are faint embers */
+.so-planet.told:not(:hover) .so-orb {
+  opacity: .88;
+  box-shadow: 0 0 0 1px rgba(205,184,138,.25), 0 0 14px color-mix(in oklch, var(--mid-c) 40%, transparent);
+}
+.so-planet.told:not(:hover) .so-tag { opacity: .85; color: #7d8698; }
+.so-planet.ahead:not(:hover) .so-orb { opacity: .42; }
+.so-planet.ahead:not(:hover) .so-tag { opacity: .55; }
 
 /* caption — one beat at a time, fixed footprint */
 .so-caption {
@@ -1215,11 +1268,22 @@ body {
   width: min(680px, calc(100% - 36px)); z-index: 6;
   background: rgba(9,12,19,.82); backdrop-filter: blur(10px);
   border: 1px solid #262e3c; border-radius: 12px; padding: 16px 22px 14px;
+  animation: so-cap-rise .7s cubic-bezier(.22,1,.36,1) .5s backwards;
 }
+
+/* autoplay filament — fills along the caption's top edge over one beat */
+.so-progress {
+  position: absolute; top: -1px; left: 14px; right: 14px; height: 1px;
+  background: linear-gradient(90deg, rgba(205,184,138,.9), rgba(205,184,138,.3));
+  transform-origin: left; border-radius: 1px;
+  animation: so-progress-fill linear both;
+}
+@keyframes so-progress-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .so-cap-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 7px; }
 .so-cap-head .n { font-family: Cinzel, serif; font-size: 10px; color: rgba(205,184,138,.55); }
 .so-cap-head .l { font-family: Cinzel, serif; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: #cdb88a; }
-.so-cap-head .c { font-family: Cinzel, serif; font-size: 9px; letter-spacing: .12em; color: #3a4354; }
+.so-cap-head .c { font-family: Cinzel, serif; font-size: 9px; letter-spacing: .12em; color: #5c6678; }
+.so-cap-cat { margin-left: auto; font-family: Cinzel, serif; font-size: 9.5px; letter-spacing: .22em; text-transform: uppercase; }
 .so-tale-btn {
   margin-left: auto; margin-right: 10px;
   font-family: Cinzel, serif; font-size: 9.5px; letter-spacing: .14em;
@@ -1227,9 +1291,9 @@ body {
   border: 1px solid transparent; transition: color .15s, border-color .15s;
 }
 .so-tale-btn:hover { color: #cdb88a; border-color: rgba(205,184,138,.35); }
-.so-cap-body { min-height: 96px; animation: so-cap-in .45s ease both; }
+.so-cap-body { min-height: var(--capmin, 96px); animation: so-cap-in .45s ease both; }
 @keyframes so-cap-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.so-cap-body p { margin: 0; font-size: 15px; line-height: 1.55; color: #c2cad8; }
+.so-cap-body p { margin: 0; font-size: 16px; line-height: 1.6; color: #c6cedb; }
 
 .so-figs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .so-chip {
@@ -1262,6 +1326,8 @@ body {
   width: 28px; height: 26px; display: grid; place-items: center; transition: .15s;
 }
 .so-nav-btn:hover { color: #cdb88a; border-color: rgba(205,184,138,.5); }
+.so-play { font-size: 9px; letter-spacing: 1px; }
+.so-play.on { color: #cdb88a; border-color: rgba(205,184,138,.5); background: rgba(205,184,138,.06); }
 .so-dots { display: flex; gap: 7px; margin: 0 auto; }
 .so-dot {
   width: 6px; height: 6px; border-radius: 50%; padding: 0;
@@ -1305,6 +1371,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .so-star, .so-float, .so-sun-orb { animation: none; }
   .so-cap-body, .so-tale-veil { animation: none; }
+  /* ignition + trace keyframes are from-only, so "none" = final state */
+  .so-wash, .so-ring, .so-sun, .so-planet, .so-trace, .so-caption,
+  .so-progress, .so-root .gs-exit, .so-root .gs-top, .so-root .gs-hint { animation: none; }
   .so-orb, .so-planet.on .so-orb { transition: none; }
 }
 @media (max-width: 760px) {
@@ -1312,7 +1381,8 @@ body {
   .so-sun-orb { width: 56px; height: 56px; }
   .so-sun-name { font-size: 13px; }
   .so-caption { bottom: 14px; padding: 13px 16px 12px; }
-  .so-cap-body { min-height: 120px; }
+  /* narrower line → more wraps than the desktop estimate reserved for */
+  .so-cap-body { min-height: calc(var(--capmin, 96px) * 1.6); }
   .so-cap-body p { font-size: 14px; }
   .so-src { display: none; }
 }

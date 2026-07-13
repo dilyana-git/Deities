@@ -1,23 +1,32 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { nodes as allNodes } from '../data/mythology.js'
 import { deityStories } from '../data/deityStories.js'
 import { categoryConfig } from '../data/categoryConfig.js'
-import { CAT } from './SkyGraph.jsx'
+import { CAT, portraitSources } from './SkyGraph.jsx'
 
 const NUMERALS = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ', 'Ⅷ', 'Ⅸ', 'Ⅹ']
 const _nodeMap = Object.fromEntries(allNodes.map(n => [n.id, n]))
 
+/* autoplay dwell: long enough to read the beat — base + per-character */
+const beatMs = b => 4200 + Math.min(b.text.length, 360) * 26
+
+/* walk the shared portrait candidate chain (both folders × name styles × formats) */
+function usePortrait(id) {
+  const chain = useMemo(() => portraitSources(id), [id])
+  const [idx, setIdx] = useState(0)
+  return { src: idx < chain.length ? chain[idx] : null, onError: () => setIdx(i => i + 1) }
+}
+
 /* figure chip with a tiny portrait — falls back to the coloured dot */
 function FigChip({ fig, color, onNavigate }) {
   const other = _nodeMap[fig]
-  const [src, setSrc] = useState(`/portraits/${fig}-head.webp`)
+  const { src, onError } = usePortrait(fig)
   if (!other) return null
   return (
     <button className="so-chip" style={{ '--chip': color }}
       title={`Fly to ${other.name}`} onClick={() => onNavigate?.(fig)}>
       {src
-        ? <img className="face" src={src} alt="" draggable="false"
-            onError={() => setSrc(s => s.endsWith('.webp') ? `/portraits/${fig}-head.png` : null)}/>
+        ? <img className="face" src={src} alt="" draggable="false" onError={onError}/>
         : <span className="dot"/>}
       {other.name}<span className="fly">⤢</span>
     </button>
@@ -29,11 +38,40 @@ function FigChip({ fig, color, onNavigate }) {
 const CX = 50, CY = 40
 const RINGS = [{ rx: 24, ry: 19 }, { rx: 38, ry: 30 }]
 
+/* one beat = a planet. Its face is the primary figure's portrait (falling
+   back to the deity's own), dissolving to the gradient orb if none loads */
+function BeatPlanet({ beat, i, cur, planet, figId, onSelect }) {
+  const p = planet
+  const { src, onError } = usePortrait(figId)
+  return (
+    <button
+      className={`so-planet ${i === cur ? 'on' : i < cur ? 'told' : 'ahead'}`}
+      style={{
+        left: `${p.left}%`, top: `${p.top}%`,
+        '--sz': `${p.size}px`, '--mid-c': p.color,
+        '--fdur': `${5 + i * 0.9}s`, '--fdelay': `${i * 0.7}s`,
+        '--ig': `${0.55 + i * 0.11}s`,
+      }}
+      onClick={() => onSelect(i)}
+      aria-label={`Beat ${i + 1}: ${beat.label}`}
+    >
+      <span className="so-float">
+        <span className={`so-orb ${p.ringed ? 'ringed' : ''} ${src ? 'has-face' : ''}`}>
+          {src && <img className="face" src={src} alt="" draggable="false" onError={onError}/>}
+        </span>
+      </span>
+      <span className="so-tag"><span className="n">{NUMERALS[i] || i + 1}</span>{beat.label}</span>
+    </button>
+  )
+}
+
 /* ════════════════════════════════════════════════════════════════════════
    Story Orbit — one deity's tale as a small solar system. The deity burns
    at the centre; each story beat is a planet floating on its orbit,
-   arranged clockwise from the lower left. One beat at a time shows in the
-   caption, so the whole tale is a handful of clicks — no scrolling.
+   arranged clockwise from the lower left. As the reader moves through the
+   beats a golden thread is traced from the sun through every chapter told,
+   so the finished tale hangs in the sky as a constellation. One beat at a
+   time shows in the caption; ▶ / spacebar autoplays at reading pace.
    ════════════════════════════════════════════════════════════════════════ */
 export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
   const node = _nodeMap[nodeId]
@@ -42,7 +80,12 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
   const accent = CAT[node?.category] || '#cdb88a'
   const [cur, setCur] = useState(0)
   const [taleOpen, setTaleOpen] = useState(false)
-  const [portrait, setPortrait] = useState(`/portraits/${nodeId}-head.webp`)
+  const [playing, setPlaying] = useState(false)
+  const sun = usePortrait(nodeId)
+
+  /* where the reader last was — staggers the trace draw on multi-beat jumps */
+  const prevCurRef = useRef(0)
+  useEffect(() => { prevCurRef.current = cur }, [cur])
 
   /* lock page scroll while the overlay is open */
   useEffect(() => {
@@ -80,15 +123,27 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
   }, [beats, accent])
 
   /* reserve room for the story's longest beat so the caption never jumps
-     while stepping through — ~72 chars per line at the caption's width */
+     while stepping through — ~78 chars per line at the caption's width;
+     the mobile media query scales this up via the --capmin custom prop */
   const capMinHeight = useMemo(() => {
     const maxLen = Math.max(0, ...beats.map(b => b.text.length))
     const anyFigs = beats.some(b => b.figures?.length)
-    return Math.ceil(maxLen / 72) * 23 + (anyFigs ? 38 : 0)
+    return Math.ceil(maxLen / 78) * 26 + (anyFigs ? 40 : 0)
   }, [beats])
 
   const next = useCallback(() => setCur(c => (c + 1) % beats.length), [beats.length])
   const prev = useCallback(() => setCur(c => (c - 1 + beats.length) % beats.length), [beats.length])
+
+  /* autoplay — dwell scales with the beat's length, rests at the last beat;
+     opening the full tale suspends the clock until it closes */
+  useEffect(() => {
+    if (!playing || taleOpen || !beats[cur]) return
+    const t = setTimeout(() => {
+      if (cur >= beats.length - 1) setPlaying(false)
+      else setCur(cur + 1)
+    }, beatMs(beats[cur]))
+    return () => clearTimeout(t)
+  }, [playing, cur, taleOpen, beats])
 
   useEffect(() => {
     function onKey(e) {
@@ -96,6 +151,7 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
       if (taleOpen) return
       if (e.key === 'ArrowRight') next()
       else if (e.key === 'ArrowLeft') prev()
+      else if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -103,7 +159,6 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
 
   if (!node || !beats.length) return null
   const beat = beats[cur]
-  const active = planets[cur]
   const catLabel = (categoryConfig[node.category]?.label || node.category).toUpperCase()
 
   return (
@@ -123,47 +178,36 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
         }}/>
       ))}
 
-      {/* gold thread: sun → active planet (percent space, so no resize math) */}
+      {/* the tale traced so far: sun → chapter Ⅰ → … → current chapter
+          (percent space, so no resize math) */}
       <svg className="so-thread" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <line x1={CX} y1={CY} x2={active.left} y2={active.top}
-          stroke="#cdb88a" strokeWidth="1" opacity="0.38" strokeDasharray="2 6"
-          vectorEffect="non-scaling-stroke"/>
+        {planets.slice(0, cur + 1).map((p, i) => {
+          const from = i === 0 ? { left: CX, top: CY } : planets[i - 1]
+          const stag = i === 0 ? 1.05 : Math.max(0, i - 1 - prevCurRef.current) * 0.12
+          return (
+            <line key={i} className="so-trace"
+              x1={from.left} y1={from.top} x2={p.left} y2={p.top}
+              pathLength="1" style={{ '--tstag': `${stag}s` }}/>
+          )
+        })}
       </svg>
 
       {/* the deity sun */}
       <div className="so-sun" style={{ left: `${CX}%`, top: `${CY}%` }}>
         <div className="so-sun-orb">
-          {portrait && (
-            <img src={portrait} alt="" draggable="false"
-              onError={() => setPortrait(p =>
-                p.endsWith('.webp') ? `/portraits/${nodeId}-head.png` : null)}/>
+          {sun.src && (
+            <img src={sun.src} alt="" draggable="false" onError={sun.onError}/>
           )}
         </div>
         <div className="so-sun-name">{node.name}</div>
         {node.epithet && <div className="so-sun-epithet">{node.epithet}</div>}
       </div>
 
-      {/* beat planets */}
-      {beats.map((b, i) => {
-        const p = planets[i]
-        return (
-          <button key={i}
-            className={`so-planet ${i === cur ? 'on' : ''}`}
-            style={{
-              left: `${p.left}%`, top: `${p.top}%`,
-              '--sz': `${p.size}px`, '--mid-c': p.color,
-              '--fdur': `${5 + i * 0.9}s`, '--fdelay': `${i * 0.7}s`,
-            }}
-            onClick={() => setCur(i)}
-            aria-label={`Beat ${i + 1}: ${b.label}`}
-          >
-            <span className="so-float">
-              <span className={`so-orb ${p.ringed ? 'ringed' : ''}`}/>
-            </span>
-            <span className="so-tag"><span className="n">{NUMERALS[i] || i + 1}</span>{b.label}</span>
-          </button>
-        )
-      })}
+      {/* beat planets — told chapters stay lit, ones ahead are faint embers */}
+      {beats.map((b, i) => (
+        <BeatPlanet key={i} beat={b} i={i} cur={cur} planet={planets[i]}
+          figId={b.figures?.[0] || nodeId} onSelect={setCur}/>
+      ))}
 
       <button className="gs-exit" onClick={onClose} aria-label="Close story orbit">✕</button>
 
@@ -174,10 +218,14 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
         </div>
       </div>
 
-      <div className="gs-hint">← → to move · esc to close</div>
+      <div className="gs-hint">← → to move · space to play · esc to close</div>
 
       {/* caption — one beat at a time, fixed footprint */}
       <div className="so-caption">
+        {playing && !taleOpen && (
+          <div className="so-progress" key={`p${cur}`}
+            style={{ animationDuration: `${beatMs(beat)}ms` }}/>
+        )}
         <div className="so-cap-head">
           <span className="n">{NUMERALS[cur] || cur + 1}</span>
           <span className="l">{beat.label}</span>
@@ -188,7 +236,7 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
           )}
           <span className="c">{cur + 1} / {beats.length}</span>
         </div>
-        <div className="so-cap-body" key={cur} style={{ minHeight: capMinHeight }}>
+        <div className="so-cap-body" key={cur} style={{ '--capmin': `${capMinHeight}px` }}>
           <p>{beat.text}</p>
           {beat.figures?.length > 0 && (
             <div className="so-figs">
@@ -201,6 +249,11 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
           )}
         </div>
         <div className="so-cap-nav">
+          <button className={`so-nav-btn so-play ${playing ? 'on' : ''}`}
+            onClick={() => setPlaying(p => !p)}
+            aria-label={playing ? 'Pause the tale' : 'Play the tale'}>
+            {playing ? '❚❚' : '▶'}
+          </button>
           <button className="so-nav-btn" onClick={prev} aria-label="Previous beat">‹</button>
           <div className="so-dots">
             {beats.map((_, i) => (

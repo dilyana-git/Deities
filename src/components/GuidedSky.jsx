@@ -1,35 +1,99 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
-import ConstellationStage from './ConstellationStage.jsx'
 import { TOURS } from '../data/tours.js'
 import { nodes as allNodes } from '../data/mythology.js'
 import { categoryConfig } from '../data/categoryConfig.js'
-import { CAT } from './SkyGraph.jsx'
+import { CAT, portraitSources } from './SkyGraph.jsx'
 
-const AUTO_MS = 6500
+const NUMERALS = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ', 'Ⅷ', 'Ⅸ', 'Ⅹ']
+const _nodeMap = Object.fromEntries(allNodes.map(n => [n.id, n]))
+
+/* autoplay dwell: long enough to read the beat — base + per-character */
+const beatMs = b => 4200 + Math.min(b.text.length, 360) * 26
+
+/* walk the shared portrait candidate chain (both folders × name styles × formats) */
+function usePortrait(id) {
+  const chain = useMemo(() => portraitSources(id), [id])
+  const [idx, setIdx] = useState(0)
+  return { src: idx < chain.length ? chain[idx] : null, onError: () => setIdx(i => i + 1) }
+}
+
+/* orbital plane: sun centre + the two rings planets alternate between,
+   all in % of the stage so the layout is resolution-independent */
+const CX = 50, CY = 40
+const RINGS = [{ rx: 24, ry: 19 }, { rx: 38, ry: 30 }]
+
+/* one tour beat = a planet. Its face is the figure's portrait, dissolving to
+   the gradient orb if none loads */
+function BeatPlanet({ beat, i, cur, planet, onSelect }) {
+  const p = planet
+  const { src, onError } = usePortrait(beat.fig)
+  const node = _nodeMap[beat.fig]
+  return (
+    <button
+      className={`so-planet ${i === cur ? 'on' : i < cur ? 'told' : 'ahead'}`}
+      style={{
+        left: `${p.left}%`, top: `${p.top}%`,
+        '--sz': `${p.size}px`, '--mid-c': p.color,
+        '--fdur': `${5 + i * 0.9}s`, '--fdelay': `${i * 0.7}s`,
+        '--ig': `${0.55 + i * 0.11}s`,
+      }}
+      onClick={() => onSelect(i)}
+      aria-label={`Chapter ${i + 1}: ${node?.name || beat.fig}`}
+    >
+      <span className="so-float">
+        <span className={`so-orb ${src ? 'has-face' : ''}`}>
+          {src && <img className="face" src={src} alt="" draggable="false" onError={onError}/>}
+        </span>
+      </span>
+      <span className="so-tag"><span className="n">{NUMERALS[i] || i + 1}</span>{node?.name || beat.fig}</span>
+    </button>
+  )
+}
+
+/* the tour's current figure, burning at the centre — its portrait cross-fades
+   in whenever the tale moves to a new star (the component is keyed by fig) */
+function Sun({ fig }) {
+  const { src, onError } = usePortrait(fig)
+  const node = _nodeMap[fig]
+  return (
+    <div className="so-sun" style={{ left: `${CX}%`, top: `${CY}%` }}>
+      <div className="so-sun-orb">
+        {src && <img src={src} alt="" draggable="false" onError={onError}/>}
+      </div>
+      <div className="so-sun-name">{node?.name || fig}</div>
+      {node?.epithet && <div className="so-sun-epithet">{node.epithet}</div>}
+    </div>
+  )
+}
 
 /* ════════════════════════════════════════════════════════════════════════
-   Guided Sky — full-screen cinematic story presentation. Each tour beat is
-   a "slide": the figure's abstract constellation fills the frame while its
-   narration sits over it. Plays like a film — autoplay, keyboard nav, a
-   chapter scrubber, and a tale picker.
+   Guided Sky — full-screen cinematic story presentation, laid out as a small
+   solar system (mirroring the Story Orbit). Each tour is a constellation of
+   figures: every beat is a planet floating on its orbit, the figure the
+   narration currently dwells on burns at the centre as the sun, and a golden
+   thread is traced from chapter to chapter so the tale hangs in the sky. One
+   beat shows in the caption at a time; ▶ / spacebar autoplays at reading pace,
+   and the "Stories" picker switches between tours.
    ════════════════════════════════════════════════════════════════════════ */
 export default function GuidedSky({ initialTourId, onClose, onBeatChange }) {
   const initialIdx = Math.max(0, TOURS.findIndex(t => t.id === initialTourId))
-  const [tourIdx, setTourIdx]   = useState(initialIdx)
-  const [step, setStep]         = useState(0)
-  const [playing, setPlaying]   = useState(true)
+  const [tourIdx, setTourIdx]     = useState(initialIdx)
+  const [cur, setCur]             = useState(0)
+  const [playing, setPlaying]     = useState(true)
   const [talesOpen, setTalesOpen] = useState(false)
 
-  const captionRef = useRef(null)
-  const talesRef   = useRef(null)
-
-  const nodeById = useMemo(() => Object.fromEntries(allNodes.map(n => [n.id, n])), [])
+  const talesRef = useRef(null)
 
   const tour  = TOURS[tourIdx]
-  const beat  = tour.beats[step]
-  const node  = nodeById[beat.fig]
-  const accent   = CAT[node?.category] || CAT.primordial
-  const catLabel = (categoryConfig[node?.category]?.label || '').toUpperCase()
+  const beats = tour.beats
+  const beat  = beats[cur]
+  const node  = _nodeMap[beat.fig]
+  const accent = CAT[node?.category] || CAT.primordial
+  const catLabel = (categoryConfig[node?.category]?.label || node?.category || '').toUpperCase()
+
+  /* where the reader last was — staggers the trace draw on multi-beat jumps */
+  const prevCurRef = useRef(0)
+  useEffect(() => { prevCurRef.current = cur }, [cur])
 
   /* lock page scroll while the overlay is open */
   useEffect(() => {
@@ -38,56 +102,72 @@ export default function GuidedSky({ initialTourId, onClose, onBeatChange }) {
     return () => { document.body.style.overflow = prev }
   }, [])
 
-  /* caption re-entrance: commit hidden, then release next frame so the
-     transition plays back to its visible resting state */
-  useEffect(() => {
-    const el = captionRef.current
-    if (!el) return
-    el.classList.add('enter')
-    const raf = requestAnimationFrame(() => el.classList.remove('enter'))
-    return () => cancelAnimationFrame(raf)
-  }, [tourIdx, step])
-
   /* graph sync: light the figure behind the overlay as the story advances */
-  useEffect(() => {
-    onBeatChange?.(beat.fig)
-  }, [beat.fig, onBeatChange])
+  useEffect(() => { onBeatChange?.(beat.fig) }, [beat.fig, onBeatChange])
 
-  const next = useCallback(() => {
-    setStep(s => {
-      if (s >= tour.beats.length - 1) { setPlaying(false); return s }
-      return s + 1
+  /* ambient backdrop stars — seeded once per mount */
+  const bgStars = useMemo(() =>
+    Array.from({ length: 130 }, () => ({
+      left: Math.random() * 100, top: Math.random() * 100,
+      size: Math.random() < 0.82 ? 1 : 2,
+      lo: 0.05 + Math.random() * 0.15, hi: 0.3 + Math.random() * 0.5,
+      dur: 2.5 + Math.random() * 4, delay: Math.random() * 4,
+    })), [])
+
+  /* planet placement: clockwise arc that skips the caption's sector,
+     alternating inner/outer rings so neighbours never crowd */
+  const planets = useMemo(() => {
+    const n = beats.length
+    return beats.map((b, i) => {
+      const a = (130 + i * (280 / Math.max(n - 1, 1))) * Math.PI / 180
+      const ring = RINGS[i % 2]
+      const color = CAT[_nodeMap[b.fig]?.category] || '#cdb88a'
+      return {
+        left: CX + ring.rx * Math.cos(a),
+        top: CY + ring.ry * Math.sin(a),
+        size: 32 + (i % 3) * 7,
+        color,
+      }
     })
-  }, [tour])
+  }, [beats])
 
-  const prev = useCallback(() => setStep(s => Math.max(0, s - 1)), [])
+  /* reserve room for the tour's longest narration so the caption never jumps */
+  const capMinHeight = useMemo(() => {
+    const maxLen = Math.max(0, ...beats.map(b => b.text.length))
+    return Math.ceil(maxLen / 78) * 26
+  }, [beats])
 
-  function goto(i) { setStep(Math.min(Math.max(0, i), tour.beats.length - 1)) }
+  const next = useCallback(() => setCur(c => Math.min(c + 1, beats.length - 1)), [beats.length])
+  const prev = useCallback(() => setCur(c => Math.max(c - 1, 0)), [])
 
   function selectTour(i) {
     setTourIdx(i)
-    setStep(0)
+    setCur(0)
     setTalesOpen(false)
+    prevCurRef.current = 0
   }
 
-  /* autoplay — restarts whenever the beat (or play state) changes */
+  /* autoplay — dwell scales with the beat's length, rests at the last beat */
   useEffect(() => {
-    if (!playing) return
-    const timer = setTimeout(next, AUTO_MS)
-    return () => clearTimeout(timer)
-  }, [tourIdx, step, playing, next])
+    if (!playing || !beats[cur]) return
+    const t = setTimeout(() => {
+      if (cur >= beats.length - 1) setPlaying(false)
+      else setCur(cur + 1)
+    }, beatMs(beats[cur]))
+    return () => clearTimeout(t)
+  }, [playing, cur, beats])
 
   /* keyboard nav */
   useEffect(() => {
     function onKey(e) {
+      if (e.key === 'Escape') { talesOpen ? setTalesOpen(false) : onClose?.(); return }
       if (e.key === 'ArrowRight') next()
       else if (e.key === 'ArrowLeft') prev()
       else if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p) }
-      else if (e.key === 'Escape') onClose?.()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [next, prev, onClose])
+  }, [next, prev, onClose, talesOpen])
 
   /* close the tale picker on outside click */
   useEffect(() => {
@@ -98,23 +178,54 @@ export default function GuidedSky({ initialTourId, onClose, onBeatChange }) {
   }, [talesOpen])
 
   return (
-    <div className="gs-root" style={{ '--accent': accent }}>
-      <ConstellationStage fig={beat.fig} accent={accent} />
-      <div className="grade wash" />
-      <div className="grade stars" />
-      <div className="grade vig" />
+    <div className="so-root" style={{ '--accent': accent }}>
+      <div className="so-wash"/>
+      {bgStars.map((s, i) => (
+        <div key={i} className="so-star" style={{
+          left: `${s.left}%`, top: `${s.top}%`, width: s.size, height: s.size,
+          '--lo': s.lo, '--hi': s.hi, '--dur': `${s.dur}s`, '--delay': `${s.delay}s`,
+        }}/>
+      ))}
+
+      {RINGS.map((r, i) => (
+        <div key={i} className="so-ring" style={{
+          left: `${CX - r.rx}%`, top: `${CY - r.ry}%`,
+          width: `${r.rx * 2}%`, height: `${r.ry * 2}%`,
+        }}/>
+      ))}
+
+      {/* the tale traced so far: centre → chapter Ⅰ → … → current chapter */}
+      <svg className="so-thread" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {planets.slice(0, cur + 1).map((p, i) => {
+          const from = i === 0 ? { left: CX, top: CY } : planets[i - 1]
+          const stag = i === 0 ? 1.05 : Math.max(0, i - 1 - prevCurRef.current) * 0.12
+          return (
+            <line key={i} className="so-trace"
+              x1={from.left} y1={from.top} x2={p.left} y2={p.top}
+              pathLength="1" style={{ '--tstag': `${stag}s` }}/>
+          )
+        })}
+      </svg>
+
+      {/* the figure the tale currently dwells on, burning at the centre */}
+      <Sun key={beat.fig} fig={beat.fig}/>
+
+      {/* beat planets — told chapters stay lit, ones ahead are faint embers */}
+      {beats.map((b, i) => (
+        <BeatPlanet key={i} beat={b} i={i} cur={cur} planet={planets[i]} onSelect={setCur}/>
+      ))}
 
       <button className="gs-exit" onClick={onClose} aria-label="Close story mode">✕</button>
 
-      {/* top chrome — the rail (bottom) owns position; no competing counter here */}
-      <div className="gs-top">
+      {/* tour title */}
+      <div className="gs-top" style={{ pointerEvents: 'none' }}>
         <div className="gs-story">
           <div className="gs-kicker">{tour.kicker}</div>
           <div className="gs-storytitle">{tour.title}</div>
         </div>
       </div>
 
-      {/* story switcher (between tours — distinct from the rail's chapter nav) */}
+      {/* story switcher — pick a different tour */}
       <div className={`gs-tales ${talesOpen ? 'open' : ''}`} ref={talesRef}>
         <button className="gs-tales-btn" onClick={() => setTalesOpen(o => !o)}>
           <span>Stories</span><span className="car">▾</span>
@@ -130,36 +241,37 @@ export default function GuidedSky({ initialTourId, onClose, onBeatChange }) {
         </div>
       </div>
 
-      {/* caption */}
-      <div className="gs-caption" ref={captionRef}>
-        <div className="gs-cat" style={{ color: accent }}>{catLabel}</div>
-        <h1 className="gs-name">{node?.name || beat.fig}</h1>
-        <div className="gs-epithet">{node?.epithet}</div>
-        <p className="gs-narration">{beat.text}</p>
-      </div>
+      <div className="gs-hint">← → to move · space to play · esc to close</div>
 
-      <div className="gs-hint">← → to move · space to play</div>
-
-      {/* bottom scrubber */}
-      <div className="gs-bottom">
-        <div className="gs-rail">
-          <div className="gs-rail-fill" style={{ width: `${((step + 1) / tour.beats.length) * 100}%` }} />
+      {/* caption — one beat at a time, fixed footprint */}
+      <div className="so-caption">
+        {playing && (
+          <div className="so-progress" key={`p${tourIdx}-${cur}`}
+            style={{ animationDuration: `${beatMs(beat)}ms` }}/>
+        )}
+        <div className="so-cap-head">
+          <span className="n">{NUMERALS[cur] || cur + 1}</span>
+          <span className="l">{node?.name || beat.fig}</span>
+          <span className="so-cap-cat" style={{ color: accent }}>{catLabel}</span>
+          <span className="c">{cur + 1} / {beats.length}</span>
         </div>
-        <div className="gs-strip-row">
-          <button className="gs-nav" onClick={prev} aria-label="Previous">◂</button>
-          <button className={`gs-play ${playing ? 'playing' : ''}`} onClick={() => setPlaying(p => !p)} aria-label={playing ? 'Pause' : 'Play'}>
-            <span className="play">▶</span><span className="pause">❚❚</span>
+        <div className="so-cap-body" key={`${tourIdx}-${cur}`} style={{ '--capmin': `${capMinHeight}px` }}>
+          <p>{beat.text}</p>
+        </div>
+        <div className="so-cap-nav">
+          <button className={`so-nav-btn so-play ${playing ? 'on' : ''}`}
+            onClick={() => setPlaying(p => !p)}
+            aria-label={playing ? 'Pause the tale' : 'Play the tale'}>
+            {playing ? '❚❚' : '▶'}
           </button>
-          <div className="gs-strip">
-            {tour.beats.map((b, i) => (
-              <button key={i} className={`gs-cell ${i === step ? 'on' : ''} ${i < step ? 'done' : ''}`} onClick={() => goto(i)}>
-                <span className="gs-cell-n">{String(i + 1).padStart(2, '0')}</span>
-                <span className="gs-cell-name">{nodeById[b.fig]?.name || b.fig}</span>
-                <span className="gs-cell-bar" />
-              </button>
+          <button className="so-nav-btn" onClick={prev} aria-label="Previous chapter">‹</button>
+          <div className="so-dots">
+            {beats.map((_, i) => (
+              <button key={i} className={`so-dot ${i === cur ? 'on' : ''}`}
+                onClick={() => setCur(i)} aria-label={`Chapter ${i + 1}`}/>
             ))}
           </div>
-          <button className="gs-nav" onClick={next} aria-label="Next">▸</button>
+          <button className="so-nav-btn" onClick={next} aria-label="Next chapter">›</button>
         </div>
       </div>
     </div>
