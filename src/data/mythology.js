@@ -837,6 +837,113 @@ export const nodes = [
   image_prompt: "Medea, a head-and-shoulders sculptural bust, the face prominent and centered, a cold dangerous intelligence in her eyes, holding a small potion-cup, herbs and a coiled serpent at her shoulder, weathered marble darkened with bronze and verdigris and a faint green glow, beautiful and ruinous"
 },
 
+  // ── THE HOUSE OF HELIOS — CIRCE'S KIN & HEIRS ────────────────────────────────
+{
+  id: "perse",
+  name: "Perse",
+  epithet: "The Oceanid of the Undying Sun",
+  category: "nymph_minor",
+  gender: "female",
+  domains: ["salt water", "cold beauty", "the tide"],
+  description: "The Oceanid wife of Helios and mother of his four dread children — Circe, Aeëtes, Pasiphaë, and Perses. Vain and sharp-tongued, she cared more for her own beauty than for the strange witch-brood she bore, and it was said the pharmaka, the herbs of true sorcery, first stirred in the world through her line.",
+  origins: "A daughter of Oceanus and Tethys; consort of Helios in his golden halls.",
+  jungian_archetype: "Queen",
+  notable_myths: ["The Children of the Sun", "The Halls of Helios"],
+  symbols: ["a mirror of still water", "salt", "a coiled fish"],
+  roman_equivalent: "Perseis",
+  image_prompt: "Perse, a head-and-shoulders sculptural bust, the face prominent and centered, a cold vain beauty with heavy-lidded eyes, damp coils of hair like kelp, a thin coronet of shell at her brow, pale sea-green marble beaded with condensation and faint nacre, lovely and indifferent"
+},
+{
+  id: "pasiphae",
+  name: "Pasiphaë",
+  epithet: "The Witch-Queen of Crete",
+  category: "nymph_minor",
+  gender: "female",
+  domains: ["sorcery", "poisons", "the bull"],
+  description: "Daughter of Helios and sister of Circe, a witch as deadly as she was radiant, wed to King Minos of Crete. When Minos cheated Poseidon of a snow-white bull, the god cursed her with an unnatural passion for the beast — and from that union she bore the Minotaur. Mother also of Ariadne and Phaedra, she ruled Crete with venom in her veins.",
+  origins: "Daughter of Helios and the Oceanid Perse; sister of Circe, Aeëtes, and Perses; queen to Minos.",
+  jungian_archetype: "Shadow",
+  notable_myths: ["The Bull of Minos", "The Birth of the Minotaur", "The Witch-Queens of the Sun"],
+  symbols: ["a hollow wooden cow", "the double axe", "a vial of poison"],
+  roman_equivalent: null,
+  image_prompt: "Pasiphaë, a head-and-shoulders sculptural bust, the face prominent and centered, an imperious cruel beauty with a knowing half-smile, a thin gold diadem set with a small bull's-head boss, dark marble streaked with red-oxide and cold gilding, regal and venomous"
+},
+{
+  id: "minos",
+  name: "Minos",
+  epithet: "King of Crete, Judge of the Dead",
+  category: "mortal",
+  gender: "male",
+  domains: ["kingship", "law", "the sea's dominion"],
+  description: "The mighty king of Crete, son of Zeus and Europa, whose sea-power ruled the islands and whose greed for a divine bull doomed his house. He caged the Minotaur in Daedalus's Labyrinth and levied the tribute of Athenian youths to feed it. So just a lawgiver was he that, after death, he was made one of the three judges of the underworld.",
+  origins: "Son of Zeus and the Phoenician princess Europa; husband of Pasiphaë; king of Knossos.",
+  jungian_archetype: "King",
+  notable_myths: ["The Bull from the Sea", "The Labyrinth and the Tribute", "Judge of the Dead"],
+  symbols: ["a scepter", "the double axe of Crete", "the scales of judgment"],
+  roman_equivalent: null,
+  image_prompt: "Minos, a head-and-shoulders sculptural bust, the face prominent and centered, a stern bearded king with hard sea-grey eyes, a heavy crown of Cretan design, a set of scales faintly incised behind him, weathered pale stone and tarnished bronze, austere and severe"
+},
+{
+  id: "aeetes",
+  name: "Aeëtes",
+  epithet: "The Witch-King of Colchis",
+  category: "nymph_minor",
+  gender: "male",
+  domains: ["sorcery", "kingship", "the guarded Fleece"],
+  description: "Son of Helios and brother of Circe, the sorcerer-king who ruled far Colchis at the edge of the dawn. In his sacred grove hung the Golden Fleece, watched by a sleepless dragon, and he set murderous trials for any who sought it. His daughter Medea's betrayal for love of Jason cost him the Fleece and shattered his line.",
+  origins: "Son of Helios and the Oceanid Perse; brother of Circe, Pasiphaë, and Perses; father of Medea.",
+  jungian_archetype: "King",
+  notable_myths: ["The Keeper of the Golden Fleece", "Jason's Trials", "The Betrayal of Medea"],
+  symbols: ["the Golden Fleece", "fire-breathing bulls", "a serpent-guarded grove"],
+  roman_equivalent: null,
+  image_prompt: "Aeëtes, a head-and-shoulders sculptural bust, the face prominent and centered, a proud hawk-eyed sorcerer-king, a crown wrought like sun-rays, a fold of golden fleece at his shoulder, dark bronze-veined marble with cold gold leaf, imperious and radiant"
+},
+{
+  id: "perses",
+  name: "Perses",
+  epithet: "The Necromancer of the East",
+  category: "nymph_minor",
+  gender: "male",
+  domains: ["dark sorcery", "necromancy", "usurpation"],
+  description: "The least-storied of Helios's four witch-children, brother to Circe, Aeëtes, and Pasiphaë, who went east to work sorceries with the dead. He seized his brother Aeëtes's throne in Colchis by force — until Medea returned and, by poison or by blade, restored her father and ended her uncle's reign.",
+  origins: "Son of Helios and the Oceanid Perse; brother of Circe, Aeëtes, and Pasiphaë.",
+  jungian_archetype: "Shadow",
+  notable_myths: ["The Usurper of Colchis", "The Witch-Children of the Sun"],
+  symbols: ["a raised barrow", "ash", "a black knife"],
+  roman_equivalent: null,
+  image_prompt: "Perses, a head-and-shoulders sculptural bust, the face prominent and centered, a gaunt shadowed sorcerer with hollow watchful eyes, a plain dark circlet, faint spectral wisps at his shoulder, near-black marble veined with grey and dead silver, cold and secretive"
+},
+{
+  id: "telegonus",
+  name: "Telegonus",
+  epithet: "The Son Born Far Away",
+  category: "mortal",
+  gender: "male",
+  domains: ["seafaring", "the fatal spear", "unknowing"],
+  description: "Son of Circe and Odysseus, born on Aeaea after his father sailed home. Grown restless, he set out to find Odysseus in Ithaca — and, landing unrecognized on a strange shore, killed the old king in the fight that followed, his spear tipped with the venomed sting of the great ray Trygon. So the prophecy was fulfilled: death came to Odysseus from the sea, by the hand of his own son.",
+  origins: "Son of the witch Circe and the hero Odysseus; raised alone on the island of Aeaea.",
+  jungian_archetype: "Hero",
+  notable_myths: ["The Son of Circe", "The Spear of Trygon", "The Death of Odysseus"],
+  symbols: ["a stingray-tipped spear", "a ship's prow", "a father's ring"],
+  roman_equivalent: null,
+  image_prompt: "Telegonus, a head-and-shoulders sculptural bust, the face prominent and centered, an earnest sea-weathered youth with searching eyes, the barbed spine of a ray lashed to a spear at his shoulder, pale salt-bleached marble and dull bronze, hopeful and shadowed by fate"
+},
+{
+  id: "trygon",
+  name: "Trygon",
+  epithet: "The Ray of the Abyss",
+  category: "sea_deity",
+  gender: "nonbinary",
+  domains: ["the deep sea", "venom", "ancient stillness"],
+  description: "An ancient and terrible being of the deepest sea, older than the Olympians, whose barbed tail carries a venom against which there is no remedy. From that living sting was cut the point of the spear that would one day slay Odysseus — a weapon of grief drawn up from the black water where light has never reached.",
+  origins: "A primordial creature of the abyss, dwelling beneath the reach of the sun; kin to the oldest powers of the sea.",
+  jungian_archetype: "Threshold Guardian",
+  notable_myths: ["The Venomed Tail", "The Spear of Telegonus"],
+  symbols: ["a barbed tail-spine", "black water", "a single pale wound of light"],
+  roman_equivalent: null,
+  image_prompt: "Trygon, a vast ancient stingray rendered as a dark sculptural relief, a broad flat body filling the frame, a long barbed venomous tail curling forward, depthless black surfaces veined with faint abyssal phosphor and old verdigris, immense silent and primordial"
+},
+
  {
     id: "semele",
     name: "Semele",
@@ -1297,6 +1404,39 @@ export const links = [
 { source: "daedalus", target: "minotaur", type: "created_by", label: "devised both its making and its prison" },
 { source: "daedalus", target: "perdix",   type: "enemy_of",   label: "cast him from the height in envy" },
 { source: "athena",   target: "perdix",   type: "transformed_into", label: "caught him and made him a partridge" },
+
+  // ── THE HOUSE OF HELIOS — CIRCE'S KIN & HEIRS ─────────────────────────────
+  { source: "helios",   target: "perse",     type: "lover_of",   label: "the Oceanid who bore his witch-children" },
+  { source: "perse",    target: "circe",     type: "parent_of",  label: "with Helios" },
+  { source: "helios",   target: "pasiphae",  type: "parent_of",  label: "with the Oceanid Perse" },
+  { source: "perse",    target: "pasiphae",  type: "parent_of",  label: "with Helios" },
+  { source: "helios",   target: "aeetes",    type: "parent_of",  label: "with the Oceanid Perse" },
+  { source: "perse",    target: "aeetes",    type: "parent_of",  label: "with Helios" },
+  { source: "helios",   target: "perses",    type: "parent_of",  label: "with the Oceanid Perse" },
+  { source: "perse",    target: "perses",    type: "parent_of",  label: "with Helios" },
+  { source: "pasiphae", target: "circe",     type: "enemy_of",   label: "her cold sister, who summoned her to birth the monster" },
+
+  // ── CRETE — THE HOUSE OF MINOS ────────────────────────────────────────────
+  { source: "pasiphae", target: "minos",     type: "lover_of",   label: "queen and consort to the king of Crete" },
+  { source: "pasiphae", target: "minotaur",  type: "parent_of",  label: "bore the bull-headed son of Poseidon's curse" },
+  { source: "minos",    target: "minotaur",  type: "enemy_of",   label: "walled his wife's shame in the Labyrinth" },
+  { source: "minos",    target: "ariadne",   type: "parent_of",  label: "his daughter" },
+  { source: "pasiphae", target: "ariadne",   type: "parent_of",  label: "her daughter" },
+  { source: "minos",    target: "daedalus",  type: "enemy_of",   label: "imprisoned the craftsman who knew the maze's secret" },
+  { source: "circe",    target: "daedalus",  type: "lover_of",   label: "a brief love in the days of the Minotaur's birth" },
+
+  // ── COLCHIS — THE HOUSE OF AEËTES ─────────────────────────────────────────
+  { source: "aeetes",   target: "medea",     type: "parent_of",  label: "his daughter, the sorceress of Colchis" },
+  { source: "aeetes",   target: "jason",     type: "enemy_of",   label: "set him deadly trials to keep the Golden Fleece" },
+  { source: "perses",   target: "aeetes",    type: "enemy_of",   label: "usurped his brother's Colchian throne" },
+
+  // ── AEAEA — CIRCE'S HEIRS & THE END OF ODYSSEUS ───────────────────────────
+  { source: "hermes",   target: "circe",     type: "lover_of",   label: "her restless lover through the long exile" },
+  { source: "circe",    target: "telegonus", type: "parent_of",  label: "her son, got of Odysseus" },
+  { source: "odysseus", target: "telegonus", type: "parent_of",  label: "the son he never met" },
+  { source: "telegonus",target: "odysseus",  type: "enemy_of",   label: "slew him unknowing with the ray's venomed sting" },
+  { source: "trygon",   target: "telegonus", type: "created_by", label: "its severed sting became the spear that felled Odysseus" },
+  { source: "telemachus",target: "circe",    type: "lover_of",   label: "who chose the witch of Aeaea at the last" },
 
   // ── CHAOS BIRTHS ──────────────────────────────────────────────────────────
   { source:"chaos",    target:"gaia",      type:"birthed",    label:"bore the Earth from the void" },
