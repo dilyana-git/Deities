@@ -422,9 +422,9 @@ export default function App() {
     }
   }, [])
 
-  /* fade hint on first interaction / after 9 s */
+  /* fade hint on first interaction / just after the ignition lands (~13.4 s) */
   const fadeHint = useCallback(() => setHintFaded(true), [])
-  useEffect(() => { const t = setTimeout(fadeHint, 9000); return () => clearTimeout(t) }, [fadeHint])
+  useEffect(() => { const t = setTimeout(fadeHint, 14000); return () => clearTimeout(t) }, [fadeHint])
 
   /* "/" summons the search line from anywhere (unless already typing) */
   useEffect(() => {

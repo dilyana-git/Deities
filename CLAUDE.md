@@ -184,7 +184,11 @@ Don't reintroduce a centre-bright wash anywhere in this stack. It lifts the back
 
 ## Node Glyphs & Portraits
 
-Each node `<g>` stacks: a blurred `glow` circle (`#glow` filter), a gold `sel-halo` bloom circle (invisible until `.selected`/`.route`), a pale `core` circle, a **frameless** portrait `<image>`, and a `node-label` text.
+Each node `<g>` stacks: a `glow` halo circle, a gold `sel-halo` bloom circle (invisible until `.selected`/`.route`), a pale `core` circle, a **frameless** portrait `<image>`, and a `node-label` text.
+
+- **The glow's softness is a gradient, not a filter.** It fills with a per-category `node-glow-{cat}` radial gradient (1 → 0.58 → 0.19 → 0 alpha) and carries **no `#glow` filter**. A flat fill softened by the shared 3.2px blur is a glow on a 3.4px tail dot and a hard-edged disc on a 44px primary, where 3px of feather is 7% of the radius — and the filter was conditional on `prom > 0.65`, so hubs just under it (Hera, 0.638) drew a crisp coloured circle ~140px across. Because the gradient is `objectBoundingBox`, one falloff holds from the tail dot to a nova'd primary. Don't put a flat `fill` back on `.glow`.
+- **Every glow radius goes through `GLOW_R` / `GLOW_R_PEAK` / `GLOW_R_NOVA`** (1.5 / 1.8 / 2.2 × the star radius) — rest, hub-breath peak, hover flare, ignition flare, selection nova, and `sizeNode`. These were six scattered literals; sizing one path alone puts the halo out of proportion with its star on that path only.
+- **The lit-state swell is tier-aware.** `.nodes.focusing .lit .glow` scales 1.5, but tier 1 overrides to **1.12** — a primary's halo is already ~65px of radius, and 1.5 pushes two lit primaries into each other and over the small stars between them.
 
 - Portraits are **not** cropped to a circle and have **no ring** — the `<image>` spans `IMG_SCALE` (1.45×) the node radius and dissolves into the sky via a CSS radial-gradient mask (`.node image` in `index.css`). A CSS mask (not an SVG one) is deliberate: it re-rasterizes at paint resolution, so the fade stays smooth at any zoom.
 - Selection/route emphasis is **light, not a frame**: `.sel-halo` (a blurred gold disc behind the core) breathes via `@keyframes gold-bloom` and leaks through the portrait's faded edges as a rim-light.

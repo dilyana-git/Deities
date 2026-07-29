@@ -225,7 +225,7 @@ body {
   }
   50% {
     r: var(--glow-r-peak);
-    opacity: calc(var(--glow-base, 0.1) * 2.2);
+    opacity: calc(var(--glow-base, 0.1) * 1.6);
   }
 }
 .node .glow.hub-breath {
@@ -350,6 +350,14 @@ body {
    selected primary's leaf neighbours to read as stars, not specks. */
 .nodes.focusing .node.tier-3.lit:not(.selected) .core { transform: scale(2.8); }
 .nodes.focusing .node.tier-3.lit:not(.selected) .glow { transform: scale(3); }
+
+/* …and the inverse at the top of the scale. A primary's halo is already
+   ~65px of radius at rest; the shared 1.5x lit-scale pushes it past 95px,
+   where two lit primaries (Zeus and Hera are three hops apart on the map)
+   overlap each other and engulf the smaller stars between them. The halo
+   only has to say "this one is in the constellation", and at that size a
+   small step already says it. */
+.nodes.focusing .node.tier-1.lit:not(.selected) .glow { transform: scale(1.12); }
 
 /* subtle scale on hover for immediate feedback */
 .node:hover .core,

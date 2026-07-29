@@ -164,6 +164,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        barely need to move, tail dots need to become visible marks. */
     const selRadius = n => n.tier === 3 ? 13 : radius(n) * (n.tier === 1 ? 1.3 : 1.7)
 
+    /* Glow halo size, as a multiple of the star's radius. Every place that
+       resizes a `.glow` — rest, hub-breath peak, hover flare, ignition
+       flare, selection nova — goes through these, so the halo can never
+       drift out of proportion with the star on one code path only. */
+    const GLOW_R      = 1.5    // resting halo
+    const GLOW_R_PEAK = 1.8    // hub-breath / hover swell
+    const GLOW_R_NOVA = 2.2    // transient burst on selection & ignition
+
     /* portrait half-width as a multiple of the node radius — portraits spread
        beyond the star and fade into the sky (see the `portrait-mask` in defs)
        instead of being cropped to a circle. */
@@ -622,6 +630,24 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('class', 'cat-halo')
       .attr('fill', c => `url(#cat-halo-${c})`)
 
+    /* ── per-node glow gradients ────────────────────────────────────
+       The star's glow has to be a real falloff, not a flat disc.
+       It used to be a solid `CAT[c]` fill softened only by the shared
+       3.2px `#glow` blur — which is a glow on a 3.4px tail dot and a
+       hard-edged circle on a 44px primary, where 3px of feather is 7%
+       of the radius. And the filter was only attached above prom 0.65,
+       so a hub like Hera (0.638) drew a crisp coloured disc ~140px
+       across that swallowed her neighbours and collided with Zeus's.
+       An objectBoundingBox gradient scales with `r` for free, so the
+       same falloff holds from the tail dot to a nova'd primary. */
+    cats.forEach(c => {
+      const g = defs.append('radialGradient').attr('id', `node-glow-${c}`)
+      g.append('stop').attr('offset', '0%').attr('stop-color', CAT[c]).attr('stop-opacity', 1)
+      g.append('stop').attr('offset', '32%').attr('stop-color', CAT[c]).attr('stop-opacity', 0.58)
+      g.append('stop').attr('offset', '64%').attr('stop-color', CAT[c]).attr('stop-opacity', 0.19)
+      g.append('stop').attr('offset', '100%').attr('stop-color', CAT[c]).attr('stop-opacity', 0)
+    })
+
     function updateCatHalos() {
       for (const c of cats) {
         const ms = catNodes.get(c)
@@ -664,15 +690,18 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        even before any interaction. Separate from the general twinkle. */
     const hubBreathThreshold = promRank[Math.min(5, promRank.length - 1)] || 0.6
 
+    /* No `filter` here any more: the gradient IS the softness, so the glow
+       reads the same at every radius instead of depending on a fixed-pixel
+       blur that only some nodes were even given. That also drops a
+       per-pixel convolution from ~137 nodes. */
     gNode.append('circle').attr('class','glow')
-      .attr('r',        d => radius(d) * 1.25)
-      .attr('fill',     d => CAT[d.category])
+      .attr('r',        d => radius(d) * GLOW_R)
+      .attr('fill',     d => `url(#node-glow-${d.category})`)
       .attr('opacity',  d => 0.07 + d.prom * 0.14)
-      .attr('filter',   d => d.prom > 0.65 ? 'url(#glow)' : null)
       .classed('hub-breath', d => d.prom >= hubBreathThreshold)
       .style('--glow-base',     d => (0.07 + d.prom * 0.14).toFixed(3))
-      .style('--glow-r',        d => (radius(d) * 1.25).toFixed(1))
-      .style('--glow-r-peak',   d => (radius(d) * 1.5).toFixed(1))
+      .style('--glow-r',        d => (radius(d) * GLOW_R).toFixed(1))
+      .style('--glow-r-peak',   d => (radius(d) * GLOW_R_PEAK).toFixed(1))
       .style('--twinkle-dur',   () => `${(4.5 + rnd() * 4.5).toFixed(2)}s`)
       .style('--twinkle-delay', () => `-${(rnd() * 7).toFixed(2)}s`)
       .style('--breath-dur',    () => `${(3.5 + rnd() * 1.5).toFixed(2)}s`)
@@ -1008,7 +1037,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       primordial: 1, titan: 2, olympian: 3, chthonic: 3,
       sea_deity: 4, nymph_minor: 4, monster: 5, hero: 5, mortal: 5,
     }
-    const WAVE_MS = [500, 1600, 3000, 4200, 5200, 6000]
+    /* Tempo of the entire sequence, in one number. Every wave time, duration
+       and delay below is expressed through `pace()`, so the cosmogony can be
+       given more room (or tightened) without re-balancing two dozen literals
+       against each other — the phases keep their relative rhythm.
+       1 = the original ~8.4s run. */
+    const PACE = 1.6
+    const pace = v => Math.round(v * PACE)
+    const WAVE_MS = [500, 1600, 3000, 4200, 5200, 6000].map(pace)
     const WAVE_LABEL = ['', 'PRIMORDIALS', 'TITANS', 'OLYMPIANS', 'THE SEA & THE WILD', 'HEROES & MONSTERS']
     nodes.forEach(n => { n._wave = n.id === 'chaos' ? 0 : (CAT_WAVE[n.category] ?? 5) })
 
@@ -1037,9 +1073,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('fill', '#0e1220').attr('opacity', 0.22)
       .attr('pointer-events', 'none')
 
-    const IGNITION_MS = WAVE_MS[5] + 2400
+    const IGNITION_MS = WAVE_MS[5] + pace(2400)
 
-    /* The sequence runs ~8.4s, and it used to lose that time to input nobody
+    /* The sequence runs ~13s, and it used to lose that time to input nobody
        meant as a skip: the click that focuses the browser window after a
        reload, a touchpad momentum tail from a gesture that began before the
        page did, a bare modifier key. Input only skips past the grace period,
@@ -1075,7 +1111,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         .attr('fill', '#e8d5a0')
         .attr('opacity', 0.85)
         .attr('filter', 'url(#glow)')
-        .transition('spark').duration(500 + Math.random() * 300)
+        .transition('spark').duration(pace(500) + Math.random() * pace(300))
         .ease(d3.easeCubicOut)
         .attr('cx', d => d.ex).attr('cy', d => d.ey)
         .attr('opacity', 0)
@@ -1097,7 +1133,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       clusterSel.interrupt('ign').attr('opacity', 0)
       gNode.interrupt('ign').attr('opacity', 0)
       gNode.selectAll('.glow').interrupt('ign').each(function (d) {
-        d3.select(this).attr('opacity', 0.07 + d.prom * 0.14).attr('r', radius(d) * 1.25)
+        d3.select(this).attr('opacity', 0.07 + d.prom * 0.14).attr('r', radius(d) * GLOW_R)
       })
       sparkLayer.selectAll('*').interrupt('spark').remove()
       genTitleLayer.selectAll('*').interrupt('ign').remove()
@@ -1118,23 +1154,23 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       armIgnition()
 
       /* phase 1: starfield materialises from black */
-      bgLayer.transition('ign').duration(1200).delay(100)
+      bgLayer.transition('ign').duration(pace(1200)).delay(pace(100))
         .ease(d3.easeCubicOut)
         .attr('opacity', 1)
 
       /* the celestial grid etches in just behind the starfield */
-      domeLayer.transition('ign').duration(1600).delay(400)
+      domeLayer.transition('ign').duration(pace(1600)).delay(pace(400))
         .ease(d3.easeCubicOut)
         .attr('opacity', 1)
 
       /* the limb glow swells in slower and later — the sky lights at its rim
          last, after the stars are already out */
-      limbLayer.transition('ign').duration(2400).delay(700)
+      limbLayer.transition('ign').duration(pace(2400)).delay(pace(700))
         .ease(d3.easeCubicOut)
         .attr('opacity', 1)
 
       /* category territory halos seep in just after the starfield */
-      catHaloLayer.transition('ign').duration(1800).delay(600)
+      catHaloLayer.transition('ign').duration(pace(1800)).delay(pace(600))
         .ease(d3.easeCubicOut)
         .attr('opacity', 1)
 
@@ -1148,9 +1184,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
           .attr('dominant-baseline', 'central')
           .attr('opacity', 0)
           .text(label)
-        title.transition('ign').duration(400).delay(WAVE_MS[i] - 200)
+        title.transition('ign').duration(pace(400)).delay(WAVE_MS[i] - pace(200))
           .attr('opacity', 0.5)
-          .transition('ign').duration(900)
+          .transition('ign').duration(pace(900))
           .attr('opacity', 0)
           .on('end', function () { d3.select(this).remove() })
       })
@@ -1158,14 +1194,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       /* phase 3: edges draw in with a golden glow that settles to neutral */
       linkSel.each(function (d) {
         const sW = d.source._wave ?? 5, tW = d.target._wave ?? 5
-        const delay = WAVE_MS[Math.max(sW, tW)] + rnd() * 300
+        const delay = WAVE_MS[Math.max(sW, tW)] + rnd() * pace(300)
         d3.select(this)
           .attr('stroke', '#c9a84c')
-          .transition('ign').duration(700).delay(delay)
+          .transition('ign').duration(pace(700)).delay(delay)
           .ease(d3.easeCubicOut)
           .attr('stroke-dashoffset', 0)
           .attr('opacity', 0.28)
-          .transition('ign').duration(800)
+          .transition('ign').duration(pace(800))
           .attr('stroke', NEUTRAL_EDGE)
           .attr('opacity', 0.08)
           .on('end', function () {
@@ -1176,11 +1212,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       /* phase 4: nodes ignite in genealogical waves with sparkle + flare */
       gNode.each(function (d) {
         const isHub = d.prom >= hubThreshold
-        const stagger = isHub ? 300 : rnd() * 250
+        const stagger = isHub ? pace(300) : rnd() * pace(250)
         const delay = WAVE_MS[d._wave] + stagger
         const g = d3.select(this)
 
-        g.transition('ign').duration(500).delay(delay)
+        g.transition('ign').duration(pace(500)).delay(delay)
           .ease(d3.easeCubicOut)
           .attr('opacity', 1)
           .on('start', function () {
@@ -1189,28 +1225,28 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
         /* glow flare — all nodes get a brief brightness spike when born */
         d3.select(this).select('.glow')
-          .transition('ign').duration(200).delay(delay)
+          .transition('ign').duration(pace(200)).delay(delay)
           .attr('opacity', isHub ? 0.4 : 0.2)
-          .attr('r', radius(d) * (isHub ? 2.0 : 1.6))
-          .transition('ign').duration(1100).ease(d3.easeCubicOut)
+          .attr('r', radius(d) * (isHub ? GLOW_R_NOVA : GLOW_R_PEAK))
+          .transition('ign').duration(pace(1100)).ease(d3.easeCubicOut)
           .attr('opacity', 0.07 + d.prom * 0.14)
-          .attr('r', radius(d) * 1.25)
+          .attr('r', radius(d) * GLOW_R)
       })
 
       /* cluster labels seep in once their category's nodes have arrived */
       clusterSel.each(function (c) {
         const wave = CAT_WAVE[c] ?? 5
         d3.select(this)
-          .transition('ign').duration(800).delay(WAVE_MS[wave] + 400)
+          .transition('ign').duration(pace(800)).delay(WAVE_MS[wave] + pace(400))
           .attr('opacity', 0.45)
       })
 
       /* phase 5: parallax settle — ease back from over-zoom to rest */
-      svg.transition('ign').duration(2200).delay(1200)
+      svg.transition('ign').duration(pace(2200)).delay(pace(1200))
         .ease(d3.easeBackOut.overshoot(0.3))
         .call(zoom.transform, restTx)
 
-      bloom.transition('ign').duration(2000).delay(1400)
+      bloom.transition('ign').duration(pace(2000)).delay(pace(1400))
         .ease(d3.easeCubicOut)
         .attr('opacity', 0)
         .on('end', function () { d3.select(this).remove() })
@@ -1230,7 +1266,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
           .attr('transform', `translate(${hub.x - 5},${hub.y + 4})`)
           .transition().duration(350).ease(d3.easeSinOut)
           .attr('transform', `translate(${hub.x},${hub.y})`)
-      }, IGNITION_MS + 1200)
+      }, IGNITION_MS + pace(1200))
     }
 
     /* land everything on its resting state — the same values phase 5 arrives at
@@ -1253,7 +1289,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       gNode.interrupt('ign').attr('opacity', 1)
       gNode.selectAll('.glow').interrupt('ign')
         .each(function (d) {
-          d3.select(this).attr('opacity', 0.07 + d.prom * 0.14).attr('r', radius(d) * 1.25)
+          d3.select(this).attr('opacity', 0.07 + d.prom * 0.14).attr('r', radius(d) * GLOW_R)
         })
       clusterSel.interrupt('ign').attr('opacity', 0.45)
       bloom.interrupt('ign').remove()
@@ -1457,7 +1493,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const d = g.datum()
       const r = grown ? selRadius(d) : radius(d)
       const t = d3.transition().duration(280).ease(d3.easeCubicOut)
-      g.select('.glow').transition(t).attr('r', r * 1.25)
+      g.select('.glow').transition(t).attr('r', r * GLOW_R)
       g.select('.sel-halo').transition(t).attr('r', r * 1.45)
       g.select('.core').transition(t).attr('r', r)
       g.select('image').transition(t)
@@ -1553,9 +1589,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         const baseOp = 0.07 + d.prom * 0.14
         g.select('.glow')
           .transition('nova').duration(180).ease(d3.easeCubicOut)
-          .attr('r', r * 2.0).attr('opacity', Math.min(baseOp * 3.5, 0.4))
+          .attr('r', r * GLOW_R_NOVA).attr('opacity', Math.min(baseOp * 3.5, 0.4))
           .transition('nova').duration(600).ease(d3.easeCubicOut)
-          .attr('r', r * 1.25).attr('opacity', baseOp)
+          .attr('r', r * GLOW_R).attr('opacity', baseOp)
       }
     }
 
@@ -1583,7 +1619,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         gNode.filter(n => n.id === d.id).select('.glow')
           .style('--glow-base', Math.min((0.07 + d.prom * 0.14) * 2.2, 0.4).toFixed(3))
           .transition('glow-shimmer').duration(140).ease(d3.easeCubicOut)
-          .attr('r', radius(d) * 1.6)
+          .attr('r', radius(d) * GLOW_R_PEAK)
       }
 
       /* magnetic lean: temporarily nudge neighbors toward the hovered node */
@@ -1641,7 +1677,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       gNode.filter(n => n.id !== _grownId).select('.glow').interrupt('glow-shimmer')
         .style('--glow-base', d => (0.07 + d.prom * 0.14).toFixed(3))
         .transition('glow-restore').duration(220).ease(d3.easeCubicOut)
-        .attr('r', d => radius(d) * 1.25)
+        .attr('r', d => radius(d) * GLOW_R)
 
       /* release magnetic lean — spring nodes back */
       if (_hoverNudges) {
@@ -1734,13 +1770,63 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        never touches selection/hover edge state, and it yields the instant the
        viewer hovers, selects, opens a path or a tour. */
     const LINEAGES_RAW = [
-      ['chaos', 'gaia', 'uranus', 'cronus', 'zeus'],
+      ['chaos', 'gaia', 'uranus', 'cronus', 'zeus', 'apollo'],
       ['chaos', 'gaia', 'cronus', 'hades'],
       ['uranus', 'cronus', 'poseidon'],
       ['gaia', 'pontus', 'nereus'],
       ['cronus', 'zeus', 'athena'],
       ['chaos', 'nyx', 'hypnos'],
+      ['uranus', 'iapetus', 'atlas'],
+      ['gaia', 'pontus', 'phorcys', 'medusa'],
+      ['hyperion', 'helios', 'pasiphae'],
     ]
+
+    /* A hand-written seed is 2–4 hops, and at rest that is a thread the eye has
+       barely begun to follow before it fades. So each seed is grown out to the
+       whole line it sits on — on down to its furthest heir, then back up to its
+       eldest ancestor — along `parent_of`/`birthed` edges only, so the thread
+       stays a strict line of descent rather than wandering sideways into a
+       marriage or a feud. The walk takes the *longest* branch rather than the
+       first one it steps into, so a descent doesn't stop at an early dead end
+       (Zeus alone has a dozen children, most of them leaves). This genealogy
+       tops out at 7 hops; the seeds below now reach 5 or 6 instead of 3. */
+    const TRACE_HOPS = 10
+    const kids = {}, sires = {}
+    nodes.forEach(n => { kids[n.id] = []; sires[n.id] = [] })
+    /* the sim has long since swapped these string ids for node objects */
+    links.forEach(l => {
+      if (l.type !== 'parent_of' && l.type !== 'birthed') return
+      const s = srcId(l), t = tgtId(l)
+      kids[s].push(t)
+      sires[t].push(s)
+    })
+    const byRenown = (a, b) => byId[b].degree - byId[a].degree
+    Object.values(kids).forEach(c => c.sort(byRenown))
+    Object.values(sires).forEach(c => c.sort(byRenown))
+
+    /* longest simple chain leading out of `start` through `tree`, ≤ budget hops */
+    function extend(start, seen, tree, budget) {
+      if (budget <= 0) return []
+      let best = []
+      for (const next of tree[start]) {
+        if (seen.has(next)) continue
+        seen.add(next)
+        const chain = [next, ...extend(next, seen, tree, budget - 1)]
+        seen.delete(next)
+        if (chain.length > best.length) best = chain
+        if (best.length === budget) break
+      }
+      return best
+    }
+    function growLineage(seed) {
+      const seen = new Set(seed)
+      const room  = TRACE_HOPS - (seed.length - 1)
+      const heirs = extend(seed[seed.length - 1], seen, kids, room)
+      heirs.forEach(id => seen.add(id))
+      const elders = extend(seed[0], seen, sires, room - heirs.length)
+      return [...elders.reverse(), ...seed, ...heirs]
+    }
+
     function findHop(a, b) {
       let res = null
       linkSel.each(function(l) {
@@ -1751,7 +1837,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       return res
     }
     /* keep only the chains every hop of which is a real edge in this dataset */
-    const LINEAGES = LINEAGES_RAW.map(ids => {
+    const LINEAGES = LINEAGES_RAW.map(growLineage).map(ids => {
       const hops = []
       for (let i = 0; i < ids.length - 1; i++) {
         const h = findHop(ids[i], ids[i + 1])
@@ -1807,7 +1893,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const comet = traceLayer.append('circle').attr('class', 'ambient')
         .attr('r', 3.2).attr('fill', '#f3e6bd')
         .attr('filter', 'url(#trace-glow)').attr('opacity', 0.95)
-      const DUR = Math.min(5600, Math.max(2800, total * 3.4))
+      /* Pace, not a fixed span. A thread twice as long squeezed into the same
+         2.8–5.6s just doubles the comet's speed, which is exactly where the eye
+         loses the hop it is following — so length sets the duration, floored at
+         ~0.9s a hop so a short descent still reads as a journey. */
+      const DUR = Math.min(9500, Math.max(900 * chain.hops.length, total * 3.4))
       trail.transition('ambient').duration(DUR).ease(d3.easeSinInOut)
         .attr('stroke-dashoffset', 0)
         .tween('comet', () => t => {
