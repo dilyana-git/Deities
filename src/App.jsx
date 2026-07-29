@@ -35,14 +35,23 @@ function bfs(adj, from, to) {
 
 /* ── shared styles ───────────────────────────────────────────────────── */
 const S = {
-  root: { width:'100%', height:'100vh', display:'flex', flexDirection:'column', background:'#06080e', overflow:'hidden' },
+  root: { width:'100%', height:'100vh', position:'relative', background:'#06080e', overflow:'hidden' },
+  /* The chrome belongs to the sky, not to a web page. No pills, no strokes, no
+     panels — just letterspaced small caps floating directly on the void, dim
+     until the cursor finds them. */
   hbtn: {
-    fontFamily:'Cinzel, serif', fontSize:11.5, letterSpacing:'.16em', color:'#5c6678',
-    background:'transparent', border:'1px solid #19202d', borderRadius:7,
-    padding:'7px 13px', cursor:'pointer', transition:'.16s',
-    display:'inline-flex', alignItems:'center', gap:7,
+    fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.22em', color:'#525c6e',
+    background:'transparent', border:'none', padding:'6px 3px', cursor:'pointer',
+    transition:'color .18s', display:'inline-flex', alignItems:'center', gap:7,
+    textTransform:'uppercase',
   },
-  hbtnActive: { color:'#cdb88a', border:'1px solid #5a5440', background:'#13110a' },
+  hbtnActive: { color:'#cdb88a' },
+  bareInput: {
+    width:'100%', background:'transparent', border:'none',
+    borderBottom:'1px solid #2a3242', borderRadius:0, padding:'9px 2px',
+    color:'#dbe1ec', fontFamily:"'Crimson Pro', serif", fontSize:22,
+    letterSpacing:'.01em', outline:'none',
+  },
   overlay: {
     background:'rgba(9,12,19,.97)', border:'1px solid #262e3c', borderRadius:10,
     padding:6, boxShadow:'0 18px 48px rgba(0,0,0,.55)', backdropFilter:'blur(10px)',
@@ -60,9 +69,11 @@ const S = {
 }
 
 /* ── autocomplete dropdown ───────────────────────────────────────────── */
-function AutocompleteInput({ value, onChange, onPick, placeholder, sortedNodes, style }) {
+function AutocompleteInput({ value, onChange, onPick, placeholder, sortedNodes, style, inputStyle, autoFocus }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const inputRef = useRef(null)
+  useEffect(() => { if (autoFocus) inputRef.current?.focus() }, [autoFocus])
 
   const matches = useMemo(() => {
     const q = value.trim().toLowerCase()
@@ -85,7 +96,8 @@ function AutocompleteInput({ value, onChange, onPick, placeholder, sortedNodes, 
   return (
     <div ref={ref} style={{ position:'relative', ...style }}>
       <input
-        style={S.input}
+        ref={inputRef}
+        style={inputStyle || S.input}
         value={value}
         placeholder={placeholder}
         onChange={e => { onChange(e.target.value); setOpen(true) }}
@@ -121,27 +133,74 @@ function AutocompleteInput({ value, onChange, onPick, placeholder, sortedNodes, 
   )
 }
 
-/* ── floating search bar ─────────────────────────────────────────────── */
-function SearchBox({ sortedNodes, onPick }) {
+/* ── summoned search ─────────────────────────────────────────────────────
+   No standing search pill sits on the chart. Press "/" (or click the wordmark's
+   search cue) and a single bare line drops from the upper sky — dissolved
+   chrome, summoned only when wanted, gone on Escape or pick. */
+function SummonSearch({ open, onClose, sortedNodes, onPick }) {
   const [q, setQ] = useState('')
-  function handlePick(node) { setQ(''); onPick(node.id) }
+  useEffect(() => { if (open) setQ('') }, [open])
+  useEffect(() => {
+    if (!open) return
+    function esc(e) { if (e.key === 'Escape') { e.stopPropagation(); onClose() } }
+    document.addEventListener('keydown', esc, true)
+    return () => document.removeEventListener('keydown', esc, true)
+  }, [open, onClose])
+
+  if (!open) return null
   return (
-    <div style={{ position:'absolute', top:16, left:16, zIndex:20, width:262, opacity:0.65, transition:'opacity .2s' }}
-      onMouseEnter={e => e.currentTarget.style.opacity='1'}
-      onMouseLeave={e => e.currentTarget.style.opacity='0.65'}>
-      <div style={{
-        display:'flex', alignItems:'center', gap:9, padding:'9px 13px',
-        background:'rgba(10,13,20,.72)', border:'1px solid #1e2530', borderRadius:9,
-        backdropFilter:'blur(8px)',
-      }}>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5c6678" strokeWidth="2">
-          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/>
-        </svg>
+    <div style={{ position:'absolute', inset:0, zIndex:40, background:'rgba(4,6,12,.55)', backdropFilter:'blur(3px)' }}
+      onMouseDown={onClose}>
+      <div className="pop-in" onMouseDown={e => e.stopPropagation()}
+        style={{ position:'absolute', top:'20vh', left:'50%', transform:'translateX(-50%)', width:'min(440px,84vw)' }}>
+        <p style={{ fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.28em', color:'#5c6678',
+          textTransform:'uppercase', margin:'0 0 6px' }}>Name a figure</p>
         <AutocompleteInput
-          value={q} onChange={setQ} onPick={handlePick}
-          placeholder="find a figure…" sortedNodes={sortedNodes}
-          style={{ flex:1 }}
+          value={q} onChange={setQ} onPick={n => { onPick(n.id); onClose() }}
+          placeholder="Zeus, Medusa, Chaos…" sortedNodes={sortedNodes}
+          inputStyle={S.bareInput} autoFocus
         />
+        <p style={{ fontStyle:'italic', fontSize:12.5, color:'#3a4354', margin:'8px 2px 0' }}>
+          Enter to leap · Esc to dismiss
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/* ── era axis ─────────────────────────────────────────────────────────────
+   A generational depth scale set into the otherwise-empty lower-left corner:
+   the cosmogony reads top-down, oldest to youngest, so the eye has a sense of
+   how deep in time any star sits. Colours are the family accents of the wave
+   that dominates each generation. */
+const ERAS = [
+  { r:'Ⅰ', label:'Primordials',        c: CAT.primordial },
+  { r:'Ⅱ', label:'Titans',             c: CAT.titan },
+  { r:'Ⅲ', label:'Olympians',          c: CAT.olympian },
+  { r:'Ⅳ', label:'Sea & the Wild',     c: CAT.sea_deity },
+  { r:'Ⅴ', label:'Heroes & Monsters',  c: CAT.monster },
+]
+function EraAxis() {
+  return (
+    <div style={{ position:'absolute', left:20, bottom:18, zIndex:12, pointerEvents:'none',
+      opacity:0.72 }}>
+      <p style={{ fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.26em', color:'#4a5364',
+        textTransform:'uppercase', margin:'0 0 9px 2px' }}>Depth of Ages</p>
+      <div style={{ display:'flex' }}>
+        {/* the axis line */}
+        <div style={{ width:1, marginLeft:5, marginRight:12,
+          background:'linear-gradient(#2a3242, #2a3242 92%, transparent)' }}/>
+        <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+          {ERAS.map(e => (
+            <div key={e.r} style={{ display:'flex', alignItems:'center', gap:9, position:'relative' }}>
+              <span style={{ position:'absolute', left:-18, width:7, height:7, borderRadius:'50%',
+                background:e.c, boxShadow:`0 0 7px ${e.c}` }}/>
+              <span style={{ fontFamily:'Cinzel, serif', fontSize:11, color:'#7c8698', width:16 }}>{e.r}</span>
+              <span style={{ fontFamily:"'Crimson Pro', serif", fontStyle:'italic', fontSize:13,
+                color:'#6b7488' }}>{e.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -274,7 +333,7 @@ function PathSlot({ label, value, onChange, onPick, sortedNodes }) {
 function LegendPanel({ onClose }) {
   return (
     <div style={{
-      position:'absolute', left:16, bottom:16, zIndex:24, width:248,
+      position:'absolute', right:20, bottom:52, zIndex:24, width:248,
       ...S.overlay, padding:'14px 16px',
       boxShadow:'0 18px 50px rgba(0,0,0,.5)',
     }} className="pop-in">
@@ -338,6 +397,7 @@ export default function App() {
   const [zodiacOpen,      setZodiacOpen]      = useState(false)
   const [orbitOpen,       setOrbitOpen]       = useState(false)
   const [shortcutsOpen,   setShortcutsOpen]   = useState(false)
+  const [searchOpen,      setSearchOpen]      = useState(false)
 
   const prevBeatFigRef = useRef(null)
 
@@ -365,6 +425,22 @@ export default function App() {
   /* fade hint on first interaction / after 9 s */
   const fadeHint = useCallback(() => setHintFaded(true), [])
   useEffect(() => { const t = setTimeout(fadeHint, 9000); return () => clearTimeout(t) }, [fadeHint])
+
+  /* "/" summons the search line from anywhere (unless already typing) */
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === '/' && !searchOpen) {
+        const t = e.target
+        const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)
+        if (typing || pathOpen || storyOpen || zodiacOpen || orbitOpen) return
+        e.preventDefault()
+        setSearchOpen(true)
+        setHintFaded(true)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [searchOpen, pathOpen, storyOpen, zodiacOpen, orbitOpen])
 
   /* path panel: when it opens, clear selection; when closed, restore */
   function openPath() {
@@ -416,61 +492,65 @@ export default function App() {
     if (id) setHintFaded(true)
   }, [])
 
-  /* header button style helper */
+  /* header button style helper — dissolved text; brighten on hover */
   function hbtn(active) {
     return { ...S.hbtn, ...(active ? S.hbtnActive : {}) }
+  }
+  function navHover(active) {
+    return {
+      onMouseEnter: e => { e.currentTarget.style.color = '#cdb88a' },
+      onMouseLeave: e => { e.currentTarget.style.color = active ? '#cdb88a' : '#525c6e' },
+    }
   }
 
   return (
     <div style={S.root}>
 
-      {/* ── header ─────────────────────────────────────────────────── */}
-      <header style={{
-        display:'flex', alignItems:'center', gap:16, padding:'13px 22px',
-        borderBottom:'1px solid #19202d', flexShrink:0, zIndex:30,
-        background:'linear-gradient(180deg,rgba(8,10,16,.9),rgba(8,10,16,.5))',
-      }}>
-        <span style={{ fontFamily:'Cinzel, serif', fontWeight:500, fontSize:19, letterSpacing:'.34em', color:'#cdb88a', paddingLeft:'.34em' }}>
-          THEOGONY
-        </span>
-        <span style={{ fontStyle:'italic', fontSize:16, color:'#5c6678', marginRight:'auto', whiteSpace:'nowrap' }}>
-          A Web of Becoming
-        </span>
-
-        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-          <button style={hbtn(pathOpen)} onClick={() => pathOpen ? closePath() : openPath()}>
-            PATH
-          </button>
-          <button style={hbtn(legendOpen)} onClick={() => setLegendOpen(v => !v)}>
-            LEGEND
-          </button>
-          <button style={hbtn(storyOpen)} onClick={openStory}>
-            <span style={{ width:6, height:6, borderRadius:'50%', background:'currentColor', opacity:.7 }}/>
-            STORY
-          </button>
-          <button style={hbtn(zodiacOpen)} onClick={() => setZodiacOpen(true)}>
-            <span style={{ fontSize:12, lineHeight:1, opacity:.8 }}>✦</span>
-            ZODIAC
-          </button>
-          <button
-            style={{ ...S.hbtn, width:28, height:28, padding:0, display:'grid', placeItems:'center', borderRadius:'50%', fontSize:13 }}
-            onClick={() => setShortcutsOpen(v => !v)}
-            aria-label="Keyboard shortcuts"
-          >?</button>
-        </div>
-      </header>
-
-      {/* ── main ───────────────────────────────────────────────────── */}
-      <main className="atlas-main" style={{ position:'relative', flex:1, overflow:'hidden' }}>
+      {/* ── main (full-bleed sky; chrome floats over it) ───────────── */}
+      <main className="atlas-main" style={{ position:'absolute', inset:0, overflow:'hidden' }}>
         <SkyGraph ref={graphRef} onSelect={handleNodeSelect}/>
 
-        {/* floating search (dimmed while path panel is open) */}
-        <div style={{ pointerEvents: pathOpen ? 'none' : 'auto', opacity: pathOpen ? 0.25 : 1, transition: 'opacity .3s' }}>
-          <SearchBox
-            sortedNodes={sortedNodes}
-            onPick={id => { graphRef.current?.select(id, true); setHintFaded(true) }}
-          />
+        {/* ── wordmark + invitation, floating on the void ──────────── */}
+        <div style={{ position:'absolute', top:20, left:22, zIndex:30, pointerEvents:'none' }}>
+          <div style={{ fontFamily:'Cinzel, serif', fontWeight:500, fontSize:19, letterSpacing:'.34em',
+            color:'#cdb88a', paddingLeft:'.34em' }}>THEOGONY</div>
+          <div style={{ fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.24em', color:'#4a5364',
+            textTransform:'uppercase', margin:'5px 0 0 .34em' }}>A Web of Becoming</div>
+          {/* the invitation — the one line that says what to do */}
+          <button
+            onClick={openStory}
+            style={{ pointerEvents:'auto', display:'block', margin:'11px 0 0 .1em', padding:0,
+              background:'none', border:'none', cursor:'pointer', textAlign:'left',
+              fontFamily:"'Crimson Pro', serif", fontStyle:'italic', fontSize:16.5, color:'#8891a3',
+              transition:'color .2s' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#cdb88a'}
+            onMouseLeave={e => e.currentTarget.style.color = '#8891a3'}
+          >
+            Trace any figure back to Chaos&nbsp;
+            <span style={{ color:'#cdb88a' }}>→</span>
+          </button>
         </div>
+
+        {/* ── dissolved nav, floating top-right ────────────────────── */}
+        <nav style={{ position:'absolute', top:22, right:24, zIndex:30,
+          display:'flex', gap:22, alignItems:'center' }}>
+          <button style={hbtn(pathOpen)} {...navHover(pathOpen)} onClick={() => pathOpen ? closePath() : openPath()}>
+            Path
+          </button>
+          <button style={hbtn(legendOpen)} {...navHover(legendOpen)} onClick={() => setLegendOpen(v => !v)}>
+            Legend
+          </button>
+          <button style={hbtn(storyOpen)} {...navHover(storyOpen)} onClick={openStory}>
+            <span style={{ width:5, height:5, borderRadius:'50%', background:'currentColor', opacity:.7 }}/>
+            Story
+          </button>
+          <button style={hbtn(zodiacOpen)} {...navHover(zodiacOpen)} onClick={() => setZodiacOpen(true)}>
+            <span style={{ fontSize:11, lineHeight:1, opacity:.8 }}>✦</span>
+            Zodiac
+          </button>
+          <button style={hbtn(false)} {...navHover(false)}
+            onClick={() => setShortcutsOpen(v => !v)} aria-label="Keyboard shortcuts">?</button>
+        </nav>
 
         {/* path panel */}
         {pathOpen && (
@@ -486,6 +566,10 @@ export default function App() {
 
         {/* legend */}
         {legendOpen && <LegendPanel onClose={() => setLegendOpen(false)}/>}
+
+        {/* era axis — generational depth scale in the lower-left corner (hidden
+            while the path panel occupies that side of the screen) */}
+        {!pathOpen && <EraAxis/>}
 
         {/* detail panel */}
         <DetailPanel
@@ -511,24 +595,31 @@ export default function App() {
           pointerEvents:'none', transition:'opacity .3s', opacity: hintFaded ? 0 : 1,
           whiteSpace:'nowrap', margin:0,
         }}>
-          Click a star to explore · Drag to roam · Scroll to zoom
+          Click a star to explore · Drag to roam · Scroll to zoom · <span style={{ color:'#5c6678' }}>/</span> to search
         </p>
 
-        {/* reset view */}
+        {/* reset view — dissolved to bare small caps like the rest of the chrome */}
         <button
           onClick={() => { setSelectedId(null); graphRef.current?.clearSelection(); graphRef.current?.resetView() }}
           style={{
-            position:'absolute', right:16, bottom:16, zIndex:22,
-            fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.14em', color:'#3e4654',
-            background:'rgba(9,12,19,.6)', border:'1px solid #161c28', borderRadius:7,
-            padding:'7px 12px', cursor:'pointer', transition:'opacity .2s, color .15s, border-color .15s',
-            opacity:0.6,
+            position:'absolute', right:24, bottom:18, zIndex:22,
+            fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.2em', color:'#3e4654',
+            background:'none', border:'none', padding:'6px 3px', cursor:'pointer',
+            transition:'color .18s', textTransform:'uppercase',
           }}
-          onMouseEnter={e => { e.currentTarget.style.opacity='1'; e.currentTarget.style.color='#cdb88a'; e.currentTarget.style.borderColor='#5a5440' }}
-          onMouseLeave={e => { e.currentTarget.style.opacity='0.6'; e.currentTarget.style.color='#3e4654'; e.currentTarget.style.borderColor='#161c28' }}
+          onMouseEnter={e => { e.currentTarget.style.color='#cdb88a' }}
+          onMouseLeave={e => { e.currentTarget.style.color='#3e4654' }}
         >
-          ⤢ RESET VIEW
+          ⤢ Reset View
         </button>
+
+        {/* summoned search line ("/") */}
+        <SummonSearch
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          sortedNodes={sortedNodes}
+          onPick={id => { graphRef.current?.select(id, true); setHintFaded(true) }}
+        />
       </main>
 
       {/* tooltip anchor (position driven by mousemove in SkyGraph) */}

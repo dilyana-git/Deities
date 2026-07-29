@@ -110,15 +110,48 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     nodes.forEach(n => { n.degree = adj[n.id].size })
     const maxDeg = Math.max(...nodes.map(n => n.degree))
     nodes.forEach(n => { n.prom = Math.sqrt(n.degree) / Math.sqrt(maxDeg) })
-    /* node size scales with connection count (renown). The wider range and
-       steeper exponent make hubs (Zeus, Gaia) dramatically larger while leaf
-       stars stay small — the hierarchy reads instantly across the field. */
-    const radius = n => 4 + Math.pow(n.prom, 1.4) * 22
+
+    /* ── three explicit size tiers ─────────────────────────────────────
+       A continuous size curve averages ~116 stars into an even texture with
+       nowhere for the eye to land. Instead the field is cut into three
+       DISCRETE registers so a glance reads the hierarchy at once:
+         · primary   — the dozen most-connected figures, rendered 3–4× larger
+                        with permanent labels and portraits (the anchors)
+         · secondary — everyone still woven into several myths: solid
+                        family-coloured discs at the old default size, unlabeled
+         · tail       — leaves and near-isolates: plain little dots
+       The gap between tiers is deliberate — a primary is unmistakably a
+       primary, not merely a slightly bigger secondary. */
+    const PRIMARY_COUNT = 12
+    const byDegDesc = nodes.slice().sort((a, b) => b.degree - a.degree || a.id.localeCompare(b.id))
+    const primarySet = new Set(byDegDesc.filter(n => n.degree > 0).slice(0, PRIMARY_COUNT).map(n => n.id))
+    nodes.forEach(n => {
+      n._tier = primarySet.has(n.id) ? 'primary'
+              : n.degree <= 1        ? 'tail'
+              :                        'secondary'
+    })
+    /* discrete radius per tier (a little in-tier variation by renown so a
+       primary still out-sizes a primary, but the tiers never overlap) */
+    function radius(n) {
+      if (n._tier === 'primary')   return 19 + Math.pow(n.prom, 1.15) * 10   // ~19–29
+      if (n._tier === 'secondary') return 6.5 + n.prom * 2.6                 // ~7–9
+      return 3.0                                                             // plain dots
+    }
 
     /* portrait half-width as a multiple of the node radius — portraits spread
        beyond the star and fade into the sky (see the `portrait-mask` in defs)
        instead of being cropped to a circle. */
     const IMG_SCALE = 1.45
+
+    /* Resting-camera bleed. A disc floating dead-centre with even margins on
+       every side reads as small — a coin on a table. Overscaling it slightly
+       and biasing the camera down-and-right pushes the field's lower-right off
+       the frame while leaving a generous open margin at the top-left (where the
+       wordmark lives and the dome's rim curves into the void). The crop is what
+       implies scale — you are looking at part of a much larger sky. */
+    const BLEED_K = 1.11         // overscale past a clean fit
+    const BLEED_DX = 0.045       // shove the field's centre right (fraction of W)
+    const BLEED_DY = 0.055       // …and down (fraction of H)
 
     /* ── birth-order generation (BFS along parent_of / birthed edges) ── */
     const childAdj = {}
@@ -584,9 +617,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     const gNode = nodeLayer.selectAll('g').data(nodes).join('g')
       .attr('class', 'node')
-      .classed('prominent', d => d.prom >= hubThreshold)
-      .classed('mid-label', d => d.prom > 0.3 && d.prom < hubThreshold)
-      .classed('nolabel',   d => d.degree === 0)
+      .classed('tier-primary',   d => d._tier === 'primary')
+      .classed('tier-secondary', d => d._tier === 'secondary')
+      .classed('tier-tail',      d => d._tier === 'tail')
+      /* label registers keyed off the tiers: primaries carry permanent
+         labels, secondaries reveal theirs on zoom/hover, the tail stays mute */
+      .classed('prominent', d => d._tier === 'primary')
+      .classed('mid-label', d => d._tier === 'secondary')
+      .classed('nolabel',   d => d._tier === 'tail')
       .style('cursor', 'pointer')
       .on('click',      (e, d) => { e.stopPropagation(); api.select(d.id, true) })
       .on('mouseenter', (e, d) => hoverOn(d))
@@ -625,10 +663,17 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('filter',  'url(#glow)')
       .attr('opacity', 0)
 
+    /* the core disc. Under a primary it is just the backing the portrait sits
+       on, so it stays pale; but for the secondaries and the tail — which show
+       NO portrait at rest — the disc IS the mark, so it carries far more of the
+       family colour. Those saturated little discs are the most legible things
+       on the field, and here they do the identifying work portraits used to. */
     gNode.append('circle').attr('class','core')
       .attr('r',       d => radius(d))
-      .attr('fill',    d => `color-mix(in oklab, ${CAT[d.category]} 32%, #f0ead9)`)
-      .attr('opacity', d => 0.72 + d.prom * 0.28)
+      .attr('fill',    d => d._tier === 'primary'
+        ? `color-mix(in oklab, ${CAT[d.category]} 32%, #f0ead9)`
+        : `color-mix(in oklab, ${CAT[d.category]} 66%, #efe8d6)`)
+      .attr('opacity', d => d._tier === 'primary' ? 0.72 + d.prom * 0.28 : 0.92)
 
     /* head portrait — unframed. Drawn ~45% larger than the star and softened
        into the sky by a CSS radial-gradient mask (`.node image` in index.css;
@@ -663,11 +708,34 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        lands on an idle main thread instead of mid-animation. The onerror
        fallback chain above still resolves .png / -full variants per the
        drop-in-by-id convention. */
+    /* Portraits are the REWARD of attention, not the default state. At 18px a
+       standing figure is unreadable noise, so only the dozen primaries wear
+       their portrait at rest; every other star is a clean family-coloured disc
+       until the viewer leans in (hover) or zooms past the mid threshold. That
+       also means the opening only ever requests ~12 images, not ~116. */
+    const _portraitShown = new Set()
+    function showPortrait(d) {
+      if (_portraitShown.has(d.id)) return
+      _portraitShown.add(d.id)
+      gNode.filter(n => n.id === d.id).select('image')
+        .attr('href', portraitSources(d.id)[0])
+    }
     let _portraitsLoaded = false
     function loadPortraits() {
       if (_portraitsLoaded) return
       _portraitsLoaded = true
-      gNode.select('image').attr('href', d => portraitSources(d.id)[0])
+      gNode.filter(d => d._tier === 'primary').each(function(d) {
+        _portraitShown.add(d.id)
+        d3.select(this).select('image').attr('href', portraitSources(d.id)[0])
+      })
+    }
+    /* reveal a whole tier's portraits at once (used when the camera crosses the
+       zoom threshold — up close there is room for the secondaries to bloom in) */
+    let _secondaryPortraitsShown = false
+    function showSecondaryPortraits() {
+      if (_secondaryPortraitsShown) return
+      _secondaryPortraitsShown = true
+      gNode.filter(d => d._tier === 'secondary').each(function(d) { showPortrait(d) })
     }
 
     gNode.append('text').attr('class','node-label')
@@ -720,12 +788,43 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
           const dx = n.x - best.x, dy = n.y - best.y
           return dx * dx + dy * dy <= CLUSTER_R * CLUSTER_R
         })
-        anchor.set(c, { x: d3.mean(blob, n => n.x), y: d3.min(blob, n => n.y) - 26 })
+        /* Set the label on the OUTER rim of its cluster, not on top of it.
+           A label parked at the blob's centroid (or its top) inevitably sits on
+           a member star — "OLYMPIANS" landing squarely on Helios. Instead we
+           find the blob's centre, then push the label radially outward, away
+           from the dome centre, just past the farthest member: it floats off
+           the constellation's outer edge like a name set along an arc, and the
+           stars themselves stay clear. */
+        const bcx = d3.mean(blob, n => n.x), bcy = d3.mean(blob, n => n.y)
+        let br = 0
+        for (const n of blob) {
+          const dx = n.x - bcx, dy = n.y - bcy
+          const d = Math.sqrt(dx * dx + dy * dy)
+          if (d > br) br = d
+        }
+        let ox = bcx - DOME.cx, oy = bcy - DOME.cy
+        let ol = Math.hypot(ox, oy)
+        if (ol < 1e-3) { ox = 0; oy = -1; ol = 1 }   // dead-centre cluster: park it above
+        const off = br + 20
+        /* clamp the outward push so a rim cluster's label doesn't sail past the
+           dome horizon (and off the bled frame) — keep it inside ρ ≈ 0.94 */
+        let lx = bcx + (ox / ol) * off, ly = bcy + (oy / ol) * off
+        const rho = domeRho(lx, ly)
+        if (rho > 0.94) {
+          const s = 0.94 / rho
+          lx = DOME.cx + (lx - DOME.cx) * s
+          ly = DOME.cy + (ly - DOME.cy) * s
+        }
+        anchor.set(c, { x: lx, y: ly })
       }
 
       for (const c of cats) {
         if (!labelPos.has(c)) labelPos.set(c, { ...anchor.get(c) })
       }
+      /* the primary stars are the field's landmarks — a band label must never
+         sit on one (the "OLYMPIANS on Helios" collision). We repel labels off
+         them explicitly, since the label-vs-label pass below can't see nodes. */
+      const bigNodes = nodes.filter(n => n._tier === 'primary')
       for (let iter = 0; iter < 80; iter++) {
         let moved = false
         for (const c of cats) {
@@ -733,6 +832,20 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
           const dx = (a.x - p.x) * 0.15, dy = (a.y - p.y) * 0.15
           if (Math.abs(dx) > 0.02 || Math.abs(dy) > 0.02) moved = true
           p.x += dx; p.y += dy
+        }
+        for (const c of cats) {
+          const p = labelPos.get(c), b = labelSize.get(c)
+          for (const n of bigNodes) {
+            const rr = radius(n) + 12
+            const dx = p.x - n.x, dy = p.y - n.y
+            const ox = b.w / 2 + rr - Math.abs(dx)
+            const oy = b.h / 2 + rr - Math.abs(dy)
+            if (ox > 0 && oy > 0) {
+              moved = true
+              if (ox < oy) p.x += (dx >= 0 ? ox : -ox)
+              else         p.y += (dy >= 0 ? oy : -oy)
+            }
+          }
         }
         for (let i = 0; i < cats.length; i++) {
           for (let j = i + 1; j < cats.length; j++) {
@@ -827,6 +940,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         zoomLayer.attr('transform', e.transform)
         svg.classed('zoomed-mid', e.transform.k > 1.0)
         svg.classed('zoomed-in', e.transform.k > 1.7)
+        /* up close, the secondaries earn their portraits — there is finally
+           room to read a face where a disc stood */
+        if (e.transform.k > 1.7) showSecondaryPortraits()
         /* cluster labels dim as you zoom in (individual names take over) */
         const clOp = e.transform.k > 1.7 ? 0.12 : e.transform.k > 1.0 ? 0.28 : 0.45
         clusterSel.attr('opacity', clOp)
@@ -850,9 +966,10 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const y0 = Math.min(...ys), y1 = Math.max(...ys)
       const bw = x1 - x0, bh = y1 - y0
       if (!(bw > 0 && bh > 0)) return
-      const k = Math.min((W - pad * 2) / bw, (H - pad * 2) / bh, 1.3)
+      const k = Math.min((W - pad * 2) / bw, (H - pad * 2) / bh, 1.3) * BLEED_K
       if (!isFinite(k) || k <= 0) return
-      const tx = W / 2 - k * (x0 + bw / 2), ty = H / 2 - k * (y0 + bh / 2)
+      const tx = W / 2 - k * (x0 + bw / 2) + W * BLEED_DX
+      const ty = H / 2 - k * (y0 + bh / 2) + H * BLEED_DY
       if (animate) {
         svg.transition().duration(900).call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
       } else {
@@ -882,12 +999,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const _y0 = Math.min(..._ys), _y1 = Math.max(..._ys)
     const _bw = _x1 - _x0, _bh = _y1 - _y0
     const restK = (_bw > 0 && _bh > 0)
-      ? Math.min((W - 72) / _bw, (H - 72) / _bh, 1.3)
+      ? Math.min((W - 72) / _bw, (H - 72) / _bh, 1.3) * BLEED_K
       : 1
     const _cx = _x0 + _bw / 2, _cy = _y0 + _bh / 2
     const startK = restK * 1.20
-    const restTx  = d3.zoomIdentity.translate(W / 2 - restK  * _cx, H / 2 - restK  * _cy).scale(restK)
-    const startTx = d3.zoomIdentity.translate(W / 2 - startK * _cx, H / 2 - startK * _cy).scale(startK)
+    const restTx  = d3.zoomIdentity.translate(W / 2 - restK  * _cx + W * BLEED_DX, H / 2 - restK  * _cy + H * BLEED_DY).scale(restK)
+    const startTx = d3.zoomIdentity.translate(W / 2 - startK * _cx + W * BLEED_DX, H / 2 - startK * _cy + H * BLEED_DY).scale(startK)
 
     /* sparkle layer for ignition particles */
     const sparkLayer = floatXLayer.append('g').attr('class', 'sparks').attr('pointer-events', 'none')
@@ -1126,6 +1243,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       svg.interrupt('ign').call(zoom.transform, restTx)
 
       loadPortraits()
+      scheduleAmbient(3200)   // let the sky settle, then begin its heartbeat
       teardownSkip()
     }
 
@@ -1192,6 +1310,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* ── hover / selection state ────────────────────────────────── */
     const state = { selected: null, pathLock: false, tourLock: false }
+    let _hoverActive = false
 
     const srcId = l => (typeof l.source === 'object' ? l.source.id : l.source)
     const tgtId = l => (typeof l.target === 'object' ? l.target.id : l.target)
@@ -1431,6 +1550,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     function hoverOn(d) {
       if (state.pathLock || state.tourLock || !_ignitionDone) return
+      _hoverActive = true
+      stopAmbient()                 // the viewer is driving now — hush the ambient sky
+      showPortrait(d)               // the face is the reward of leaning in
       const near = adj[d.id]
       nodeLayer.classed('focusing', true)
       gNode.classed('faded', n => n.id !== d.id && !near.has(n.id))
@@ -1492,6 +1614,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     function hoverOff() {
       if (state.pathLock || state.tourLock) return
+      _hoverActive = false
+      if (!state.selected) scheduleAmbient(5000)   // idle again — let the sky resume its pulse
       if (tip) tip.style.opacity = '0'
 
       /* restore glow from hover flare (leave the grown/selected node alone —
@@ -1583,11 +1707,107 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
     }
 
+    /* ── ambient lineage trace ─────────────────────────────────────
+       The heartbeat of the resting sky. Every few seconds — only while the
+       viewer is doing nothing — one line of descent quietly ignites and a
+       comet travels it, drawing a gold thread from ancestor to heir
+       (Chaos → Gaia → Uranus → Cronus → Zeus, and a handful of other
+       descents). It lives entirely in `traceLayer` as its own overlay, so it
+       never touches selection/hover edge state, and it yields the instant the
+       viewer hovers, selects, opens a path or a tour. */
+    const LINEAGES_RAW = [
+      ['chaos', 'gaia', 'uranus', 'cronus', 'zeus'],
+      ['chaos', 'gaia', 'cronus', 'hades'],
+      ['uranus', 'cronus', 'poseidon'],
+      ['gaia', 'pontus', 'nereus'],
+      ['cronus', 'zeus', 'athena'],
+      ['chaos', 'nyx', 'hypnos'],
+    ]
+    function findHop(a, b) {
+      let res = null
+      linkSel.each(function(l) {
+        if (res) return
+        const s = srcId(l), t = tgtId(l)
+        if ((s === a && t === b) || (s === b && t === a)) res = { el: this, reversed: s !== a }
+      })
+      return res
+    }
+    /* keep only the chains every hop of which is a real edge in this dataset */
+    const LINEAGES = LINEAGES_RAW.map(ids => {
+      const hops = []
+      for (let i = 0; i < ids.length - 1; i++) {
+        const h = findHop(ids[i], ids[i + 1])
+        if (!h) return null
+        hops.push(h)
+      }
+      return { ids, hops }
+    }).filter(Boolean)
+
+    let _ambientTimer = null
+    let _ambientIdx = 0
+    function stopAmbient() {
+      clearTimeout(_ambientTimer)
+      traceLayer.selectAll('.ambient').interrupt('ambient').remove()
+    }
+    function scheduleAmbient(delay) {
+      clearTimeout(_ambientTimer)
+      _ambientTimer = setTimeout(runAmbient, delay)
+    }
+    function ambientIdle() {
+      return _ignitionDone && !reduced && !document.hidden
+        && !state.selected && !state.pathLock && !state.tourLock && !_hoverActive
+    }
+    function runAmbient() {
+      if (!LINEAGES.length) return
+      if (!ambientIdle()) { scheduleAmbient(4500); return }
+      const chain = LINEAGES[_ambientIdx % LINEAGES.length]
+      _ambientIdx++
+      traceChain(chain)
+    }
+    function traceChain(chain) {
+      traceLayer.selectAll('.ambient').interrupt('ambient').remove()
+      /* sample every hop path into one polyline, walked in ancestor→heir order */
+      const pts = []
+      for (const hop of chain.hops) {
+        const L = hop.el.getTotalLength()
+        const N = Math.max(10, Math.round(L / 5))
+        for (let i = 0; i <= N; i++) {
+          const f = hop.reversed ? 1 - i / N : i / N
+          const p = hop.el.getPointAtLength(f * L)
+          pts.push(p)
+        }
+      }
+      if (pts.length < 2) { scheduleAmbient(6000); return }
+      const dstr = 'M' + pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join('L')
+      const trail = traceLayer.append('path').attr('class', 'ambient')
+        .attr('d', dstr).attr('fill', 'none')
+        .attr('stroke', '#cdb88a').attr('stroke-width', 1.5)
+        .attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round')
+        .attr('filter', 'url(#trace-glow)').attr('opacity', 0.8)
+      const total = trail.node().getTotalLength()
+      trail.attr('stroke-dasharray', total).attr('stroke-dashoffset', total)
+      const comet = traceLayer.append('circle').attr('class', 'ambient')
+        .attr('r', 3.2).attr('fill', '#f3e6bd')
+        .attr('filter', 'url(#trace-glow)').attr('opacity', 0.95)
+      const DUR = Math.min(5600, Math.max(2800, total * 3.4))
+      trail.transition('ambient').duration(DUR).ease(d3.easeSinInOut)
+        .attr('stroke-dashoffset', 0)
+        .tween('comet', () => t => {
+          const p = trail.node().getPointAtLength(t * total)
+          comet.attr('cx', p.x).attr('cy', p.y)
+        })
+        .transition('ambient').duration(1500).ease(d3.easeCubicIn)
+        .attr('opacity', 0)
+        .on('end', () => { trail.remove(); comet.remove(); scheduleAmbient(6000 + Math.random() * 4000) })
+      comet.transition('ambient').delay(DUR).duration(1100).attr('opacity', 0)
+    }
+
     /* ── public API ─────────────────────────────────────────────── */
     const api = {
       select(id, fly, opts) {
         if (!_ignitionDone) finishIgnition()
         if (state.pathLock) return
+        stopAmbient()
         state.selected = id
         applySelectVisual(id)
         if (fly && id) frameSelection(id, opts)
@@ -1597,6 +1817,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         if (state.pathLock || state.tourLock) return
         state.selected = null
         applySelectVisual(null)
+        scheduleAmbient(5000)
         onSelect(null)
       },
       flyTo(id, scale) {
@@ -1610,6 +1831,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       resetView() { fitView() },
       highlightPath(ids) {
         state.pathLock = true
+        stopAmbient()
         renderEdgeLabels(null)
         const set = new Set(ids)
         const edgeSet = new Set()
@@ -1703,8 +1925,13 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         gNode.classed('route', false).classed('receded', false)
         linkSel.classed('route', false).classed('faded', false)
         applySelectVisual(state.selected)
+        if (!state.selected) scheduleAmbient(5000)
       },
-      setTourLock(v) { state.tourLock = v },
+      setTourLock(v) {
+        state.tourLock = v
+        if (v) stopAmbient()
+        else if (!state.selected) scheduleAmbient(5000)
+      },
       litEdge(a, b) {
         linkSel.classed('route', l => {
           const s = srcId(l), t = tgtId(l)
@@ -1720,6 +1947,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       clearTimeout(ignitionTimer)
       clearTimeout(dragHintTimer)
       clearTimeout(_meteorTimer)
+      clearTimeout(_ambientTimer)
       teardownSkip()
       state._traceActive = false
       cancelAnimationFrame(state._traceRaf)
