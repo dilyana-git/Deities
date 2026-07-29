@@ -17,10 +17,13 @@ function usePortrait(id) {
   return { src: idx < chain.length ? chain[idx] : null, onError: () => setIdx(i => i + 1) }
 }
 
-/* orbital plane: sun centre + the two rings planets alternate between,
-   all in % of the stage so the layout is resolution-independent */
-const CX = 50, CY = 40
-const RINGS = [{ rx: 24, ry: 19 }, { rx: 38, ry: 30 }]
+/* orbital plane: sun centre + the two rings planets alternate between, all in
+   % of `.so-plane` — a square box sized from ONE base radius in min-axis units
+   (see index.css). Both radii of a ring derive from that base, so the ellipse
+   holds its shape at every aspect instead of stretching with the stage. */
+const CX = 50, CY = 50               // the sun, at the plane's centre
+const TILT = 0.62                    // ry ÷ rx — how far the plane is tipped
+const RINGS = [0.63, 1].map(f => ({ rx: 50 * f, ry: 50 * f * TILT }))
 
 /* one tour beat = a planet. Its face is the figure's portrait, dissolving to
    the gradient orb if none loads */
@@ -75,10 +78,12 @@ function Sun({ fig }) {
    beat shows in the caption at a time; ▶ / spacebar autoplays at reading pace,
    and the "Stories" picker switches between tours.
    ════════════════════════════════════════════════════════════════════════ */
-export default function GuidedSky({ initialTourId, onClose, onBeatChange }) {
+export default function GuidedSky({ initialTourId, initialBeat = 0, onClose, onBeatChange }) {
   const initialIdx = Math.max(0, TOURS.findIndex(t => t.id === initialTourId))
+  /* opening mid-tale (from a figure's Stories list) starts at that chapter */
+  const initialCur = Math.min(Math.max(initialBeat, 0), TOURS[initialIdx].beats.length - 1)
   const [tourIdx, setTourIdx]     = useState(initialIdx)
-  const [cur, setCur]             = useState(0)
+  const [cur, setCur]             = useState(initialCur)
   const [playing, setPlaying]     = useState(true)
   const [talesOpen, setTalesOpen] = useState(false)
 
@@ -187,33 +192,37 @@ export default function GuidedSky({ initialTourId, onClose, onBeatChange }) {
         }}/>
       ))}
 
-      {RINGS.map((r, i) => (
-        <div key={i} className="so-ring" style={{
-          left: `${CX - r.rx}%`, top: `${CY - r.ry}%`,
-          width: `${r.rx * 2}%`, height: `${r.ry * 2}%`,
-        }}/>
-      ))}
+      {/* the orbital plane — square, so a percent is the same distance on
+          both axes and the orbit reads as a tipped circle, not a stretched one */}
+      <div className="so-plane">
+        {RINGS.map((r, i) => (
+          <div key={i} className="so-ring" style={{
+            left: `${CX - r.rx}%`, top: `${CY - r.ry}%`,
+            width: `${r.rx * 2}%`, height: `${r.ry * 2}%`,
+          }}/>
+        ))}
 
-      {/* the tale traced so far: centre → chapter Ⅰ → … → current chapter */}
-      <svg className="so-thread" viewBox="0 0 100 100" preserveAspectRatio="none">
-        {planets.slice(0, cur + 1).map((p, i) => {
-          const from = i === 0 ? { left: CX, top: CY } : planets[i - 1]
-          const stag = i === 0 ? 1.05 : Math.max(0, i - 1 - prevCurRef.current) * 0.12
-          return (
-            <line key={i} className="so-trace"
-              x1={from.left} y1={from.top} x2={p.left} y2={p.top}
-              pathLength="1" style={{ '--tstag': `${stag}s` }}/>
-          )
-        })}
-      </svg>
+        {/* the tale traced so far: centre → chapter Ⅰ → … → current chapter */}
+        <svg className="so-thread" viewBox="0 0 100 100">
+          {planets.slice(0, cur + 1).map((p, i) => {
+            const from = i === 0 ? { left: CX, top: CY } : planets[i - 1]
+            const stag = i === 0 ? 1.05 : Math.max(0, i - 1 - prevCurRef.current) * 0.12
+            return (
+              <line key={i} className="so-trace"
+                x1={from.left} y1={from.top} x2={p.left} y2={p.top}
+                pathLength="1" style={{ '--tstag': `${stag}s` }}/>
+            )
+          })}
+        </svg>
 
-      {/* the figure the tale currently dwells on, burning at the centre */}
-      <Sun key={beat.fig} fig={beat.fig}/>
+        {/* the figure the tale currently dwells on, burning at the centre */}
+        <Sun key={beat.fig} fig={beat.fig}/>
 
-      {/* beat planets — told chapters stay lit, ones ahead are faint embers */}
-      {beats.map((b, i) => (
-        <BeatPlanet key={i} beat={b} i={i} cur={cur} planet={planets[i]} onSelect={setCur}/>
-      ))}
+        {/* beat planets — told chapters stay lit, ones ahead are faint embers */}
+        {beats.map((b, i) => (
+          <BeatPlanet key={i} beat={b} i={i} cur={cur} planet={planets[i]} onSelect={setCur}/>
+        ))}
+      </div>
 
       <button className="gs-exit" onClick={onClose} aria-label="Close story mode">✕</button>
 

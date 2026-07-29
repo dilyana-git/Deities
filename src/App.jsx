@@ -334,6 +334,7 @@ export default function App() {
   const [hintFaded,       setHintFaded]       = useState(false)
   const [storyOpen,       setStoryOpen]       = useState(false)
   const [storyTourId,     setStoryTourId]     = useState(null)
+  const [storyBeat,       setStoryBeat]       = useState(0)
   const [zodiacOpen,      setZodiacOpen]      = useState(false)
   const [orbitOpen,       setOrbitOpen]       = useState(false)
   const [shortcutsOpen,   setShortcutsOpen]   = useState(false)
@@ -382,6 +383,15 @@ export default function App() {
     if (pathOpen) closePath()
     prevBeatFigRef.current = null
     setStoryTourId(null)
+    setStoryBeat(0)
+    setStoryOpen(true)
+  }
+  /* opened from a figure's Stories list — lands on the chapter where it enters */
+  function openTale(tourId, beat) {
+    if (pathOpen) closePath()
+    prevBeatFigRef.current = null
+    setStoryTourId(tourId)
+    setStoryBeat(beat || 0)
     setStoryOpen(true)
   }
   function closeStory() {
@@ -491,6 +501,7 @@ export default function App() {
             setSelectedId(id)
           }}
           onOpenOrbit={() => setOrbitOpen(true)}
+          onOpenTale={openTale}
         />
 
         {/* hint */}
@@ -561,6 +572,7 @@ export default function App() {
       {storyOpen && (
         <GuidedSky
           initialTourId={storyTourId}
+          initialBeat={storyBeat}
           onClose={closeStory}
           onBeatChange={handleStoryBeat}
         />

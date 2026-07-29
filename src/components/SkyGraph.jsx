@@ -151,7 +151,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     svg.attr('viewBox', `0 0 ${W} ${H}`).attr('preserveAspectRatio', 'xMidYMid meet')
 
     const defs = svg.append('defs')
+    /* color-interpolation-filters:sRGB — the default (linearRGB) forces a
+       gamma round-trip on every pixel of every blur pass, ~2-3x the cost for
+       no perceptible gain at these glow sizes. Set on every blur filter. */
     const flt  = defs.append('filter').attr('id','glow').attr('x','-80%').attr('y','-80%').attr('width','260%').attr('height','260%')
+      .attr('color-interpolation-filters','sRGB')
     flt.append('feGaussianBlur').attr('stdDeviation', 3.2).attr('result','b')
     const fm = flt.append('feMerge')
     fm.append('feMergeNode').attr('in','b')
@@ -159,6 +163,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* trace-dot glow — tighter blur for the lineage-trace traveling dots */
     const tFlt = defs.append('filter').attr('id','trace-glow').attr('x','-200%').attr('y','-200%').attr('width','500%').attr('height','500%')
+      .attr('color-interpolation-filters','sRGB')
     tFlt.append('feGaussianBlur').attr('stdDeviation', 4).attr('result','b')
     const tFm = tFlt.append('feMerge')
     tFm.append('feMergeNode').attr('in','b')
@@ -166,24 +171,40 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     const zoomLayer    = svg.append('g').attr('class','zoom')
 
-    /* ── depth haze: a faint nebula gradient that drifts behind everything ── */
+    /* ── depth haze: a faint nebula that drifts behind everything ──────
+       It is an ANNULUS, not a blob. A centre-bright nebula puts the sky's
+       highest value exactly where the content is, so the field reads as
+       mud-on-mist; the glow belongs out at the limb with the middle of the
+       sky falling away to black. The peak sits at ~62% of this (deliberately
+       oversized, off-centre) ellipse, so the bright band rides near the frame
+       edge and drifts asymmetrically. */
     const hazeLayer = zoomLayer.append('g').attr('class','haze-layer')
     const hazeGrad = defs.append('radialGradient').attr('id', 'haze-grad')
       .attr('cx', '50%').attr('cy', '50%').attr('r', '50%')
-    hazeGrad.append('stop').attr('offset', '0%').attr('stop-color', '#2a1a3a').attr('stop-opacity', 0.35)
-    hazeGrad.append('stop').attr('offset', '55%').attr('stop-color', '#1a2436').attr('stop-opacity', 0.15)
+    hazeGrad.append('stop').attr('offset', '0%').attr('stop-color', '#0a0f1c').attr('stop-opacity', 0)
+    hazeGrad.append('stop').attr('offset', '44%').attr('stop-color', '#141a2c').attr('stop-opacity', 0)
+    hazeGrad.append('stop').attr('offset', '62%').attr('stop-color', '#2a1a3a').attr('stop-opacity', 0.30)
+    hazeGrad.append('stop').attr('offset', '78%').attr('stop-color', '#1a2436').attr('stop-opacity', 0.20)
     hazeGrad.append('stop').attr('offset', '100%').attr('stop-color', '#06080e').attr('stop-opacity', 0)
     hazeLayer.append('ellipse')
       .attr('class', 'depth-haze')
       .attr('cx', W * 0.55).attr('cy', H * 0.45)
       .attr('rx', W * 0.7).attr('ry', H * 0.6)
       .attr('fill', 'url(#haze-grad)')
-      .attr('opacity', 0.4)
+      .attr('opacity', 0.55)
 
     /* background stars sit inside their own slow-drift wrapper so they
        move at a different speed from the constellation field — parallax depth */
     const bgDrift      = zoomLayer.append('g').attr('class','bg-drift')
     const bgLayer      = bgDrift.append('g').attr('class','bg')
+    /* the dome's limb glow lives HERE, not with the rest of the dome furniture
+       inside float-x, for one reason: float-x is a stacking context (it is
+       `will-change: transform`), and a screen blend inside it can only reach
+       its own siblings — not the starfield. Out here it composites additively
+       over the stars, which is what makes it read as atmosphere rather than a
+       blue film laid across them. It is populated in the dome block below,
+       once DOME geometry exists; the layer is created now for z-order. */
+    const limbLayer    = zoomLayer.append('g').attr('class','limb-layer').attr('pointer-events','none')
     /* celestial-rotate wraps the entire constellation field in a very slow
        rotation (~3° over 2 min) so the sky feels alive even untouched.
        The bg stars drift on a DIFFERENT period (bg-drift), creating a
@@ -203,7 +224,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        1. faint dust (many tiny dots, low opacity) for depth
        2. mid-field stars (varied sizes, warm/cool tint)
        3. bright flares (large blurred halos that twinkle)
-       More stars toward the center via a mild radial density gradient. */
+       Size/brightness peak in an ANNULUS around the dome's limb, not at the
+       centre: the middle of the sky is the darkest part of the frame so the
+       node field reads light-on-dark. `rimBias` peaks at ρ≈0.34 of the star
+       field's radius — where the dome horizon falls — and reaches zero at
+       dead centre. */
     let _s = 7
     const rnd = () => { _s = (_s * 1103515245 + 12345) & 0x7fffffff; return _s / 0x7fffffff }
     const big = Math.max(W, H) * 2.2
@@ -212,13 +237,25 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const x = -big * 0.3 + rnd() * big
       const y = -big * 0.3 + rnd() * big
       const distFromCenter = Math.sqrt((x - W/2)**2 + (y - H/2)**2) / (big * 0.5)
-      const depthBias = Math.max(0, 1 - distFromCenter * 0.6)
-      const r = 0.25 + rnd() * 0.6 + depthBias * rnd() * 0.9
-      const o = 0.12 + rnd() * 0.3 + depthBias * rnd() * 0.32
+      const rimBias = Math.max(0, 1 - Math.abs(distFromCenter - 0.34) / 0.30)
+      const r = 0.25 + rnd() * 0.6 + rimBias * rnd() * 0.9
+      const o = 0.12 + rnd() * 0.3 + rimBias * rnd() * 0.32
       const tint = TINTS[Math.floor(rnd() * TINTS.length)]
       return { x, y, r, o, tint }
     })
     const flareStars = starData.filter(d => d.o > 0.48)
+
+    /* Soft-glow gradients for the flare blooms. Each flare used to be an
+       feGaussianBlur (`url(#glow)`) — a per-pixel convolution ~70× over, all
+       twinkling at once, which was the heaviest always-on raster cost. A radial
+       gradient fill rasterizes as a plain gradient (near-free) and reads the
+       same at flare scale. One gradient per tint so each keeps its colour. */
+    TINTS.forEach((t, i) => {
+      const g = defs.append('radialGradient').attr('id', `flare-${i}`)
+      g.append('stop').attr('offset', '0%').attr('stop-color', t).attr('stop-opacity', 1)
+      g.append('stop').attr('offset', '35%').attr('stop-color', t).attr('stop-opacity', 0.55)
+      g.append('stop').attr('offset', '100%').attr('stop-color', t).attr('stop-opacity', 0)
+    })
 
     bgLayer.selectAll('circle.flare')
       .data(flareStars)
@@ -226,8 +263,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('class', 'flare')
       .attr('cx', d => d.x).attr('cy', d => d.y)
       .attr('r',    d => d.r * 5.5)
-      .attr('fill', d => d.tint)
-      .attr('filter', 'url(#glow)')
+      .attr('fill', d => `url(#flare-${TINTS.indexOf(d.tint)})`)
       .style('--flare-peak',  d => (0.28 + d.o * 0.55).toFixed(2))
       .style('--flare-dur',   () => `${(1.5 + rnd() * 2.0).toFixed(2)}s`)
       .style('--flare-delay', () => `-${(rnd() * 6).toFixed(2)}s`)
@@ -313,27 +349,66 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     ]]))
 
     /* dome furniture — planisphere-style celestial grid behind the field:
-       a soft sky glow, concentric declination rings, meridian spokes, a
-       glowing horizon ring with degree ticks, and a tilted dashed ecliptic */
+       a limb glow, a core shade, concentric declination rings, meridian
+       spokes, a glowing horizon ring with degree ticks, and a tilted dashed
+       ecliptic.
+
+       VALUE STRUCTURE — the dome is lit from its RIM, not its centre. The
+       sky's brightest band sits just outside the horizon and the core falls
+       away toward black, so every node is a light mark on a dark ground.
+       (The inverse — a glowing centre — puts the field's own values below
+       their backdrop and the content sinks into a hole.) The two elements
+       below carry it: `dome-limb` is the atmosphere behind the ellipse,
+       `dome-core` is the well it surrounds. Both live under the grid lines,
+       the links and the nodes, so only the sky is affected. */
     {
       const { cx, cy, rx, ry } = DOME
       const GRID = 'rgb(130,155,205)'
 
-      const skyGrad = defs.append('radialGradient').attr('id', 'sky-dome-glow')
+      /* limb glow: an annulus peaking just past the horizon. Drawn on an
+         ellipse 1.15× the dome so the gradient has room to fall off outward
+         — that outer tail clips at the frame edge, which is the intent: the
+         glow reads as atmosphere continuing past the view. Goes into
+         `limbLayer` (outside float-x) so it can screen-blend over the stars. */
+      const RIM = 1.15
+      const limbGrad = defs.append('radialGradient').attr('id', 'dome-limb-glow')
         .attr('cx', '50%').attr('cy', '50%').attr('r', '50%')
-      skyGrad.append('stop').attr('offset', '0%').attr('stop-color', '#16223a').attr('stop-opacity', 0.30)
-      skyGrad.append('stop').attr('offset', '72%').attr('stop-color', '#101a2e').attr('stop-opacity', 0.14)
-      skyGrad.append('stop').attr('offset', '100%').attr('stop-color', '#0a1020').attr('stop-opacity', 0)
-      domeLayer.append('ellipse')
-        .attr('cx', cx).attr('cy', cy).attr('rx', rx).attr('ry', ry)
-        .attr('fill', 'url(#sky-dome-glow)')
+      limbGrad.append('stop').attr('offset', '0%').attr('stop-color', '#16223a').attr('stop-opacity', 0)
+      limbGrad.append('stop').attr('offset', '52%').attr('stop-color', '#16223a').attr('stop-opacity', 0)
+      limbGrad.append('stop').attr('offset', '70%').attr('stop-color', '#22314f').attr('stop-opacity', 0.07)
+      limbGrad.append('stop').attr('offset', '82%').attr('stop-color', '#2b3a63').attr('stop-opacity', 0.26)
+      limbGrad.append('stop').attr('offset', '88%').attr('stop-color', '#31406e').attr('stop-opacity', 0.38)
+      limbGrad.append('stop').attr('offset', '94%').attr('stop-color', '#271f45').attr('stop-opacity', 0.16)
+      limbGrad.append('stop').attr('offset', '100%').attr('stop-color', '#1a1430').attr('stop-opacity', 0)
+      limbLayer.append('ellipse')
+        .attr('class', 'dome-limb')
+        .attr('cx', cx).attr('cy', cy).attr('rx', rx * RIM).attr('ry', ry * RIM)
+        .attr('fill', 'url(#dome-limb-glow)')
 
-      /* declination rings */
+      /* core shade: near-black poured into the middle of the disc, fading to
+         nothing by the horizon. It sits above the background starfield, so it
+         also sinks the stars behind the content — the centre is meant to read
+         as depth, not as a field of competing points. */
+      const coreGrad = defs.append('radialGradient').attr('id', 'dome-core-shade')
+        .attr('cx', '50%').attr('cy', '50%').attr('r', '50%')
+      coreGrad.append('stop').attr('offset', '0%').attr('stop-color', '#01030a').attr('stop-opacity', 0.86)
+      coreGrad.append('stop').attr('offset', '38%').attr('stop-color', '#01030a').attr('stop-opacity', 0.72)
+      coreGrad.append('stop').attr('offset', '68%').attr('stop-color', '#02040c').attr('stop-opacity', 0.38)
+      coreGrad.append('stop').attr('offset', '88%').attr('stop-color', '#03050e').attr('stop-opacity', 0.10)
+      coreGrad.append('stop').attr('offset', '100%').attr('stop-color', '#04060f').attr('stop-opacity', 0)
+      domeLayer.append('ellipse')
+        .attr('class', 'dome-core')
+        .attr('cx', cx).attr('cy', cy).attr('rx', rx).attr('ry', ry)
+        .attr('fill', 'url(#dome-core-shade)')
+
+      /* declination rings — inner rings are lifted to compensate for the core
+         shade underneath them; without it the innermost ring reads at almost
+         the same value as the near-black it crosses and the grid dissolves */
       for (const k of [0.35, 0.62, 0.85]) {
         domeLayer.append('ellipse')
           .attr('cx', cx).attr('cy', cy).attr('rx', rx * k).attr('ry', ry * k)
           .attr('fill', 'none').attr('stroke', GRID)
-          .attr('stroke-width', 0.6).attr('opacity', 0.10)
+          .attr('stroke-width', 0.6).attr('opacity', 0.10 + (0.85 - k) * 0.12)
       }
 
       /* meridian spokes — from the inner ring out to the horizon */
@@ -342,7 +417,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         domeLayer.append('line')
           .attr('x1', cx + Math.cos(a) * rx * 0.35).attr('y1', cy + Math.sin(a) * ry * 0.35)
           .attr('x2', cx + Math.cos(a) * rx).attr('y2', cy + Math.sin(a) * ry)
-          .attr('stroke', GRID).attr('stroke-width', 0.5).attr('opacity', 0.06)
+          .attr('stroke', GRID).attr('stroke-width', 0.5).attr('opacity', 0.075)
       }
 
       /* horizon ring: blurred under-glow + crisp line + degree ticks */
@@ -371,7 +446,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         .attr('cx', cx).attr('cy', cy).attr('rx', rx * 0.97).attr('ry', ry * 0.34)
         .attr('transform', `rotate(-16 ${cx} ${cy})`)
         .attr('fill', 'none').attr('stroke', '#cdb88a')
-        .attr('stroke-width', 0.7).attr('stroke-dasharray', '4 8').attr('opacity', 0.13)
+        .attr('stroke-width', 0.7).attr('stroke-dasharray', '4 8').attr('opacity', 0.17)
     }
 
     /* initial positions — cluster anchors + jitter */
@@ -465,11 +540,17 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        family colour, so every category occupies its own glowing region of
        sky. Geometry (centre + radius) is recomputed from each category's
        node spread alongside the cluster labels; `screen` blending lets
-       overlapping fields add luminously rather than muddy out. */
+       overlapping fields add luminously rather than muddy out.
+
+       Kept deliberately faint. These fields land directly behind the nodes,
+       so every point of opacity here is a point of contrast taken away from
+       the figures standing on them — a halo bright enough to be read as
+       colour on its own is bright enough to turn its own cluster to mud.
+       Against the darkened core they now read at roughly half the alpha. */
     cats.forEach(c => {
       const g = defs.append('radialGradient').attr('id', `cat-halo-${c}`)
-      g.append('stop').attr('offset', '0%').attr('stop-color', CAT[c]).attr('stop-opacity', 0.22)
-      g.append('stop').attr('offset', '55%').attr('stop-color', CAT[c]).attr('stop-opacity', 0.08)
+      g.append('stop').attr('offset', '0%').attr('stop-color', CAT[c]).attr('stop-opacity', 0.12)
+      g.append('stop').attr('offset', '55%').attr('stop-color', CAT[c]).attr('stop-opacity', 0.045)
       g.append('stop').attr('offset', '100%').attr('stop-color', CAT[c]).attr('stop-opacity', 0)
     })
     const haloSel = catHaloLayer.selectAll('ellipse').data(cats).join('ellipse')
@@ -813,23 +894,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     /* generation title layer */
     const genTitleLayer = zoomLayer.append('g').attr('class', 'gen-titles').attr('pointer-events', 'none')
 
-    /* initial state: starfield dim, everything else invisible */
-    svg.call(zoom.transform, startTx)
-    bgLayer.attr('opacity', 0)
-    domeLayer.attr('opacity', 0)
-    catHaloLayer.attr('opacity', 0)
-    linkLayer.attr('opacity', 1)
-    nodeLayer.attr('opacity', 1)
-    clusterLayer.attr('opacity', 1)
-    clusterSel.attr('opacity', 0)
-    gNode.attr('opacity', 0)
-
-    /* edges: hidden via dashoffset, golden during draw-in */
-    linkSel
-      .attr('stroke-dasharray', 2000)
-      .attr('stroke-dashoffset', 2000)
-      .attr('opacity', 0.22)
-
     /* bloom overlay — fades with parallax */
     const bloom = zoomLayer.append('rect')
       .attr('width', W * 4).attr('height', H * 4)
@@ -837,7 +901,29 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('fill', '#0e1220').attr('opacity', 0.22)
       .attr('pointer-events', 'none')
 
+    const IGNITION_MS = WAVE_MS[5] + 2400
+
+    /* The sequence runs ~8.4s, and it used to lose that time to input nobody
+       meant as a skip: the click that focuses the browser window after a
+       reload, a touchpad momentum tail from a gesture that began before the
+       page did, a bare modifier key. Input only skips past the grace period,
+       and only when it reads as deliberate. */
+    const SKIP_GRACE_MS = 900
+    const REFOCUS_MS    = 350
+    /* And it is rAF-driven, so a hidden tab freezes every transition while the
+       wall-clock completion timer keeps counting — load in a background tab (or
+       glance away mid-run) and you came back to a sky that was already lit. It
+       now waits for a visible tab and rewinds if it loses one, capped so
+       flipping back and forth can't loop the ignition forever. */
+    const MAX_RESTARTS  = 2
+
     let _ignitionDone = false
+    let _running      = false
+    let _restarts     = 0
+    let _runStart     = 0
+    let _lastFocus    = 0
+    let ignitionTimer = null
+    let dragHintTimer = null
 
     /* sparkle burst — spawn small gold circles that scatter outward */
     function spawnSparks(x, y, count, r) {
@@ -861,105 +947,167 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         .on('end', function () { d3.select(this).remove() })
     }
 
-    /* phase 1: starfield materialises from black */
-    bgLayer.transition('ign').duration(1200).delay(100)
-      .ease(d3.easeCubicOut)
-      .attr('opacity', 1)
+    /* frame zero: starfield dim, everything else invisible. Also where a
+       restart rewinds to, so it must undo any transition already in flight. */
+    function armIgnition() {
+      svg.interrupt('ign').call(zoom.transform, startTx)
+      bgLayer.interrupt('ign').attr('opacity', 0)
+      domeLayer.interrupt('ign').attr('opacity', 0)
+      limbLayer.interrupt('ign').attr('opacity', 0)
+      catHaloLayer.interrupt('ign').attr('opacity', 0)
+      linkLayer.attr('opacity', 1)
+      nodeLayer.attr('opacity', 1)
+      clusterLayer.attr('opacity', 1)
+      clusterSel.interrupt('ign').attr('opacity', 0)
+      gNode.interrupt('ign').attr('opacity', 0)
+      gNode.selectAll('.glow').interrupt('ign').each(function (d) {
+        d3.select(this).attr('opacity', 0.07 + d.prom * 0.14).attr('r', radius(d) * 1.25)
+      })
+      sparkLayer.selectAll('*').interrupt('spark').remove()
+      genTitleLayer.selectAll('*').interrupt('ign').remove()
+      bloom.interrupt('ign').attr('opacity', 0.22)
 
-    /* the celestial grid etches in just behind the starfield */
-    domeLayer.transition('ign').duration(1600).delay(400)
-      .ease(d3.easeCubicOut)
-      .attr('opacity', 1)
-
-    /* category territory halos seep in just after the starfield */
-    catHaloLayer.transition('ign').duration(1800).delay(600)
-      .ease(d3.easeCubicOut)
-      .attr('opacity', 1)
-
-    /* phase 2: generation title flashes */
-    WAVE_LABEL.forEach((label, i) => {
-      if (!label) return
-      const title = genTitleLayer.append('text')
-        .attr('class', 'genesis-title')
-        .attr('x', W / 2).attr('y', H / 2)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'central')
-        .attr('opacity', 0)
-        .text(label)
-      title.transition('ign').duration(400).delay(WAVE_MS[i] - 200)
-        .attr('opacity', 0.5)
-        .transition('ign').duration(900)
-        .attr('opacity', 0)
-        .on('end', function () { d3.select(this).remove() })
-    })
-
-    /* phase 3: edges draw in with a golden glow that settles to neutral */
-    linkSel.each(function (d) {
-      const sW = d.source._wave ?? 5, tW = d.target._wave ?? 5
-      const delay = WAVE_MS[Math.max(sW, tW)] + rnd() * 300
-      d3.select(this)
+      /* edges: hidden via dashoffset, golden during draw-in */
+      linkSel.interrupt('ign')
         .attr('stroke', '#c9a84c')
-        .transition('ign').duration(700).delay(delay)
-        .ease(d3.easeCubicOut)
-        .attr('stroke-dashoffset', 0)
-        .attr('opacity', 0.28)
-        .transition('ign').duration(800)
-        .attr('stroke', NEUTRAL_EDGE)
-        .attr('opacity', 0.08)
-        .on('end', function () {
-          d3.select(this).attr('stroke-dasharray', null)
-        })
-    })
+        .attr('stroke-dasharray', 2000)
+        .attr('stroke-dashoffset', 2000)
+        .attr('opacity', 0.22)
+    }
 
-    /* phase 4: nodes ignite in genealogical waves with sparkle + flare */
-    gNode.each(function (d) {
-      const isHub = d.prom >= hubThreshold
-      const stagger = isHub ? 300 : rnd() * 250
-      const delay = WAVE_MS[d._wave] + stagger
-      const g = d3.select(this)
+    function startIgnition() {
+      if (_ignitionDone || _running) return
+      _running  = true
+      _runStart = performance.now()
+      armIgnition()
 
-      g.transition('ign').duration(500).delay(delay)
+      /* phase 1: starfield materialises from black */
+      bgLayer.transition('ign').duration(1200).delay(100)
         .ease(d3.easeCubicOut)
         .attr('opacity', 1)
-        .on('start', function () {
-          spawnSparks(d.x, d.y, isHub ? 8 : 4, radius(d))
-        })
 
-      /* glow flare — all nodes get a brief brightness spike when born */
-      d3.select(this).select('.glow')
-        .transition('ign').duration(200).delay(delay)
-        .attr('opacity', isHub ? 0.4 : 0.2)
-        .attr('r', radius(d) * (isHub ? 2.0 : 1.6))
-        .transition('ign').duration(1100).ease(d3.easeCubicOut)
-        .attr('opacity', 0.07 + d.prom * 0.14)
-        .attr('r', radius(d) * 1.25)
-    })
+      /* the celestial grid etches in just behind the starfield */
+      domeLayer.transition('ign').duration(1600).delay(400)
+        .ease(d3.easeCubicOut)
+        .attr('opacity', 1)
 
-    /* cluster labels seep in once their category's nodes have arrived */
-    clusterSel.each(function (c) {
-      const wave = CAT_WAVE[c] ?? 5
-      d3.select(this)
-        .transition('ign').duration(800).delay(WAVE_MS[wave] + 400)
-        .attr('opacity', 0.45)
-    })
+      /* the limb glow swells in slower and later — the sky lights at its rim
+         last, after the stars are already out */
+      limbLayer.transition('ign').duration(2400).delay(700)
+        .ease(d3.easeCubicOut)
+        .attr('opacity', 1)
 
-    /* phase 5: parallax settle — ease back from over-zoom to rest */
-    svg.transition('ign').duration(2200).delay(1200)
-      .ease(d3.easeBackOut.overshoot(0.3))
-      .call(zoom.transform, restTx)
+      /* category territory halos seep in just after the starfield */
+      catHaloLayer.transition('ign').duration(1800).delay(600)
+        .ease(d3.easeCubicOut)
+        .attr('opacity', 1)
 
-    bloom.transition('ign').duration(2000).delay(1400)
-      .ease(d3.easeCubicOut)
-      .attr('opacity', 0)
-      .on('end', function () { d3.select(this).remove() })
+      /* phase 2: generation title flashes */
+      WAVE_LABEL.forEach((label, i) => {
+        if (!label) return
+        const title = genTitleLayer.append('text')
+          .attr('class', 'genesis-title')
+          .attr('x', W / 2).attr('y', H / 2)
+          .attr('text-anchor', 'middle')
+          .attr('dominant-baseline', 'central')
+          .attr('opacity', 0)
+          .text(label)
+        title.transition('ign').duration(400).delay(WAVE_MS[i] - 200)
+          .attr('opacity', 0.5)
+          .transition('ign').duration(900)
+          .attr('opacity', 0)
+          .on('end', function () { d3.select(this).remove() })
+      })
 
-    /* skip on any input — jump everything to its end state */
+      /* phase 3: edges draw in with a golden glow that settles to neutral */
+      linkSel.each(function (d) {
+        const sW = d.source._wave ?? 5, tW = d.target._wave ?? 5
+        const delay = WAVE_MS[Math.max(sW, tW)] + rnd() * 300
+        d3.select(this)
+          .attr('stroke', '#c9a84c')
+          .transition('ign').duration(700).delay(delay)
+          .ease(d3.easeCubicOut)
+          .attr('stroke-dashoffset', 0)
+          .attr('opacity', 0.28)
+          .transition('ign').duration(800)
+          .attr('stroke', NEUTRAL_EDGE)
+          .attr('opacity', 0.08)
+          .on('end', function () {
+            d3.select(this).attr('stroke-dasharray', null)
+          })
+      })
+
+      /* phase 4: nodes ignite in genealogical waves with sparkle + flare */
+      gNode.each(function (d) {
+        const isHub = d.prom >= hubThreshold
+        const stagger = isHub ? 300 : rnd() * 250
+        const delay = WAVE_MS[d._wave] + stagger
+        const g = d3.select(this)
+
+        g.transition('ign').duration(500).delay(delay)
+          .ease(d3.easeCubicOut)
+          .attr('opacity', 1)
+          .on('start', function () {
+            spawnSparks(d.x, d.y, isHub ? 8 : 4, radius(d))
+          })
+
+        /* glow flare — all nodes get a brief brightness spike when born */
+        d3.select(this).select('.glow')
+          .transition('ign').duration(200).delay(delay)
+          .attr('opacity', isHub ? 0.4 : 0.2)
+          .attr('r', radius(d) * (isHub ? 2.0 : 1.6))
+          .transition('ign').duration(1100).ease(d3.easeCubicOut)
+          .attr('opacity', 0.07 + d.prom * 0.14)
+          .attr('r', radius(d) * 1.25)
+      })
+
+      /* cluster labels seep in once their category's nodes have arrived */
+      clusterSel.each(function (c) {
+        const wave = CAT_WAVE[c] ?? 5
+        d3.select(this)
+          .transition('ign').duration(800).delay(WAVE_MS[wave] + 400)
+          .attr('opacity', 0.45)
+      })
+
+      /* phase 5: parallax settle — ease back from over-zoom to rest */
+      svg.transition('ign').duration(2200).delay(1200)
+        .ease(d3.easeBackOut.overshoot(0.3))
+        .call(zoom.transform, restTx)
+
+      bloom.transition('ign').duration(2000).delay(1400)
+        .ease(d3.easeCubicOut)
+        .attr('opacity', 0)
+        .on('end', function () { d3.select(this).remove() })
+
+      /* natural completion */
+      ignitionTimer = setTimeout(finishIgnition, IGNITION_MS)
+
+      /* drag hint — after entrance, gently nudge a hub node to suggest dragging */
+      dragHintTimer = setTimeout(() => {
+        const hub = nodes.slice().sort((a, b) => b.degree - a.degree)[0]
+        if (!hub) return
+        const g = gNode.filter(n => n.id === hub.id)
+        g.transition('drag-hint')
+          .duration(400).ease(d3.easeSinInOut)
+          .attr('transform', `translate(${hub.x + 8},${hub.y - 6})`)
+          .transition().duration(400).ease(d3.easeSinInOut)
+          .attr('transform', `translate(${hub.x - 5},${hub.y + 4})`)
+          .transition().duration(350).ease(d3.easeSinOut)
+          .attr('transform', `translate(${hub.x},${hub.y})`)
+      }, IGNITION_MS + 1200)
+    }
+
+    /* land everything on its resting state — the same values phase 5 arrives at
+       on its own, so skipping and watching it through end in the same sky */
     function finishIgnition() {
       if (_ignitionDone) return
       _ignitionDone = true
+      _running = false
+      clearTimeout(ignitionTimer)
 
       bgLayer.interrupt('ign').attr('opacity', 1)
       domeLayer.interrupt('ign').attr('opacity', 1)
+      limbLayer.interrupt('ign').attr('opacity', 1)
       catHaloLayer.interrupt('ign').attr('opacity', 1)
       linkSel.interrupt('ign')
         .attr('stroke-dasharray', null)
@@ -969,7 +1117,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       gNode.interrupt('ign').attr('opacity', 1)
       gNode.selectAll('.glow').interrupt('ign')
         .each(function (d) {
-          d3.select(this).attr('opacity', 0.09 + d.prom * 0.16).attr('r', radius(d) * 1.6)
+          d3.select(this).attr('opacity', 0.07 + d.prom * 0.14).attr('r', radius(d) * 1.25)
         })
       clusterSel.interrupt('ign').attr('opacity', 0.45)
       bloom.interrupt('ign').remove()
@@ -981,41 +1129,57 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       teardownSkip()
     }
 
+    /* skip — but only on input that reads as a deliberate "let me in" */
     function onSkipInput(e) {
-      if (_ignitionDone) return
-      if (e.type === 'keydown' && e.key === 'Tab') return
+      if (_ignitionDone || !_running) return
+      if (performance.now() - _runStart < SKIP_GRACE_MS) return
+      if (e.type === 'keydown') {
+        /* a bare modifier is someone reaching for a shortcut, not skipping */
+        if (e.key === 'Tab' || e.key === 'Shift' || e.key === 'Control' ||
+            e.key === 'Alt' || e.key === 'Meta'  || e.key === 'CapsLock') return
+      } else if (e.type === 'wheel') {
+        /* momentum tail from a gesture that started before the page did */
+        if (Math.abs(e.deltaY) + Math.abs(e.deltaX) < 8) return
+      } else if (e.type === 'pointerdown') {
+        /* the click that focuses the window is not a request to skip */
+        if (performance.now() - _lastFocus < REFOCUS_MS) return
+      }
       finishIgnition()
+    }
+
+    function onWinFocus() { _lastFocus = performance.now() }
+
+    /* hold at frame zero while the tab is hidden, rather than burning the
+       sequence down a wall clock nobody is watching */
+    function onIgnitionVisibility() {
+      if (_ignitionDone) return
+      if (!document.hidden) { startIgnition(); return }
+      if (!_running) return
+      _running = false
+      clearTimeout(ignitionTimer)
+      clearTimeout(dragHintTimer)
+      if (_restarts >= MAX_RESTARTS) { finishIgnition(); return }
+      _restarts++
+      armIgnition()
     }
 
     const skipOpts = { capture: true }
     window.addEventListener('pointerdown', onSkipInput, skipOpts)
     window.addEventListener('keydown',     onSkipInput, skipOpts)
     window.addEventListener('wheel',       onSkipInput, skipOpts)
+    window.addEventListener('focus',       onWinFocus)
+    document.addEventListener('visibilitychange', onIgnitionVisibility)
 
     function teardownSkip() {
       window.removeEventListener('pointerdown', onSkipInput, skipOpts)
       window.removeEventListener('keydown',     onSkipInput, skipOpts)
       window.removeEventListener('wheel',       onSkipInput, skipOpts)
+      window.removeEventListener('focus',       onWinFocus)
+      document.removeEventListener('visibilitychange', onIgnitionVisibility)
     }
 
-    /* natural completion */
-    const ignitionTimer = setTimeout(() => {
-      _ignitionDone = true; loadPortraits(); teardownSkip()
-    }, WAVE_MS[5] + 2400)
-
-    /* drag hint — after entrance, gently nudge a hub node to suggest dragging */
-    const dragHintTimer = setTimeout(() => {
-      const hub = nodes.slice().sort((a, b) => b.degree - a.degree)[0]
-      if (!hub) return
-      const g = gNode.filter(n => n.id === hub.id)
-      g.transition('drag-hint')
-        .duration(400).ease(d3.easeSinInOut)
-        .attr('transform', `translate(${hub.x + 8},${hub.y - 6})`)
-        .transition().duration(400).ease(d3.easeSinInOut)
-        .attr('transform', `translate(${hub.x - 5},${hub.y + 4})`)
-        .transition().duration(350).ease(d3.easeSinOut)
-        .attr('transform', `translate(${hub.x},${hub.y})`)
-    }, WAVE_MS[5] + 3600)
+    armIgnition()
+    if (!document.hidden) startIgnition()
 
     /* ── tooltip positioning ────────────────────────────────────── */
     const tip = document.getElementById('tip')
@@ -1397,7 +1561,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       // bar is, so reserve height there instead. Both insets convert px →
       // viewBox via the meet scale s, and the centre shifts away from the
       // covered side by half the inset (same derivation on each axis).
-      const rightPx  = opts.tour ? 0 : (document.querySelector('.detail-panel')?.getBoundingClientRect().width || 420)
+      // Measure the panel's opaque *plate*, not the whole panel: the Colossus
+      // panel's left ~11% is a wash the star field bleeds under, so reserving
+      // it would throw away screen the graph can still use.
+      const panelEl  = document.querySelector('.detail-panel .col-plate')
+                    || document.querySelector('.detail-panel')
+      const rightPx  = opts.tour ? 0 : (panelEl?.getBoundingClientRect().width || 420)
       const bottomPx = opts.tour ? 188 : 0   // clear the (now taller) tour caption bar
       const rightV   = rightPx  / s
       const bottomV  = bottomPx / s

@@ -31,13 +31,33 @@ body {
 #sky { cursor: grab; display: block; }
 #sky:active { cursor: grabbing; }
 
+/* Frame vignette. It stays clear until 62% — the dome's horizon lands around
+   offset .57–.61 here, and the limb glow just outside it is the brightest band
+   in the composition, so the vignette must not bite into it. Past that only the
+   corners remain (they fall outside the sky ellipse entirely) and they are
+   pushed hard toward black, which is what reads the glow as a rim. */
 .atlas-main::after {
   content: '';
   position: absolute; inset: 0; z-index: 2; pointer-events: none;
-  background: radial-gradient(ellipse 85% 80% at 50% 48%, transparent 50%, rgba(5,8,14,.55) 100%);
+  background: radial-gradient(ellipse 85% 80% at 50% 48%,
+    transparent 62%, rgba(3,5,10,.42) 82%, rgba(2,3,8,.82) 100%);
 }
 
-/* ── Depth haze: barely-perceptible nebula behind the web ─────────────────── */
+/* ── Sky value structure ───────────────────────────────────────────────────
+   The sky is lit from its RIM. `.dome-limb` is a screen-blended annulus that
+   swells just outside the horizon; `.dome-core` (inside the dome furniture)
+   pours near-black into the middle; the depth haze is a ring, not a blob; and
+   the background stars peak in brightness out at the same radius as the limb.
+   All of it serves one rule — the darkest region of the frame is the region
+   the nodes stand in, so every figure is a light mark on a dark ground. Do not
+   reintroduce a centre-bright wash here: it lifts the backdrop above the
+   content's own values and the whole field sinks into a hole. */
+.dome-limb {
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* ── Depth haze: barely-perceptible nebula ring behind the web ────────────── */
 @keyframes haze-drift {
   0%   { transform: translate(0, 0)     rotate(0deg); }
   33%  { transform: translate(40px, -20px) rotate(3deg); }
@@ -48,6 +68,7 @@ body {
   animation: haze-drift 90s ease-in-out infinite;
   pointer-events: none;
   mix-blend-mode: screen;
+  will-change: transform;
 }
 @media (prefers-reduced-motion: reduce) {
   .depth-haze { animation: none; }
@@ -147,14 +168,19 @@ body {
 .bg-drift {
   animation: bg-parallax-drift 180s ease-in-out infinite;
   transform-origin: 600px 370px;
+  will-change: transform;
 }
 @media (prefers-reduced-motion: reduce) {
   .celestial-rotate, .bg-drift { animation: none; }
 }
 
 /* ── Floating graph ────────────────────────────────────────────────────────
-   Nested bob + drift compose into a slow organic loop. Pure transform →
-   GPU compositor; physics-driven node positions are untouched. */
+   Nested bob + drift compose into a slow organic loop; physics-driven node
+   positions are untouched. `will-change` on the content-holding layer
+   (float-x) promotes it to its own compositor layer, so the three nested
+   transform animations wrapping it (celestial-rotate → float-y → float-x)
+   just re-transform one cached raster instead of repainting the whole
+   filtered field subtree on every frame. */
 @keyframes float-bob {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-5px); }
@@ -169,6 +195,7 @@ body {
 .float-x {
   animation: float-drift 70s ease-in-out infinite;
   animation-delay: -25s;
+  will-change: transform;
 }
 @media (prefers-reduced-motion: reduce) {
   .float-y, .float-x { animation: none; }
@@ -349,18 +376,238 @@ body {
 @keyframes dashFlow { to { stroke-dashoffset: -60; } }
 .link-animated { animation: dashFlow 2.5s linear infinite; }
 
-/* ── Panel slide-in ────────────────────────────────────────────────────────── */
+/* ── Detail panel — "Colossus" ─────────────────────────────────────────────
+   The panel is a stage, not a scrolling column of sections. The figure takes
+   the right two-thirds outright; the type is held to one narrow measure on a
+   strict left margin, with the name's optical centre level with her face. The
+   panel's left edge is a wash rather than a border, so the star field bleeds
+   under it instead of stopping at a rule.
+
+   Geometry is proportional to the design frame (940px panel over 1400×848):
+     wash     0 → 11%     transparent → plate
+     measure  11% → 45%   one 384px measure, never wider
+     figure   47% → 105%  deliberately overruns; the panel clips it
+
+   One source of truth for the width: the tourbar sizes itself against it and
+   SkyGraph measures the live .col-plate to offset its camera, so the numbers
+   live only here. */
+:root {
+  --panel-w: clamp(520px, 67vw, 1180px);
+  --panel-wash: 11%;
+}
+
 .detail-panel {
-  position: absolute; top: 0; right: 0; height: 100%; width: 420px; max-width: 100%; z-index: 28;
-  background: linear-gradient(180deg, #0c1019, #090c13);
-  border-left: 1px solid #262e3c;
+  position: absolute; top: 0; right: 0; height: 100%;
+  width: var(--panel-w); max-width: 100%; z-index: 28;
   transform: translateX(100%);
   transition: transform .34s cubic-bezier(.4,0,.2,1);
-  overflow-y: auto; overflow-x: hidden;
+  overflow: hidden;
+  /* the wash looks like open sky, so it has to behave like it — only the
+     plate and the controls over it take clicks */
+  pointer-events: none;
 }
-.detail-panel.open { transform: translateX(0); box-shadow: -22px 0 60px rgba(0,0,0,.5); }
-.detail-panel::-webkit-scrollbar { width: 8px; }
-.detail-panel::-webkit-scrollbar-thumb { background: #19202d; border-radius: 4px; }
+.detail-panel.open { transform: translateX(0); }
+
+.col-wash {
+  position: absolute; left: 0; top: 0; bottom: 0; width: var(--panel-wash);
+  pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(6,8,14,0) 0,
+    rgba(6,8,14,.42) 36%,
+    rgba(6,8,14,.86) 73%,
+    #07090f 100%);
+}
+.col-plate {
+  position: absolute; left: var(--panel-wash); right: 0; top: 0; bottom: 0;
+  background: #07090f;
+  pointer-events: auto;
+}
+
+/* category-tinted halo behind the figure — sized off the panel so it stays
+   circular, and allowed to run off the right edge as in the design */
+.col-aura {
+  position: absolute; left: 40%; top: 8%; width: 87%; aspect-ratio: 1 / 1;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%,
+    color-mix(in oklab, var(--holo, #cdb88a) 30%, transparent),
+    color-mix(in oklab, var(--holo, #cdb88a) 7%, transparent) 40%,
+    transparent 66%);
+}
+
+/* ── the figure ────────────────────────────────────────────────────────────
+   Three nested elements because each can carry only one mask without
+   mask-composite, and one mask alone cannot take every edge to zero:
+     .col-figure      the zone she is placed in + the ambient bob
+     .col-figure-in   the box, shaped to the art — head/feet fade
+     .col-figure-veil left/right fade
+     .col-figure-img  radial vignette, dissolving her outward from the torso
+
+   The box takes the *art's* ratio (--fig-ar, written from naturalWidth/Height
+   on load) rather than a share of the panel. That matters: the panel is far
+   wider relative to its height than the 1400×848 design frame on most screens,
+   so a percentage box comes out near-square, `contain` renders 2:3 art well
+   inside it, and every mask's falloff then lands on empty box while the art's
+   own rectangular edge stays hard at ~70% opacity. Box = art, and the masks
+   dissolve the edges you can actually see. */
+.col-figure {
+  position: absolute; left: 45%; right: -6%; top: 1%; height: 97%;
+  display: flex; justify-content: center;
+  pointer-events: none;
+  animation: holo-float 8s ease-in-out infinite;
+  will-change: transform;
+}
+.col-figure-in {
+  position: relative; height: 100%; flex: 0 0 auto; max-width: 100%;
+  aspect-ratio: var(--fig-ar, 2 / 3);
+  animation: holo-materialize .7s cubic-bezier(.2,.7,.3,1) both;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 10%, #000 72%, transparent 99%);
+          mask-image: linear-gradient(180deg, transparent 0, #000 10%, #000 72%, transparent 99%);
+}
+.col-figure-veil {
+  position: absolute; inset: 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16%, #000 84%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 16%, #000 84%, transparent 100%);
+}
+.col-figure-img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  /* contain, not cover: the box already matches the art, so this only guards
+     the frame before --fig-ar lands — and a cover crop would take the arms off
+     the 18 square files among the 118 */
+  object-fit: contain;
+  opacity: 0; transition: opacity .5s ease;
+  -webkit-mask-image: radial-gradient(ellipse 70% 62% at 50% 48%, #000 52%, rgba(0,0,0,.5) 80%, transparent 100%);
+          mask-image: radial-gradient(ellipse 70% 62% at 50% 48%, #000 52%, rgba(0,0,0,.5) 80%, transparent 100%);
+}
+.col-figure-in.ready .col-figure-img { opacity: 1; }
+/* fallback when no portrait exists — the 3D sigil hologram, centred in her place */
+.col-sigil { position: absolute; left: 4%; right: 4%; top: 50%; transform: translateY(-50%); }
+
+/* ── the measure ───────────────────────────────────────────────────────────
+   A container so the display type can be sized in cqw against the measure
+   itself: at 96px "Persephone" is four times the column wide, so the name has
+   to fall out of its own length rather than out of the viewport. */
+.col-type {
+  position: absolute; left: var(--panel-wash); top: 0; bottom: 0;
+  width: min(34%, 384px);
+  padding: 34px 0 40px;
+  z-index: 3; pointer-events: auto;
+  display: flex; flex-direction: column;
+  container-type: inline-size;
+  overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: none;
+}
+.col-type::-webkit-scrollbar { width: 0; height: 0; }
+/* two auto margins split the slack evenly above and below the main block, so
+   the name settles near the optical centre whatever its length */
+.col-main, .col-foot { margin-top: auto; }
+
+.col-eyebrow { display: flex; align-items: center; gap: 11px; }
+.col-eyebrow-rule {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(205,184,138,.3), rgba(205,184,138,.03));
+}
+.col-name {
+  font-family: 'Cinzel', serif; font-weight: 400;
+  /* --name-cq is the width the name can afford, in cqw, computed from its own
+     length; the 96px cap is the design's display size for a short name */
+  font-size: min(96px, var(--name-cq, 16cqw));
+  letter-spacing: .03em; line-height: .92; color: #f5f1e6;
+  margin: clamp(18px, 3.2vh, 34px) 0 0;
+  text-shadow: 0 4px 54px rgba(5,7,12,1), 0 0 110px rgba(5,7,12,.85);
+}
+.col-epithet {
+  margin: 16px 0 0;
+  font-family: 'EB Garamond', Georgia, serif; font-style: italic;
+  font-size: clamp(16px, 5.7cqw, 22px); color: #cdb88a;
+  text-shadow: 0 1px 20px rgba(5,7,12,.95);
+}
+.col-prose {
+  margin: clamp(20px, 3vh, 30px) 0 0;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: clamp(14.5px, 4.3cqw, 16.5px); line-height: 1.7;
+  color: #c9d0dd; text-wrap: pretty;
+  text-shadow: 0 1px 12px rgba(6,8,14,.95);
+  max-height: 12em; overflow: hidden;
+}
+.col-prose.clamped {
+  -webkit-mask-image: linear-gradient(180deg, #000 66%, transparent 99%);
+          mask-image: linear-gradient(180deg, #000 66%, transparent 99%);
+}
+.col-prose::first-letter {
+  font-family: 'Cinzel', serif; font-weight: 500;
+  font-size: 3.5em; line-height: .78; color: #cdb88a;
+  float: left; margin: .09em .21em 0 0;
+  text-shadow: 0 0 26px rgba(205,184,138,.35);
+}
+.col-source {
+  margin: 14px 0 0; font-family: 'EB Garamond', Georgia, serif; font-style: italic;
+  font-size: 12.5px; color: #4a5364;
+}
+
+/* label → value rows, in two registers. Five identical italic lines of the
+   same size read as a receipt, so the foot is split by what the line *does*:
+   Domains/Symbols/Myths are attributes — italic, smaller, dimmer, set tight
+   as one block — while Bonds/Tales are doors, and stand upright, larger and
+   brighter with a hover underline. Upright type is the affordance here; don't
+   set a non-clickable row in it. */
+.col-rows { display: flex; flex-direction: column; gap: 19px; }
+.col-rows-attr { display: flex; flex-direction: column; gap: 5px; }
+.col-rows-nav  { display: flex; flex-direction: column; gap: 11px; }
+.col-row { display: flex; align-items: baseline; gap: 14px; }
+.col-row-k {
+  width: 62px; flex-shrink: 0;
+  font-family: 'Cinzel', serif; letter-spacing: .26em;
+  text-transform: uppercase;
+}
+.col-row-v {
+  flex: 1; min-width: 0;
+  font-family: 'EB Garamond', Georgia, serif;
+  text-shadow: 0 1px 10px rgba(6,8,14,.9);
+}
+
+/* attributes — what she is: quiet, tight, italic */
+.col-rows-attr .col-row-k { font-size: 8px; color: #574f3c; }
+.col-rows-attr .col-row-v {
+  font-style: italic; font-size: 13.5px; line-height: 1.5; color: #656e80;
+}
+.col-em { color: #939db0; }
+
+/* navigation — where she leads: upright, a step brighter, underlines on hover */
+.col-rows-nav .col-row-k { font-size: 8.5px; color: #7c7152; }
+.col-rows-nav .col-row-v { font-size: 15.5px; line-height: 1.62; color: #9ba6b9; }
+
+.col-sep  { color: #2a3242; }
+.col-more { color: #4a5364; font-style: italic; }
+.col-link {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0;
+  cursor: pointer;
+  text-decoration-line: underline; text-decoration-thickness: 1px;
+  text-decoration-color: transparent; text-underline-offset: 3px;
+  transition: color .15s, text-decoration-color .15s;
+}
+.col-link:hover,
+.col-link:focus-visible {
+  color: #cdb88a; text-decoration-color: rgba(205,184,138,.55); outline: none;
+}
+
+.col-enter {
+  display: flex; align-items: baseline; gap: 13px; width: 100%;
+  margin-top: 26px; padding: 0; background: none; border: 0;
+  cursor: pointer; opacity: .85; transition: opacity .18s;
+}
+.col-enter:hover { opacity: 1; }
+.col-enter-rule {
+  flex: 1; height: 1px; transform: translateY(-4px);
+  background: repeating-linear-gradient(90deg, rgba(205,184,138,.42) 0 1px, transparent 1px 6px);
+}
+
+.col-close {
+  position: absolute; top: 14px; right: 24px; z-index: 6; pointer-events: auto;
+  background: none; border: 0; padding: 6px; cursor: pointer;
+  font-size: 15px; line-height: 1; color: rgba(205,184,138,.5);
+  transition: color .15s;
+}
+.col-close:hover { color: #cdb88a; }
 
 /* ── Tour bar slide-up ─────────────────────────────────────────────────────── */
 .tourbar {
@@ -368,7 +615,9 @@ body {
   left: 50%; bottom: 22px;
   transform: translateX(-50%) translateY(20px);
   z-index: 25;
-  width: min(560px, calc(100% - 456px)); /* clears the 420px detail panel + margin */
+  /* clears the detail panel + margin — floored so the wider Colossus panel
+     can never squeeze the caption bar to nothing on a narrow window */
+  width: min(560px, max(300px, calc(100% - var(--panel-w) - 36px)));
   background: rgba(9,12,19,.94);
   border: 1px solid #262e3c;
   border-radius: 13px;
@@ -399,60 +648,22 @@ body {
   animation: panelFadeIn 0.38s ease both;
 }
 
-/* ── Story teaser (panel) — uniform height, long openers fade out ─────────── */
-.story-teaser { max-height: 138px; overflow: hidden; }
-.story-teaser.clamped {
-  -webkit-mask-image: linear-gradient(180deg, #000 62%, transparent 97%);
-  mask-image: linear-gradient(180deg, #000 62%, transparent 97%);
-}
-
-/* ── Holographic hero (DetailPanel) ─────────────────────────────────────────
-   Layer order inside .holo-stage: .holo-materialize (entrance, finite) >
-   .holo-float (ambient bob) > .holo-tilt.holo-flicker (cursor perspective +
-   opacity flicker). Each transform/opacity animation lives on its own element
-   so they compose instead of overriding. --holo carries the category color. */
-.holo-stage { overflow: hidden; }
-/* the portrait's left edge dissolves into the stage — the seam against the
-   star map reads as one surface, echoing the graph's frameless portraits */
-.holo-portrait {
-  -webkit-mask-image: linear-gradient(to right, transparent, rgba(0,0,0,.55) 9%, #000 26%);
-          mask-image: linear-gradient(to right, transparent, rgba(0,0,0,.55) 9%, #000 26%);
-}
-.holo-materialize { animation: holo-materialize 0.7s cubic-bezier(.2,.7,.3,1) both; }
-.holo-float { animation: holo-float 7s ease-in-out infinite; will-change: transform; }
-.holo-tilt {
-  transform: perspective(900px);
-  transform-style: preserve-3d;
-  transition: transform 0.22s ease-out;
-}
-.holo-flicker { animation: holo-flicker 9s steps(1) infinite; }
-.holo-scanlines {
-  position: absolute; inset: 0; z-index: 3; pointer-events: none;
-  background: repeating-linear-gradient(to bottom,
-    rgba(255,255,255,.04) 0 1px, transparent 1px 3px);
-  mix-blend-mode: overlay;
-}
-.holo-sweep {
-  position: absolute; left: 0; right: 0; height: 34px; z-index: 3; pointer-events: none;
-  background: linear-gradient(to bottom,
-    transparent,
-    color-mix(in oklab, var(--holo, #cdb88a) 14%, transparent),
-    transparent);
-  animation: holo-scan 5.5s linear infinite;
-}
+/* ── Figure motion (DetailPanel) ────────────────────────────────────────────
+   The Colossus keeps only the two gestures that survive at this scale: an
+   ambient bob on the whole figure and a materialize on every node change.
+   The old hologram chrome — scanlines, light sweep, opacity flicker, cursor
+   tilt — was calibrated for a small square hero and reads as noise across
+   820px of face, so it is gone. .holo-ring/.holo-dash stay: the HoloSigil
+   fallback still draws its emitter dais. */
 .holo-ring { animation: holo-dash 4s linear infinite; }
-@keyframes holo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-@keyframes holo-scan { 0% { top: -16%; } 100% { top: 104%; } }
-@keyframes holo-dash { to { stroke-dashoffset: -36; } }
-@keyframes holo-flicker {
-  0%, 100% { opacity: 1; }
-  6%  { opacity: .93; }  7%  { opacity: 1; }
-  34% { opacity: .96; }  36% { opacity: 1; }
-  58% { opacity: .9; }   59% { opacity: .99; }
-  82% { opacity: .95; }  84% { opacity: 1; }
+@keyframes holo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes holo-dash  { to { stroke-dashoffset: -36; } }
+@keyframes holo-materialize {
+  from { opacity: 0; transform: translateY(12px) scale(.985); filter: blur(7px) brightness(1.4); }
+  to   { opacity: 1; transform: none; filter: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .holo-materialize, .holo-float, .holo-flicker, .holo-sweep, .holo-ring { animation: none; }
+  .col-figure, .col-figure-in, .holo-ring { animation: none; }
 }
 
 /* ── Story drop cap ────────────────────────────────────────────────────────── */
@@ -581,33 +792,6 @@ body {
 svg {
   user-select: none;
   -webkit-user-select: none;
-}
-
-/* ── Detail panel scrollbar ─────────────────────────────────────────────── */
-.detail-scroll::-webkit-scrollbar       { width: 4px; }
-.detail-scroll::-webkit-scrollbar-track { background: #0d111c; }
-.detail-scroll::-webkit-scrollbar-thumb { background: #1e2a3a; border-radius: 2px; }
-.detail-scroll                          { scrollbar-width: thin; scrollbar-color: #1e2a3a #0d111c; }
-
-/* ── Desktop: side-by-side layout ───────────────────────────────────────── */
-@media (min-width: 768px) {
-  .md-row {
-    flex-direction: row !important;
-  }
-
-  .detail-panel-container {
-    width: 35%;
-    height: 100%;
-  }
-}
-
-/* ── Mobile: stacked layout ─────────────────────────────────────────────── */
-@media (max-width: 767px) {
-  .detail-panel-container {
-    height: 45vh;
-    width: 100%;
-    border-top: 1px solid #1e2a3a;
-  }
 }
 
 /* ── Ambient cloud motion ───────────────────────────────────────────────── */
@@ -1163,6 +1347,23 @@ body {
 }
 @keyframes so-twinkle { from { opacity: var(--lo); } to { opacity: var(--hi); } }
 
+/* the orbital plane — a SQUARE box centred on the sun, its half-side the one
+   base radius every orbit measurement derives from. Rings, thread and planets
+   are all placed in percent of this box, so a percent buys the same number of
+   pixels on both axes and the ellipse stays a believable projected circle at
+   any viewport aspect. (Percent of the *stage* was the bug: at 1900×880 the
+   outer ring came out 1444px wide but 528px tall, and the late chapters flew
+   off to the bezel.) Height binds the radius first — the sun sits at 40% and
+   the caption owns the foot — and the width that implies still leaves the
+   outermost chapters and their labels clear of the edge. */
+.so-plane {
+  --orbit-r: min(48vh, 40vw);
+  position: absolute; left: 50%; top: 40%; z-index: 2;
+  width: calc(var(--orbit-r) * 2); height: calc(var(--orbit-r) * 2);
+  transform: translate(-50%, -50%);
+  pointer-events: none;   /* the box is mostly empty sky; planets opt back in */
+}
+
 .so-ring {
   position: absolute; border-radius: 50%; pointer-events: none;
   border: 1px dashed color-mix(in oklch, var(--accent) 22%, transparent);
@@ -1171,11 +1372,12 @@ body {
 .so-thread { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 
 /* the traced tale — each segment draws itself when its chapter is reached.
-   Width is in viewBox units (the svg stretches to the viewport): ≈1px on a
-   laptop. No non-scaling-stroke — Chrome would render the dash pattern in
-   screen space and the pathLength-normalised draw would break into dots. */
+   Width is in viewBox units, and the viewBox is square over a square box, so
+   the stroke stays uniform (≈1.3px on a laptop) instead of being stretched
+   along one axis. No non-scaling-stroke — Chrome would render the dash pattern
+   in screen space and the pathLength-normalised draw would break into dots. */
 .so-trace {
-  stroke: rgba(205,184,138,.5); stroke-width: .1;
+  stroke: rgba(205,184,138,.5); stroke-width: .15;
   stroke-dasharray: 1; stroke-dashoffset: 0;
   animation: so-trace-draw .55s ease-out var(--tstag, 0s) backwards;
 }
@@ -1188,6 +1390,7 @@ body {
   animation: so-sun-in .9s ease .12s backwards;
 }
 .so-sun-orb {
+  position: relative;
   width: 74px; height: 74px; border-radius: 50%; margin: 0 auto; overflow: hidden;
   background: radial-gradient(circle at 36% 32%, #fdf8ea, #ecd9a8 45%, #b28f5a 78%, #6b5638);
   box-shadow:
@@ -1197,6 +1400,14 @@ body {
   animation: so-breathe 7s ease-in-out infinite alternate;
 }
 .so-sun-orb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* matching shiny rim for the central figure — a touch stronger for its size */
+.so-sun-orb::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(248,242,226,.6),
+    inset 0 0 16px 2px rgba(248,242,226,.3),
+    inset 0 7px 18px -7px rgba(255,255,255,.5);
+}
 @keyframes so-breathe {
   from { box-shadow: 0 0 28px rgba(205,184,138,.5), 0 0 100px rgba(205,184,138,.22), 0 0 180px color-mix(in oklch, var(--accent) 18%, transparent); }
   to   { box-shadow: 0 0 36px rgba(205,184,138,.7), 0 0 120px rgba(205,184,138,.34), 0 0 210px color-mix(in oklch, var(--accent) 30%, transparent); }
@@ -1210,7 +1421,7 @@ body {
 /* beat planets — ignite in story order when the orbit opens */
 .so-planet {
   position: absolute; transform: translate(-50%, -50%); text-align: center;
-  z-index: 4; padding: 0;
+  z-index: 4; padding: 0; pointer-events: auto;
   animation: so-ignite .65s ease var(--ig, 0s) backwards;
 }
 .so-float { display: block; animation: so-float var(--fdur) ease-in-out var(--fdelay) infinite alternate; }
@@ -1230,10 +1441,23 @@ body {
 }
 /* portrait-backed orb keeps a faint category rim from the gradient underneath */
 .so-orb.has-face { box-shadow: 0 0 16px color-mix(in oklch, var(--mid-c) 50%, transparent); }
+/* slightly shiny circle — a soft luminous rim + top sheen so the icon catches
+   light like the glowing node discs on the home-page graph (drawn over the
+   portrait, so hard-cropped faces still read as a lit sphere, not a flat disc) */
+.so-orb::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  pointer-events: none; z-index: 2;
+  box-shadow:
+    inset 0 0 0 1px rgba(248,242,226,.6),        /* crisp cream rim ring */
+    inset 0 0 9px 1px rgba(248,242,226,.28),     /* inner luminance */
+    inset 0 5px 11px -5px rgba(255,255,255,.5),  /* top sheen */
+    0 0 10px rgba(248,242,226,.30);              /* soft outer halo */
+}
 .so-orb.ringed::after {
   content: ''; position: absolute; inset: 32% -26%; border-radius: 50%;
-  border: 1.5px solid color-mix(in oklch, var(--mid-c) 55%, #f6f0e0);
+  border: 1px solid color-mix(in oklch, var(--mid-c) 45%, transparent);
   transform: rotate(-16deg);
+  opacity: .3;
 }
 .so-tag {
   display: block; margin-top: 9px; font-family: Cinzel, serif; font-size: 9px;

@@ -33,10 +33,13 @@ function FigChip({ fig, color, onNavigate }) {
   )
 }
 
-/* orbital plane: sun centre + the two rings planets alternate between,
-   all in % of the stage so the layout is resolution-independent */
-const CX = 50, CY = 40
-const RINGS = [{ rx: 24, ry: 19 }, { rx: 38, ry: 30 }]
+/* orbital plane: sun centre + the two rings planets alternate between, all in
+   % of `.so-plane` — a square box sized from ONE base radius in min-axis units
+   (see index.css). Both radii of a ring derive from that base, so the ellipse
+   holds its shape at every aspect instead of stretching with the stage. */
+const CX = 50, CY = 50               // the sun, at the plane's centre
+const TILT = 0.62                    // ry ÷ rx — how far the plane is tipped
+const RINGS = [0.63, 1].map(f => ({ rx: 50 * f, ry: 50 * f * TILT }))
 
 /* one beat = a planet. Its face is the primary figure's portrait (falling
    back to the deity's own), dissolving to the gradient orb if none loads */
@@ -171,43 +174,47 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
         }}/>
       ))}
 
-      {RINGS.map((r, i) => (
-        <div key={i} className="so-ring" style={{
-          left: `${CX - r.rx}%`, top: `${CY - r.ry}%`,
-          width: `${r.rx * 2}%`, height: `${r.ry * 2}%`,
-        }}/>
-      ))}
+      {/* the orbital plane — square, so a percent is the same distance on
+          both axes and the orbit reads as a tipped circle, not a stretched one */}
+      <div className="so-plane">
+        {RINGS.map((r, i) => (
+          <div key={i} className="so-ring" style={{
+            left: `${CX - r.rx}%`, top: `${CY - r.ry}%`,
+            width: `${r.rx * 2}%`, height: `${r.ry * 2}%`,
+          }}/>
+        ))}
 
-      {/* the tale traced so far: sun → chapter Ⅰ → … → current chapter
-          (percent space, so no resize math) */}
-      <svg className="so-thread" viewBox="0 0 100 100" preserveAspectRatio="none">
-        {planets.slice(0, cur + 1).map((p, i) => {
-          const from = i === 0 ? { left: CX, top: CY } : planets[i - 1]
-          const stag = i === 0 ? 1.05 : Math.max(0, i - 1 - prevCurRef.current) * 0.12
-          return (
-            <line key={i} className="so-trace"
-              x1={from.left} y1={from.top} x2={p.left} y2={p.top}
-              pathLength="1" style={{ '--tstag': `${stag}s` }}/>
-          )
-        })}
-      </svg>
+        {/* the tale traced so far: sun → chapter Ⅰ → … → current chapter
+            (plane percent space, so no resize math) */}
+        <svg className="so-thread" viewBox="0 0 100 100">
+          {planets.slice(0, cur + 1).map((p, i) => {
+            const from = i === 0 ? { left: CX, top: CY } : planets[i - 1]
+            const stag = i === 0 ? 1.05 : Math.max(0, i - 1 - prevCurRef.current) * 0.12
+            return (
+              <line key={i} className="so-trace"
+                x1={from.left} y1={from.top} x2={p.left} y2={p.top}
+                pathLength="1" style={{ '--tstag': `${stag}s` }}/>
+            )
+          })}
+        </svg>
 
-      {/* the deity sun */}
-      <div className="so-sun" style={{ left: `${CX}%`, top: `${CY}%` }}>
-        <div className="so-sun-orb">
-          {sun.src && (
-            <img src={sun.src} alt="" draggable="false" onError={sun.onError}/>
-          )}
+        {/* the deity sun */}
+        <div className="so-sun" style={{ left: `${CX}%`, top: `${CY}%` }}>
+          <div className="so-sun-orb">
+            {sun.src && (
+              <img src={sun.src} alt="" draggable="false" onError={sun.onError}/>
+            )}
+          </div>
+          <div className="so-sun-name">{node.name}</div>
+          {node.epithet && <div className="so-sun-epithet">{node.epithet}</div>}
         </div>
-        <div className="so-sun-name">{node.name}</div>
-        {node.epithet && <div className="so-sun-epithet">{node.epithet}</div>}
-      </div>
 
-      {/* beat planets — told chapters stay lit, ones ahead are faint embers */}
-      {beats.map((b, i) => (
-        <BeatPlanet key={i} beat={b} i={i} cur={cur} planet={planets[i]}
-          figId={b.figures?.[0] || nodeId} onSelect={setCur}/>
-      ))}
+        {/* beat planets — told chapters stay lit, ones ahead are faint embers */}
+        {beats.map((b, i) => (
+          <BeatPlanet key={i} beat={b} i={i} cur={cur} planet={planets[i]}
+            figId={b.figures?.[0] || nodeId} onSelect={setCur}/>
+        ))}
+      </div>
 
       <button className="gs-exit" onClick={onClose} aria-label="Close story orbit">✕</button>
 

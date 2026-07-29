@@ -1,11 +1,9 @@
-import { useMemo, useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { nodes as allNodes, links as allLinks } from '../data/mythology.js'
-import { archetypeMap } from '../data/archetypeMap.js'
-import { CAT, LCOL, portraitSources } from './SkyGraph.jsx'
-import { linkTypeConfig } from '../data/linkTypeConfig.js'
+import { CAT, portraitSources } from './SkyGraph.jsx'
 import { categoryConfig } from '../data/categoryConfig.js'
 import { deityStories } from '../data/deityStories.js'
-import { getConstellation } from '../data/constellations.js'
+import { TOURS } from '../data/tours.js'
 
 /* precompute adjacency + prom */
 const _adj = {}
@@ -16,6 +14,17 @@ allLinks.forEach(l => { _adj[l.source]?.add(l.target); _adj[l.target]?.add(l.sou
 const _mythFreq = {}
 allNodes.forEach(n => (n.notable_myths || []).forEach(m => (_mythFreq[m] = (_mythFreq[m] || 0) + 1)))
 const _famousMyths = new Set(Object.entries(_mythFreq).filter(([, c]) => c >= 3).map(([m]) => m))
+
+/* which tales feature each figure — node id → the tours it appears in, with the
+   chapter where it first takes the stage, so a row can open the tale *there*
+   rather than at its beginning. A figure that recurs in one tour lists it once. */
+const _talesByFig = {}
+TOURS.forEach(t => t.beats.forEach((b, i) => {
+  const list = _talesByFig[b.fig] || (_talesByFig[b.fig] = [])
+  if (!list.some(x => x.id === t.id)) {
+    list.push({ id: t.id, title: t.title, kicker: t.kicker, beat: i, total: t.beats.length })
+  }
+}))
 const _maxDeg = Math.max(...allNodes.map(n => _adj[n.id]?.size || 0))
 const _nodeMap = Object.fromEntries(allNodes.map(n => ({
   ...n,
@@ -23,21 +32,23 @@ const _nodeMap = Object.fromEntries(allNodes.map(n => ({
   prom:   Math.sqrt(_adj[n.id]?.size || 0) / Math.sqrt(_maxDeg),
 })).map(n => [n.id, n]))
 
-/* ── vertical rhythm scale (4px base) ─────────────────────────────────────
-   Each tier is clearly larger than the one it nests inside, so the eye groups
-   content without borders:  within-a-thought < label→content < between-sections.
-   Tune the whole panel's density by editing these four numbers. */
-const SP = {
-  tight:   8,   // intra-element: chip/list gaps, label→inline value
-  label:  12,   // a section's rule label → its content
-  section:24,   // between whole sections (body column gap)
-  padX:   18,   // horizontal padding — constant across the panel
+const GOLD = '#cdb88a'
+
+/* The atlas counts in roman numerals wherever it counts at all — chapters,
+   bonds, the overflow on a truncated list. */
+const _ROMAN = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],
+                [50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']]
+function roman(n) {
+  let out = ''
+  for (const [v, s] of _ROMAN) while (n >= v) { out += s; n -= v }
+  return out
 }
 
 /* ── holographic sigil ───────────────────────────────────────────────────
-   Rotating 3D constellation projected above an emitter dais. The hero star
-   sits at the axis; its top neighbors orbit on a slowly spinning ring with
-   varying heights, perspective-projected and depth-sorted each frame.
+   Rotating 3D constellation projected above an emitter dais, shown in the
+   figure's place when a node has no portrait. The hero star sits at the axis;
+   its top neighbors orbit on a slowly spinning ring with varying heights,
+   perspective-projected and depth-sorted each frame.
    Follows the SkyGraph pattern: the SVG DOM is owned imperatively inside a
    single effect (rAF loop) — React never re-renders per frame. */
 function HoloSigil({ node, catColor }) {
@@ -178,504 +189,239 @@ function Portrait({ nodeId, onLoaded }) {
   return (
     <img
       key={chain[idx]}
-      className="holo-portrait"
+      className="col-figure-img"
       src={chain[idx]}
       alt=""
-      onLoad={onLoaded}
+      /* report the art's own ratio so the figure box can take its shape — see
+         .col-figure-in: the masks only dissolve the real edges if the box and
+         the rendered image are the same rectangle */
+      onLoad={e => onLoaded(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight)}
       onError={() => idx + 1 < chain.length ? setIdx(idx + 1) : setGone(true)}
-      style={{ width:'100%', display:'block', objectFit:'cover', objectPosition:'top center' }}
     />
   )
 }
 
-/* ── section with ornamental horizontal-rule label ───────────────────── */
-function Section({ label, children, index = 0 }) {
+/* ── label → value row ───────────────────────────────────────────────────
+   Same skeleton for every row — a Cinzel label on the left, dot-joined
+   values on the right, truncated with the remainder counted in roman — but
+   two registers, set by the group the row sits in (.col-rows-attr /
+   .col-rows-nav in index.css). Attributes are italic, small and tight;
+   navigation stands upright, larger, and underlines on hover, because those
+   are the only lines you can press. Five identical italic rows read as a
+   receipt — the split is the hierarchy. No chips, borders or bullets. */
+function Row({ label, items, max = 4, emphasize, onPick, titleFor }) {
+  if (!items?.length) return null
+  const shown = items.slice(0, max)
+  const rest  = items.length - shown.length
   return (
-    <div className="panel-section" style={{ animationDelay: `${index * 0.065 + 0.08}s` }}>
-      <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:SP.label }}>
-        <div style={{ flex:1, height:1, background:'#19202d' }}/>
-        <span style={{
-          fontFamily:'Cinzel, serif', fontSize:8.5, letterSpacing:'.22em',
-          color:'#6b604a', textTransform:'uppercase',
-        }}>
-          {label}
-        </span>
-        <div style={{ flex:1, height:1, background:'#19202d' }}/>
-      </div>
-      {children}
+    <div className="col-row">
+      <span className="col-row-k">{label}</span>
+      <span className="col-row-v">
+        {shown.map((it, i) => (
+          <span key={it.key}>
+            {i > 0 && <span className="col-sep">&nbsp;·&nbsp;</span>}
+            {onPick
+              ? <button className="col-link" title={titleFor?.(it)} onClick={() => onPick(it)}>{it.label}</button>
+              : <span className={emphasize?.has(it.label) ? 'col-em' : undefined}>{it.label}</span>}
+          </span>
+        ))}
+        {rest > 0 && (
+          <>
+            <span className="col-sep">&nbsp;·&nbsp;</span>
+            <span className="col-more">+{roman(rest)}</span>
+          </>
+        )}
+      </span>
     </div>
   )
+}
+
+/* keyword arrays arrive as bare strings; the row wants { key, label } */
+const words = list => (list || []).map(w => ({ key: w, label: w }))
+
+/* the width one line of the display name can afford, in cqw against .col-type */
+const nameCq = name =>
+  `${(100 / (Math.max(...name.split(' ').map(w => w.length)) * 0.84)).toFixed(2)}cqw`
+
+/* ── opening prose, held to the measure ──────────────────────────────────
+   .col-prose caps at ~7 lines; the bottom fade only belongs on prose that
+   actually overruns that, and whether it does depends on the live width of
+   the column — a character count would be right at 384px and wrong at 200px.
+   So measure it. Toggling .clamped only adds a mask, which changes no layout,
+   so this can't feed back into the observer. */
+function Prose({ text }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const sync = () => el.classList.toggle('clamped', el.scrollHeight > el.clientHeight + 2)
+    sync()
+    const ro = new ResizeObserver(sync)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [text])
+  return <p ref={ref} className="col-prose">{text}</p>
 }
 
 /* ════════════════════════════════════════════════════════════════════════
    DetailPanel
    ════════════════════════════════════════════════════════════════════════ */
-export default function DetailPanel({ nodeId, onClose, onNavigate, onOpenOrbit }) {
+export default function DetailPanel({ nodeId, onClose, onNavigate, onOpenOrbit, onOpenTale }) {
   const node = nodeId ? _nodeMap[nodeId] : null
-  const asideRef = useRef(null)
-
-  useEffect(() => {
-    if (node && asideRef.current) asideRef.current.scrollTop = 0
-  }, [nodeId])
-
-  const connections = useMemo(() => {
-    if (!node) return []
-    const out = [], seen = new Set()
-    allLinks.forEach(l => {
-      const s = typeof l.source === 'object' ? l.source.id : l.source
-      const t = typeof l.target === 'object' ? l.target.id : l.target
-      let other = null, dir = ''
-      if (s === node.id && _nodeMap[t]) { other = _nodeMap[t]; dir = '→' }
-      else if (t === node.id && _nodeMap[s]) { other = _nodeMap[s]; dir = '←' }
-      if (!other) return
-      const key = other.id + l.type + dir
-      if (seen.has(key)) return
-      seen.add(key)
-      out.push({ other, type: l.type, label: l.label, dir })
-    })
-    return out
-  }, [node])
-
   return (
-    <aside ref={asideRef} className={`detail-panel ${node ? 'open' : ''}`}>
+    <aside className={`detail-panel ${node ? 'open' : ''}`}>
+      {/* the wash and the plate are the panel's whole surface — the wash lets
+          the star field bleed under the left edge instead of ending it on a rule */}
+      <div className="col-wash"/>
+      <div className="col-plate"/>
       {node && (
         <PanelContent
           key={node.id}
           node={node}
-          connections={connections}
           onClose={onClose}
           onNavigate={onNavigate}
           onOpenOrbit={onOpenOrbit}
+          onOpenTale={onOpenTale}
         />
       )}
     </aside>
   )
 }
 
-const GOLD = '#cdb88a'
-
-function MiniConstellation({ spec, weight, catColor }) {
-  const w = weight ?? 0.7
-  const sz = 28
-  const vb = 200
-  const scale = vb / 200
-  const heroIdx = spec.hero ?? 0
-  const bright = new Set(spec.b || [])
-
-  return (
-    <svg viewBox={`-100 -100 ${vb} ${vb}`} width={sz} height={sz}
-      style={{ display:'block', overflow:'visible' }}>
-      <circle cx="0" cy="0" r="90" fill={catColor} opacity={0.06} />
-      {spec.e.map(([a, b], i) => (
-        <line key={i}
-          x1={spec.n[a][0]} y1={spec.n[a][1]}
-          x2={spec.n[b][0]} y2={spec.n[b][1]}
-          stroke={catColor} strokeWidth={1.2 * scale} opacity={0.35 + w * 0.2} />
-      ))}
-      {spec.n.map(([x, y], i) => {
-        const isHero = i === heroIdx
-        const isBright = bright.has(i)
-        const r = isHero ? (3.5 + w * 3) * scale
-          : isBright ? (2.5 + w * 2) * scale
-          : (1.8 + w * 1.2) * scale
-        return (
-          <g key={i}>
-            {(isHero || isBright) && (
-              <circle cx={x} cy={y} r={r * 2.2}
-                fill={isHero ? GOLD : catColor} opacity={0.12} />
-            )}
-            <circle cx={x} cy={y} r={r}
-              fill={isHero ? '#f3eede' : isBright ? '#ece6d6' : '#b8bfcc'}
-              opacity={isHero ? 1 : isBright ? 0.85 : 0.5 + w * 0.3} />
-          </g>
-        )
-      })}
-    </svg>
-  )
-}
-
-function StorySpine({ beats, catColor, source, onNavigate, nodeId }) {
-  return (
-    <div style={{ position:'relative' }}>
-      <div style={{ position:'absolute', left:14, top:14, bottom: source ? 34 : 14, width:0,
-        borderLeft:`1px dashed ${catColor}44` }}/>
-      {beats.map((b, i) => {
-        const w = b.weight ?? 0.7
-        const fig = b.figures?.[0]
-        // a figure shows its bespoke emblem on first mention; repeat mentions
-        // (and figure-less beats) get a unique per-beat pattern so no two
-        // constellations in one story panel look identical
-        const firstUse = fig && beats.findIndex(x => x.figures?.[0] === fig) === i
-        const specKey = firstUse ? fig : `${nodeId || 'beat'}-${i}`
-        const spec = getConstellation(specKey)
-        const nav = (fig && onNavigate) ? () => onNavigate(fig) : null
-        return (
-          <div key={i}
-            onClick={nav || undefined}
-            onKeyDown={nav ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nav() } } : undefined}
-            onMouseEnter={nav ? e => { e.currentTarget.style.transform = 'translateX(3px)' } : undefined}
-            onMouseLeave={nav ? e => { e.currentTarget.style.transform = 'translateX(0)' } : undefined}
-            role={nav ? 'button' : undefined}
-            tabIndex={nav ? 0 : undefined}
-            title={nav ? `Fly to ${_nodeMap[fig]?.name || fig}` : undefined}
-            style={{ position:'relative', paddingLeft:38,
-              paddingBottom: i < beats.length - 1 ? 22 : 0,
-              cursor: nav ? 'pointer' : 'default', transition:'transform .15s', outline:'none' }}>
-            <div style={{ position:'absolute', left:0, top:1 }}>
-              <MiniConstellation spec={spec} weight={w} catColor={catColor} />
-            </div>
-            <div style={{ fontFamily:'Cinzel, serif', fontSize:9.5, letterSpacing:'.16em',
-              textTransform:'uppercase', color:GOLD, marginBottom:5, marginTop:1 }}>{b.label}</div>
-            <p style={{ margin:0, fontSize:14.5, lineHeight:1.58, color:'#c2cad8' }}>{b.text}</p>
-          </div>
-        )
-      })}
-      {source && (
-        <p style={{ margin:'20px 0 0', paddingLeft:38, fontStyle:'italic', fontSize:12,
-          color:'#3a4354' }}>— {source}</p>
-      )}
-    </div>
-  )
-}
-
 /* ── main panel body ─────────────────────────────────────────────────── */
-function PanelContent({ node, connections, onClose, onNavigate, onOpenOrbit }) {
+function PanelContent({ node, onClose, onNavigate, onOpenOrbit, onOpenTale }) {
   const catCfg   = categoryConfig[node.category] || {}
-  const archetype = archetypeMap[node.jungian_archetype]
   const catColor = CAT[node.category] || '#888'
-  const [hasPortrait, setHasPortrait] = useState(false)
-  const story     = deityStories[node.id]
-  const storyText = story?.story || node.description
-  const storySource = story?.source || null
+  /* the portrait's own aspect ratio, once it has loaded — null while it hasn't,
+     which is also what raises the HoloSigil fallback */
+  const [ratio, setRatio] = useState(null)
 
-  /* hologram tilt — perspective follows the cursor, written straight to the
-     element (no per-move React state) */
-  const heroTilt = useRef(null)
-  const onTilt = e => {
-    const el = heroTilt.current
-    if (!el) return
-    const r = e.currentTarget.getBoundingClientRect()
-    const px = (e.clientX - r.left) / r.width - 0.5
-    const py = (e.clientY - r.top) / r.height - 0.5
-    el.style.transform =
-      `perspective(900px) rotateY(${(px * 14).toFixed(2)}deg) rotateX(${(-py * 10).toFixed(2)}deg)`
-  }
-  const offTilt = () => { if (heroTilt.current) heroTilt.current.style.transform = '' }
+  const story    = deityStories[node.id]
+  const beats    = story?.beats
+  /* a beat-based story only lends its opening to the measure — the whole tale
+     lives in the Story Orbit overlay behind ENTER THE STORY */
+  const canOrbit = !!(beats?.length && onOpenOrbit)
+  const prose    = (canOrbit ? beats[0].text : story?.story || node.description) || ''
+  const source   = canOrbit ? null : story?.source || null
 
-  let sectionIdx = 0
+  const bonds = [...(_adj[node.id] || [])]
+    .map(id => _nodeMap[id]).filter(Boolean)
+    .sort((a, b) => b.degree - a.degree)
+    .map(m => ({ key: m.id, label: m.name, id: m.id }))
+  const tales = ((onOpenTale && _talesByFig[node.id]) || [])
+    .map(t => ({ key: t.id, label: t.title, ...t }))
 
   return (
-    <div style={{ fontFamily:"'Crimson Pro', Georgia, serif", minHeight:'100%' }}>
+    <>
+      <div className="col-aura" style={{ '--holo': catColor }}/>
 
-      {/* ── Hero: holographic portrait OR 3D sigil hologram ─────────── */}
-      <div
-        className="holo-stage"
-        style={{
-          position:'relative', flexShrink:0, '--holo': catColor,
-          background:`radial-gradient(ellipse at 50% 42%, ${catColor}10, #060810 74%)`,
-          borderBottom:'1px solid #19202d',
-        }}
-        onMouseMove={onTilt}
-        onMouseLeave={offTilt}
-      >
-        {/* materialize / float / flicker+tilt each own their layer so their
-            transform & opacity animations don't override one another */}
-        <div className="holo-materialize">
-          <div className="holo-float">
-            <div ref={heroTilt} className="holo-tilt holo-flicker">
-              <Portrait nodeId={node.id} onLoaded={() => setHasPortrait(true)}/>
-              {/* 3D sigil hologram shown while no portrait (or forever if none exists) */}
-              {!hasPortrait && <HoloSigil node={node} catColor={catColor}/>}
-            </div>
+      {/* ── the figure — she takes the right two-thirds outright ──────
+          Three nested elements because each can carry only one mask without
+          mask-composite: the box fades head and feet, the veil fades left and
+          right, the image itself carries the radial vignette. Together they
+          take all four edges to zero. */}
+      <div className="col-figure">
+        <div className={`col-figure-in ${ratio ? 'ready' : ''}`}
+          style={ratio ? { '--fig-ar': ratio.toFixed(4) } : undefined}>
+          <div className="col-figure-veil">
+            <Portrait nodeId={node.id} onLoaded={setRatio}/>
+            {!ratio && (
+              <div className="col-sigil">
+                <HoloSigil node={node} catColor={catColor}/>
+              </div>
+            )}
           </div>
         </div>
-
-        {/* holographic chrome — static over the floating content */}
-        <div className="holo-scanlines"/>
-        <div className="holo-sweep"/>
-
-        {/* Close button — top-right, frosted */}
-        <button
-          onClick={onClose}
-          style={{
-            position:'absolute', top:12, right:14, zIndex:10,
-            background:'rgba(6,8,14,.7)', border:'1px solid rgba(38,46,60,.85)',
-            backdropFilter:'blur(6px)', borderRadius:6,
-            width:28, height:28, color:'#5c6678', cursor:'pointer', fontSize:13,
-            display:'flex', alignItems:'center', justifyContent:'center', transition:'.15s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color='#aab2c0'; e.currentTarget.style.borderColor='#3a4354' }}
-          onMouseLeave={e => { e.currentTarget.style.color='#5c6678'; e.currentTarget.style.borderColor='rgba(38,46,60,.85)' }}
-        >✕</button>
-
-        {/* Portrait overlay: top tint + bottom gradient + name */}
-        {hasPortrait && (
-          <>
-            <div style={{
-              position:'absolute', inset:'0 0 auto 0', height:56, pointerEvents:'none',
-              background:`linear-gradient(to bottom, ${catColor}22, transparent)`,
-            }}/>
-            <div style={{
-              position:'absolute', inset:'auto 0 0 0', pointerEvents:'none',
-              padding:'72px 18px 18px',
-              background:'linear-gradient(to top, #090c13 28%, rgba(9,12,19,.65) 60%, transparent)',
-            }}>
-              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
-                <span style={{
-                  fontFamily:'Cinzel, serif', fontSize:8.5, letterSpacing:'.18em',
-                  padding:'2px 8px', border:`1px solid ${catColor}77`,
-                  borderRadius:4, color:catColor,
-                  background:'rgba(6,8,14,.55)', backdropFilter:'blur(4px)',
-                }}>
-                  {(catCfg.label || node.category).toUpperCase()}
-                </span>
-                {node.roman_equivalent && (
-                  <span style={{ fontStyle:'italic', fontSize:11.5, color:'rgba(92,102,120,.9)' }}>
-                    ≡ {node.roman_equivalent}
-                  </span>
-                )}
-              </div>
-              <h2 style={{
-                fontFamily:'Cinzel, serif', fontWeight:500, fontSize:24, color:'#f0ecdf',
-                margin:'0 0 4px', lineHeight:1.1,
-                textShadow:'0 2px 16px rgba(0,0,0,.9), 0 1px 4px rgba(0,0,0,.6)',
-              }}>
-                {node.name}
-              </h2>
-              {node.epithet && (
-                <p style={{
-                  fontStyle:'italic', fontSize:13.5, color:'rgba(170,178,192,.8)', margin:0,
-                  textShadow:'0 1px 8px rgba(0,0,0,.8)',
-                }}>
-                  {node.epithet}
-                </p>
-              )}
-            </div>
-          </>
-        )}
       </div>
 
-      {/* Header when no portrait — category-bordered block */}
-      {!hasPortrait && (
-        <div style={{
-          padding:'14px 18px 13px',
-          borderLeft:`3px solid ${catColor}`,
-          borderBottom:'1px solid #19202d',
-        }}>
-          <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:5 }}>
+      <button className="col-close" onClick={onClose} aria-label="Close">✕</button>
+
+      {/* ── the measure — one column, strict left margin ────────────── */}
+      <div className="col-type">
+
+        <div className="col-main panel-section" style={{ animationDelay:'.08s' }}>
+          <div className="col-eyebrow">
+            <span style={{ color:catColor, fontSize:9, lineHeight:1 }}>✦</span>
             <span style={{
-              fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.16em',
-              padding:'2px 8px', border:`1px solid ${catColor}`, borderRadius:4, color:catColor,
+              fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.34em',
+              color:'#a2916a', whiteSpace:'nowrap',
             }}>
               {(catCfg.label || node.category).toUpperCase()}
             </span>
+            <span className="col-eyebrow-rule"/>
             {node.roman_equivalent && (
-              <span style={{ fontStyle:'italic', fontSize:12, color:'#3a4354' }}>
+              <span style={{
+                fontFamily:"'EB Garamond', Georgia, serif", fontStyle:'italic',
+                fontSize:12.5, color:'#6b7486', whiteSpace:'nowrap',
+              }}>
                 ≡ {node.roman_equivalent}
               </span>
             )}
           </div>
-          <h2 style={{ fontFamily:'Cinzel, serif', fontWeight:500, fontSize:23, color:'#e9edf4', margin:'0 0 3px', lineHeight:1.1 }}>
+
+          {/* Cinzel renders lowercase as small caps and runs ~0.71em per glyph
+              with the .03em tracking, so the display size has to fall out of the
+              name against the measure — at the design's 96px "Persephone" is
+              four columns wide. Size off the longest *word*, not the whole
+              string: "Colchian Dragon" wraps at the space and only has to fit
+              eight glyphs on a line. 0.84 leaves headroom for wide-letter names
+              (Mnemosyne) over the measured average. cqw resolves against
+              .col-type, so this stays right at every panel width. */}
+          <h2 className="col-name" style={{ '--name-cq': nameCq(node.name) }}>
             {node.name}
           </h2>
-          {node.epithet && (
-            <p style={{ fontStyle:'italic', fontSize:15, color:'#5c6678', margin:0 }}>
-              {node.epithet}
-            </p>
+          {node.epithet && <p className="col-epithet">{node.epithet}</p>}
+
+          {prose && <Prose text={prose}/>}
+          {source && <p className="col-source">— {source}</p>}
+        </div>
+
+        <div className="col-foot panel-section" style={{ animationDelay:'.22s' }}>
+          {/* two registers, not five equal lines: what she *is* sits quiet and
+              tight, what she *opens* stands upright and underlines on hover.
+              Myths belongs to the first group despite reading as titles — a
+              myth name is a keyword with nothing behind it to click. */}
+          <div className="col-rows">
+            <div className="col-rows-attr">
+              <Row label="Domains" items={words(node.domains)}/>
+              <Row label="Symbols" items={words(node.symbols)}/>
+              <Row label="Myths"   items={words(node.notable_myths)} max={3} emphasize={_famousMyths}/>
+            </div>
+            <div className="col-rows-nav">
+              <Row
+                label="Bonds" items={bonds} max={3}
+                onPick={onNavigate ? b => onNavigate(b.id) : undefined}
+                titleFor={b => `Fly to ${b.label}`}
+              />
+              <Row
+                label="Tales" items={tales} max={2}
+                onPick={t => onOpenTale(t.id, t.beat)}
+                titleFor={t => `Open “${t.title}” at chapter ${t.beat + 1} of ${t.total}`}
+              />
+            </div>
+          </div>
+
+          {canOrbit && (
+            <button className="col-enter" onClick={onOpenOrbit}>
+              <span style={{ color:GOLD, fontSize:11 }}>✦</span>
+              <span style={{
+                fontFamily:'Cinzel, serif', fontSize:11.5, letterSpacing:'.28em',
+                color:GOLD, whiteSpace:'nowrap',
+              }}>
+                ENTER THE STORY
+              </span>
+              <span className="col-enter-rule"/>
+              <span style={{
+                fontFamily:'Cinzel, serif', fontSize:9.5, letterSpacing:'.2em',
+                color:'#8c7d59', whiteSpace:'nowrap',
+              }}>
+                {roman(beats.length)} CHAPTERS
+              </span>
+            </button>
           )}
         </div>
-      )}
-
-      {/* Renown bar */}
-      {/* <div style={{ padding:'11px 18px 0' }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <span style={{
-            fontFamily:'Cinzel, serif', fontSize:8, letterSpacing:'.24em',
-            color:'#2e3545', textTransform:'uppercase', flexShrink:0,
-          }}>Renown</span>
-          <div style={{ flex:1, height:2, background:'#0e1219', borderRadius:1 }}>
-            <div style={{
-              width:`${Math.max(node.prom * 100, 3)}%`, height:'100%',
-              background:`linear-gradient(to right, ${catColor}55, ${catColor}cc)`,
-              borderRadius:1, boxShadow:`0 0 6px ${catColor}44`,
-            }}/>
-          </div>
-          <span style={{ fontFamily:'Cinzel, serif', fontSize:8.5, color:'#2e3545', flexShrink:0 }}>
-            {node.degree}
-          </span>
-        </div>
-      </div> */}
-
-      {/* ── Body ─────────────────────────────────────────────────────── */}
-      <div style={{ padding:`22px ${SP.padX}px 40px`, display:'flex', flexDirection:'column', gap:SP.section }}>
-
-        {/* Ornamental separator */}
-        {/* <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ flex:1, height:1, background:'#141820' }}/>
-          <span style={{ color:'#2e3545', fontSize:8 }}>✦</span>
-          <div style={{ flex:1, height:1, background:'#141820' }}/>
-        </div> */}
-
-        {node.jungian_archetype && (
-          <Section label="Archetype" index={sectionIdx++}>
-            <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
-              {archetype && (
-                <span style={{
-                  width:8, height:8, borderRadius:'50%', flexShrink:0, marginTop:4,
-                  background: archetype.color,
-                  boxShadow:`0 0 8px ${archetype.color}88`,
-                }}/>
-              )}
-              <span style={{
-                fontFamily:'Cinzel, serif', fontSize:10.5, letterSpacing:'.08em',
-                padding:'3px 11px', border:`1px solid ${(archetype?.color||'#94a3b8')}55`,
-                borderRadius:14, color: archetype?.color || '#94a3b8',
-              }}>
-                {node.jungian_archetype}
-              </span>
-            </div>
-            {archetype && (
-              <p style={{ margin:`${SP.tight}px 0 0`, fontStyle:'italic', fontSize:14, color:'#4e5a6a', lineHeight:1.55 }}>
-                {archetype.description}
-              </p>
-            )}
-          </Section>
-        )}
-
-        {(story?.beats?.length || storyText) && (
-          <Section label={story?.beats?.length ? 'The Story in Stars' : 'Origins'} index={sectionIdx++}>
-            {story?.beats?.length && onOpenOrbit ? (
-              /* teaser + launcher — the full tale lives in the Story Orbit overlay */
-              <>
-                <p
-                  className={`story-text story-teaser ${story.beats[0].text.length > 230 ? 'clamped' : ''}`}
-                  style={{ margin:0, fontSize:15, lineHeight:1.6, color:'#bcc4d2' }}
-                >
-                  {story.beats[0].text}
-                </p>
-                <button
-                  onClick={onOpenOrbit}
-                  style={{
-                    marginTop:14, width:'100%', padding:'10px 14px', cursor:'pointer',
-                    fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.18em',
-                    color:GOLD, background:'rgba(205,184,138,.05)',
-                    border:'1px solid rgba(205,184,138,.35)', borderRadius:8,
-                    display:'flex', alignItems:'center', justifyContent:'center', gap:9,
-                    transition:'border-color .2s, background .2s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor=GOLD; e.currentTarget.style.background='rgba(205,184,138,.1)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor='rgba(205,184,138,.35)'; e.currentTarget.style.background='rgba(205,184,138,.05)' }}
-                >
-                  <span style={{ fontSize:12 }}>✦</span>
-                  ENTER THE STORY
-                  <span style={{ fontSize:9, opacity:.6 }}>{story.beats.length} chapters</span>
-                </button>
-              </>
-            ) : story?.beats?.length ? (
-              <StorySpine beats={story.beats} catColor={catColor} source={storySource} onNavigate={onNavigate} nodeId={node.id}/>
-            ) : (
-              <>
-                {storyText.split(/\n\s*\n/).map((para, i) => (
-                  <p
-                    key={i}
-                    className={i === 0 ? 'story-text' : undefined}
-                    style={{ margin: i === 0 ? 0 : `${SP.tight}px 0 0`, fontSize:15.5, lineHeight:1.65, color:'#bcc4d2' }}
-                  >
-                    {para}
-                  </p>
-                ))}
-                {storySource && (
-                  <p style={{ margin:`${SP.tight}px 0 0`, fontStyle:'italic', fontSize:12, color:'#3a4354', letterSpacing:'.02em' }}>
-                    — {storySource}
-                  </p>
-                )}
-              </>
-            )}
-          </Section>
-        )}
-
-        {node.domains?.length > 0 && (
-          <Section label="Domains" index={sectionIdx++}>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:6 /* dense inline tags — one notch under SP.tight */ }}>
-              {node.domains.map(d => (
-                <span key={d} style={{
-                  fontSize:12.5, fontStyle:'italic', color:'#5c6678',
-                  border:'1px solid #1c2333', borderRadius:5, padding:'2px 9px',
-                  background:'#0c1018',
-                }}>{d}</span>
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {node.notable_myths?.length > 0 && (
-          <Section label="Myths" index={sectionIdx++}>
-            <ul style={{ listStyle:'none', margin:0, padding:0, display:'flex', flexDirection:'column', gap:SP.tight }}>
-              {node.notable_myths.map(m => {
-                const famous = _famousMyths.has(m)
-                return (
-                  <li key={m} style={{ display:'flex', gap:9, fontSize:14, color:'#4e5a6a', lineHeight:1.45 }}>
-                    <span style={{ color: famous ? GOLD : '#4a4030', fontSize: famous ? 9 : 8, marginTop:5, flexShrink:0, textShadow: famous ? `0 0 6px ${GOLD}55` : 'none' }}>✦</span>
-                    <span style={{ color: famous ? '#bcc4d2' : '#6a7585' }}>{m}</span>
-                  </li>
-                )
-              })}
-            </ul>
-          </Section>
-        )}
-
-        {node.symbols?.length > 0 && (
-          <Section label="Symbols" index={sectionIdx++}>
-            <p style={{ fontStyle:'italic', fontSize:13, color:'#3a4354', margin:0, letterSpacing:'.04em' }}>
-              {node.symbols.join('  ·  ')}
-            </p>
-          </Section>
-        )}
-
-        {connections.length > 0 && (
-          <Section label={`Connections · ${connections.length}`} index={sectionIdx++}>
-            <div style={{ display:'flex', flexDirection:'column', gap:4 /* padded rows already carry 7px of internal space */ }}>
-              {connections.map((c, i) => {
-                const lc  = LCOL[c.type] || '#888'
-                const cfg = linkTypeConfig[c.type] || {}
-                return (
-                  <button key={i} onClick={() => onNavigate(c.other.id)}
-                    style={{
-                      display:'flex', gap:10, width:'100%', textAlign:'left',
-                      background:'none', border:'none', cursor:'pointer',
-                      padding:'7px 6px', borderRadius:7, transition:'.13s', alignItems:'stretch',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background='#0e1320'}
-                    onMouseLeave={e => e.currentTarget.style.background='none'}
-                  >
-                    <span style={{
-                      width:2.5, borderRadius:2, flexShrink:0, alignSelf:'stretch',
-                      background:lc, boxShadow:`0 0 5px ${lc}44`,
-                    }}/>
-                    <span style={{ display:'flex', flexDirection:'column', gap:1, minWidth:0 }}>
-                      <span style={{ fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.08em', color:lc }}>
-                        {(c.dir === '←' ? cfg.inverseLabel : cfg.label) || c.type}
-                      </span>
-                      <span style={{
-                        fontFamily:'Cinzel, serif', fontSize:13.5, lineHeight:1.2,
-                        color: CAT[c.other.category] || '#94a3b8',
-                      }}>
-                        {c.other.name}
-                      </span>
-                      {c.label && (
-                        <span style={{ fontStyle:'italic', fontSize:12, color:'#3a4354', lineHeight:1.3 }}>
-                          {c.label}
-                        </span>
-                      )}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          </Section>
-        )}
 
       </div>
-    </div>
+    </>
   )
 }
