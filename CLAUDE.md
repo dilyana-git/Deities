@@ -38,7 +38,7 @@ src/
 │   ├── ZodiacSky.jsx              # Full-screen zodiac view — auto-advancing carousel with caption panel + glyph strip
 │   └── ZodiacSphere.jsx           # Interactive 3D-projected celestial globe of all 12 zodiac constellations
 └── data/
-    ├── mythology.js               # nodes[] (116 nodes) + links[] (208 links) — the entire dataset
+    ├── mythology.js               # nodes[] (137 nodes) + links[] (256 links) — the entire dataset
     ├── deityStories.js            # Original prose retellings keyed by node id ({ story, source, beats? })
     ├── tours.js                   # Guided tour narratives — 11 tours with { id, title, kicker, beats: [{ fig, text }] }
     ├── zodiac.js                  # 12 zodiac signs with myth text, star coordinates, element accents
@@ -135,17 +135,34 @@ SkyGraph ──onSelect(id) callback──▶ App.setSelectedId(id) ──▶ <D
 **Selection/hover are CSS-class driven.** SkyGraph toggles `lit` / `faded` / `selected` / `route` / `focusing` classes on node `<g>` and link `<line>` selections; `index.css` styles the rest. `pathLock` (path-finder active) and `tourLock` (guided tour active) suppress hover so those modes stay stable.
 
 **Force config** (`SkyGraph.jsx`):
-- `forceLink` distance **66**, strength **0.23**
+- `forceLink` distance **`52 + (r(source) + r(target)) * 0.55`** (size-aware — see the tier table), strength **0.23**
 - `forceManyBody` strength **-250**, `distanceMax` 480
 - **`clusterForce` 0.065** — custom force pulling each node toward its category's anchor, so categories settle into constellations
 - **`domeForce` 0.6** — soft ellipse containment: nodes past ρ 0.92 of the `DOME` ellipse get pulled back, keeping the field's silhouette circular
-- `forceCollide` radius + 26, strength 0.92
+- `forceCollide` radius + **per-tier padding** (`COLLIDE_PAD` = 18/20/13), strength 0.92
 - `alphaDecay` 0.028
 - Pre-settles with 160 synchronous `sim.tick()`s, then the sim idles (a drag re-energises it)
 
 **Celestial dome** (`DOME` in `SkyGraph.jsx`): the start-page field is shaped like a night sky projected on a sphere. Category `ANCHOR`s are remapped onto an ellipse (`DOME_ANCHOR`, outermost at ρ ≈ 0.8), `domeForce` keeps the silhouette elliptical, and after the pre-settle a **fisheye bake** (`ρ' = sin(ρA)/sin(A)`, A = 1.15) is written into `d.x/d.y` once — the mid-field bulges and the rim compresses like a star globe seen face-on. Because the warp is baked into positions, every consumer (camera, hover, drag, labels, tours, path-finder) works in one coordinate space. A `dome-grid` layer draws the planisphere furniture: sky glow, declination rings, meridian spokes, glowing horizon ring with degree ticks, and a tilted dashed gold ecliptic.
 
-**Renown / node size:** `prom = sqrt(degree) / sqrt(maxDegree)`; `radius = 2.4 + Math.pow(prom, 1.3) * 17`. More-connected figures are larger and brighter. This formula is recomputed wherever needed (SkyGraph, DetailPanel, App's autocomplete) — keep them in sync if you change it.
+**Renown / node size — three discrete tiers, not one curve.** `prom = sqrt(degree) / sqrt(maxDegree)` still ranks the figures, but size is a **step function**: 137 stars on a continuous curve all land in a mushy middle band and average into texture, leaving the eye nowhere to settle.
+
+| tier | membership | count | radius | portrait | label at rest |
+|---|---|---|---|---|---|
+| **1 primary** | top `PRIMARY_COUNT` (12) by degree | 12 | 30 → 44 | yes | **always** |
+| **2 secondary** | degree 3–8 | 63 | 8 → 12 | yes | no — at `#sky.zoomed-mid` |
+| **3 tail** | degree ≤ 2 | 62 | 3.4 flat | **no** | no — at `#sky.zoomed-in` |
+
+Tier 1 is **rank-based** (top N) so the count stays at a dozen as the dataset grows; 2/3 split on degree, where the distribution has its own shelf. Within tiers 1 and 2 a gentle `prom` ramp keeps figures distinguishable, normalised against **that tier's own prom span** (`tierBand`) so no tier collapses to a single size when the data shifts — but the ramps never approach each other, so tier membership reads at a glance.
+
+`n.tier` (1/2/3) is the source of truth; **`n._tier`** ('primary'/'secondary'/'tail') is a derived string alias read by the lineage trace, band-label repulsion and portrait scheduling.
+
+Consequences worth knowing before you touch it:
+- **Tier 3 gets no `<image>` at all** (`gNode.filter(d => d.tier !== 3)`). A portrait inside a 3.4px dot is an unreadable smudge and 62 of them are noise; those figures keep their art in the DetailPanel. ~50 tail figures have portraits on disk that deliberately never appear on the map.
+- **Selection grows to an absolute radius, not a multiplier** (`selRadius`) — `×1.7` on a 3.4px dot is still invisible, so tail dots jump to 13 while primaries only go ×1.3. `sizeNode(id, grown)` takes a **boolean**, not a scale.
+- **Forces follow the glyph.** Link distance is `52 + (r(source) + r(target)) * 0.55` and collide padding is per-tier (`COLLIDE_PAD` 18/20/13) — the old flat `distance(66)` + `radius + 26` assumed one node size and, at a 13× spread, starves the primaries while the tail hoards space. Net field density actually *drops* (~72% → ~46%), because shrinking 62 tail nodes frees more than the 12 primaries take.
+
+`prom` itself is recomputed in DetailPanel and App's autocomplete for their own scales — those are independent of the graph radius and don't need to match it.
 
 ## Background Layer Stack
 
@@ -173,7 +190,7 @@ Each node `<g>` stacks: a blurred `glow` circle (`#glow` filter), a gold `sel-ha
 - Selection/route emphasis is **light, not a frame**: `.sel-halo` (a blurred gold disc behind the core) breathes via `@keyframes gold-bloom` and leaks through the portrait's faded edges as a rim-light.
 - The portrait `<image>` stays at opacity 0 until a candidate actually loads (otherwise the browser paints a broken-image glyph while the chain walks its 404s), and its `href` is set lazily by `loadPortraits()` so ~100 mostly-missing portraits don't fire a request/404 storm during the opening ignition.
 - Candidate URLs come from **`portraitSources(id, preferFull)`** (exported from `SkyGraph.jsx`, shared with `DetailPanel`): both folders (`/portraits/` and the legacy `/deities/`) × three name styles (`{id}-head`, `{id}-full`, `{id}`) × three formats (`.webp`, `.png`, `.jpg`). An `onerror` handler walks the chain, then removes the `<image>` (leaving the bare star) if none exist.
-- Always-on; no toggle. Nodes with `degree === 0` get `.nolabel`; `prom > 0.55` get `.prominent` (brighter label).
+- Always-on; no toggle — but **only for tiers 1 and 2** (see the tier table above; tier 3 has no `<image>` element at all). Nodes carry `.tier-1` / `.tier-2` / `.tier-3`, which drive both label visibility and the lit-state scale; `degree === 0` additionally gets `.nolabel`.
 
 ## Detail Panel — "Colossus"
 
@@ -265,7 +282,8 @@ Edit `src/data/mythology.js` (nodes/links) and optionally add a matching `src/da
 |---|---|
 | `.node` + `.lit` / `.faded` / `.selected` / `.route` | Per-node highlight states toggled by SkyGraph (hover, selection, path/tour routes) |
 | `.nodes.focusing` | Dims the field while one node + neighbors are emphasized |
-| `.node.prominent` / `.node.nolabel` | High-renown label boost / hide label for isolated nodes |
+| `.node.tier-1` / `.tier-2` / `.tier-3` | Renown tier — primaries (permanent 15px label), secondaries (label at `zoomed-mid`), tail dots (label at `zoomed-in`, and a harder `scale(2.8)` when lit so 3.4px dots read inside a constellation) |
+| `.node.nolabel` | Hide label entirely for isolated (`degree === 0`) nodes |
 | `.cluster-label` | Category constellation labels above each cluster |
 | `.node-label` | Per-node name text |
 | `.star` / `.flare` | Background starfield dots and twinkling glow-bloom (`@keyframes star-flare`) |

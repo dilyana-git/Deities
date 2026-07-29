@@ -111,32 +111,58 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const maxDeg = Math.max(...nodes.map(n => n.degree))
     nodes.forEach(n => { n.prom = Math.sqrt(n.degree) / Math.sqrt(maxDeg) })
 
-    /* ── three explicit size tiers ─────────────────────────────────────
-       A continuous size curve averages ~116 stars into an even texture with
-       nowhere for the eye to land. Instead the field is cut into three
-       DISCRETE registers so a glance reads the hierarchy at once:
-         · primary   — the dozen most-connected figures, rendered 3–4× larger
-                        with permanent labels and portraits (the anchors)
-         · secondary — everyone still woven into several myths: solid
-                        family-coloured discs at the old default size, unlabeled
-         · tail       — leaves and near-isolates: plain little dots
-       The gap between tiers is deliberate — a primary is unmistakably a
-       primary, not merely a slightly bigger secondary. */
+    /* ── three tiers of renown ──────────────────────────────────────
+       ~137 stars drawn on one continuous size curve average out into
+       texture: almost everything lands in a mushy middle band and the eye
+       has nowhere to settle. So the field is cut into three discrete
+       registers instead, with a visible gap between each.
+
+         1  PRIMARY    — the 12 most-connected figures. 3-4x a secondary,
+                         portrait, permanent label. The landmarks.
+         2  SECONDARY  — the working middle (degree 3-8). Today's size and
+                         portrait; label only on zoom / hover / selection.
+         3  TAIL       — degree <= 2. A plain dot: no portrait, no label.
+                         The sky the constellations are drawn on.
+
+       Tier 1 is rank-based (top N) rather than a degree cutoff so the count
+       stays at a dozen as the dataset grows; 2/3 split on degree, where the
+       distribution has its own shelf (29 nodes at degree 3, 40 at degree 2). */
     const PRIMARY_COUNT = 12
-    const byDegDesc = nodes.slice().sort((a, b) => b.degree - a.degree || a.id.localeCompare(b.id))
-    const primarySet = new Set(byDegDesc.filter(n => n.degree > 0).slice(0, PRIMARY_COUNT).map(n => n.id))
-    nodes.forEach(n => {
-      n._tier = primarySet.has(n.id) ? 'primary'
-              : n.degree <= 1        ? 'tail'
-              :                        'secondary'
-    })
-    /* discrete radius per tier (a little in-tier variation by renown so a
-       primary still out-sizes a primary, but the tiers never overlap) */
-    function radius(n) {
-      if (n._tier === 'primary')   return 19 + Math.pow(n.prom, 1.15) * 10   // ~19–29
-      if (n._tier === 'secondary') return 6.5 + n.prom * 2.6                 // ~7–9
-      return 3.0                                                             // plain dots
+    const promRank     = nodes.map(n => n.prom).sort((a, b) => b - a)
+    const hubThreshold = promRank[Math.min(PRIMARY_COUNT - 1, promRank.length - 1)] || 0.4
+    nodes.forEach(n => { n.tier = n.prom >= hubThreshold ? 1 : n.degree >= 3 ? 2 : 3 })
+
+    /* String alias for the same three registers. The lineage trace, band-label
+       repulsion and portrait scheduling all read the tier by name; keeping one
+       derived alias means there is still a single source of truth (`n.tier`). */
+    const TIER_NAME = { 1: 'primary', 2: 'secondary', 3: 'tail' }
+    nodes.forEach(n => { n._tier = TIER_NAME[n.tier] })
+
+    /* Size is a step function, not a curve. Tiers 1 and 2 keep a gentle prom
+       ramp inside themselves so figures stay distinguishable, but the ramps
+       never approach each other: the largest secondary (12) stays under half
+       the smallest primary (30), and a typical secondary (~9) sits a clean
+       3.4x below a typical primary, so tier reads at a glance rather than
+       having to be inferred from a size two neighbours apart.
+       Each ramp is normalised against its tier's OWN prom span, so no tier
+       collapses to a single size when the data shifts. */
+    const TIER_R = { 1: [30, 44], 2: [8, 12], 3: [3.4, 3.4] }
+    const tierBand = {}
+    for (const t of [1, 2, 3]) {
+      const ps = nodes.filter(n => n.tier === t).map(n => n.prom)
+      tierBand[t] = ps.length ? [Math.min(...ps), Math.max(...ps)] : [0, 1]
     }
+    const radius = n => {
+      const [lo, hi]   = TIER_R[n.tier]
+      const [pLo, pHi] = tierBand[n.tier]
+      const t = pHi > pLo ? (n.prom - pLo) / (pHi - pLo) : 0
+      return lo + t * (hi - lo)
+    }
+
+    /* Selection has to stay legible for a 3.4px tail dot, so a grown node
+       targets an absolute radius rather than a flat multiplier — primaries
+       barely need to move, tail dots need to become visible marks. */
+    const selRadius = n => n.tier === 3 ? 13 : radius(n) * (n.tier === 1 ? 1.3 : 1.7)
 
     /* portrait half-width as a multiple of the node radius — portraits spread
        beyond the star and fade into the sky (see the `portrait-mask` in defs)
@@ -521,12 +547,18 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     }
 
     /* ── simulation ─────────────────────────────────────────────── */
+    /* Personal space per tier. The old flat +26 was label clearance for a
+       field where every node was roughly one size; with a 13x spread between
+       a primary and a tail dot it has to follow the glyph, or the primaries
+       have no room to stand and the tail wastes the space they need. */
+    const COLLIDE_PAD = { 1: 18, 2: 20, 3: 13 }
     const sim = d3.forceSimulation(nodes)
-      .force('link',    d3.forceLink(links).id(d => d.id).distance(66).strength(0.23))
+      .force('link',    d3.forceLink(links).id(d => d.id)
+        .distance(l => 52 + (radius(l.source) + radius(l.target)) * 0.55).strength(0.23))
       .force('charge',  d3.forceManyBody().strength(-250).distanceMax(480))
       .force('cluster', clusterForce(0.065))
       .force('dome',    domeForce(0.6))
-      .force('collide', d3.forceCollide().radius(d => radius(d) + 26).strength(0.92))
+      .force('collide', d3.forceCollide().radius(d => radius(d) + COLLIDE_PAD[d.tier]).strength(0.92))
       .alpha(1).alphaDecay(0.028)
 
     /* ── links ──────────────────────────────────────────────────── */
@@ -608,23 +640,16 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     }
 
     /* ── nodes ──────────────────────────────────────────────────── */
-    /* hub-only labels at default zoom: only the top ~10 most-connected figures
-       get visible labels initially. The rest appear on zoom-in (CSS rule on
-       #sky.zoomed-in) or on hover/selection. The threshold is set dynamically
-       so it always picks roughly 10-12 hubs regardless of data changes. */
-    const promValues = nodes.map(n => n.prom).sort((a, b) => b - a)
-    const hubThreshold = promValues[Math.min(11, promValues.length - 1)] || 0.4
-
+    /* Labels follow the tiers: only the 12 primaries are labelled at rest.
+       Secondaries appear at #sky.zoomed-mid, the tail only at #sky.zoomed-in
+       — so the resting field carries a dozen names, not a hundred, and zoom
+       is what buys detail. Hover and selection override all of it (CSS). */
     const gNode = nodeLayer.selectAll('g').data(nodes).join('g')
       .attr('class', 'node')
-      .classed('tier-primary',   d => d._tier === 'primary')
-      .classed('tier-secondary', d => d._tier === 'secondary')
-      .classed('tier-tail',      d => d._tier === 'tail')
-      /* label registers keyed off the tiers: primaries carry permanent
-         labels, secondaries reveal theirs on zoom/hover, the tail stays mute */
-      .classed('prominent', d => d._tier === 'primary')
-      .classed('mid-label', d => d._tier === 'secondary')
-      .classed('nolabel',   d => d._tier === 'tail')
+      .classed('tier-1',  d => d.tier === 1)
+      .classed('tier-2',  d => d.tier === 2)
+      .classed('tier-3',  d => d.tier === 3)
+      .classed('nolabel', d => d.degree === 0)
       .style('cursor', 'pointer')
       .on('click',      (e, d) => { e.stopPropagation(); api.select(d.id, true) })
       .on('mouseenter', (e, d) => hoverOn(d))
@@ -637,7 +662,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     /* hub breathing — the top ~5 nodes are gravitational centers; they get a
        dedicated slow pulse (radius + opacity over ~4s) that reads as a beacon
        even before any interaction. Separate from the general twinkle. */
-    const hubBreathThreshold = promValues[Math.min(5, promValues.length - 1)] || 0.6
+    const hubBreathThreshold = promRank[Math.min(5, promRank.length - 1)] || 0.6
 
     gNode.append('circle').attr('class','glow')
       .attr('r',        d => radius(d) * 1.25)
@@ -683,8 +708,13 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        circular crop or ring competing with the artwork. The `href` is set
        LATER, by loadPortraits(), so ~100 mostly-missing portraits don't fire
        ~390 failed requests + onerror DOM churn during the opening ignition
-       (that contention was a main source of load-time jank). */
-    gNode.append('image')
+       (that contention was a main source of load-time jank).
+
+       Tier 3 is skipped entirely: a portrait inside a 3.4px dot is an
+       unreadable smudge, and 62 of them turn the tail into noise. Those
+       figures keep their portrait where it can actually be seen — the
+       DetailPanel — and stay plain dots on the map. */
+    gNode.filter(d => d.tier !== 3).append('image')
       .attr('x',                  d => -radius(d) * IMG_SCALE)
       .attr('y',                  d => -radius(d) * IMG_SCALE)
       .attr('width',              d => radius(d) * 2 * IMG_SCALE)
@@ -708,11 +738,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        lands on an idle main thread instead of mid-animation. The onerror
        fallback chain above still resolves .png / -full variants per the
        drop-in-by-id convention. */
-    /* Portraits are the REWARD of attention, not the default state. At 18px a
-       standing figure is unreadable noise, so only the dozen primaries wear
-       their portrait at rest; every other star is a clean family-coloured disc
-       until the viewer leans in (hover) or zooms past the mid threshold. That
-       also means the opening only ever requests ~12 images, not ~116. */
+    /* Tiers 1 and 2 wear their portrait at rest — those are the stars with
+       enough glyph to carry a face. The tail has no <image> element at all, so
+       the opening requests ~75 portraits rather than one per node, and the
+       deferral above (loadPortraits fires after the ignition) is what keeps the
+       request/404 storm off the animating main thread. */
     const _portraitShown = new Set()
     function showPortrait(d) {
       if (_portraitShown.has(d.id)) return
@@ -724,18 +754,10 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     function loadPortraits() {
       if (_portraitsLoaded) return
       _portraitsLoaded = true
-      gNode.filter(d => d._tier === 'primary').each(function(d) {
+      gNode.filter(d => d.tier !== 3).each(function(d) {
         _portraitShown.add(d.id)
         d3.select(this).select('image').attr('href', portraitSources(d.id)[0])
       })
-    }
-    /* reveal a whole tier's portraits at once (used when the camera crosses the
-       zoom threshold — up close there is room for the secondaries to bloom in) */
-    let _secondaryPortraitsShown = false
-    function showSecondaryPortraits() {
-      if (_secondaryPortraitsShown) return
-      _secondaryPortraitsShown = true
-      gNode.filter(d => d._tier === 'secondary').each(function(d) { showPortrait(d) })
     }
 
     gNode.append('text').attr('class','node-label')
@@ -940,9 +962,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         zoomLayer.attr('transform', e.transform)
         svg.classed('zoomed-mid', e.transform.k > 1.0)
         svg.classed('zoomed-in', e.transform.k > 1.7)
-        /* up close, the secondaries earn their portraits — there is finally
-           room to read a face where a disc stood */
-        if (e.transform.k > 1.7) showSecondaryPortraits()
         /* cluster labels dim as you zoom in (individual names take over) */
         const clOp = e.transform.k > 1.7 ? 0.12 : e.transform.k > 1.0 ? 0.28 : 0.45
         clusterSel.attr('opacity', clOp)
@@ -1431,13 +1450,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        shared transition so they enlarge in lockstep. The portrait's soft-fade
        CSS mask is sized in percentages, so it follows the image for free.
        Physics radius is left alone, so the layout doesn't reflow. */
-    const SEL_GROW = 1.7
     let _grownId = null
-    function sizeNode(id, scale) {
+    function sizeNode(id, grown) {
       const g = gNode.filter(n => n.id === id)
       if (g.empty()) return
       const d = g.datum()
-      const r = radius(d) * scale
+      const r = grown ? selRadius(d) : radius(d)
       const t = d3.transition().duration(280).ease(d3.easeCubicOut)
       g.select('.glow').transition(t).attr('r', r * 1.25)
       g.select('.sel-halo').transition(t).attr('r', r * 1.45)
@@ -1449,9 +1467,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       g.select('.node-label').transition(t).attr('x', side > 0 ? r + 6 : -(r + 6))
     }
     function enlargeSelected(id) {
-      if (_grownId === id) return            // already correct — skip redundant transitions
-      if (_grownId) sizeNode(_grownId, 1)    // restore the previously selected node
-      if (id) sizeNode(id, SEL_GROW)
+      if (_grownId === id) return                // already correct — skip redundant transitions
+      if (_grownId) sizeNode(_grownId, false)    // restore the previously selected node
+      if (id) sizeNode(id, true)
       _grownId = id
     }
 

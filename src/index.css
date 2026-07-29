@@ -278,11 +278,24 @@ body {
   stroke-width: 3px;
   stroke-linejoin: round;
 }
-/* hub labels always visible; mid-tier on zoom; rest on deep zoom */
-.node.prominent .node-label { opacity: .68; }
-.node.mid-label .node-label { opacity: 0; transition: opacity .4s; }
-#sky.zoomed-mid .node.mid-label .node-label { opacity: .52; }
-#sky.zoomed-in  .node.mid-label .node-label { opacity: .68; }
+/* Labels are tiered with the stars. At rest only the 12 primaries are named
+   — a dozen landmarks the eye can actually hold — and they are set a step
+   larger and brighter so a name reads as belonging to a big star rather than
+   floating loose in the field. Secondaries surface at mid zoom, the tail only
+   at deep zoom: zoom is what buys detail, so the resting view stays quiet. */
+.node.tier-1 .node-label {
+  font-size: 15px;
+  opacity: .82;
+  fill: #dbe0ea;
+  letter-spacing: .01em;
+}
+.node.tier-2 .node-label { opacity: 0; transition: opacity .4s; }
+#sky.zoomed-mid .node.tier-2 .node-label { opacity: .52; }
+#sky.zoomed-in  .node.tier-2 .node-label { opacity: .68; }
+
+/* the tail: plain dots, named only when you have zoomed all the way in */
+.node.tier-3 .node-label { opacity: 0; transition: opacity .4s; font-size: 12px; }
+#sky.zoomed-in .node.tier-3 .node-label { opacity: .5; }
 
 /* portrait soft fade — dissolves each portrait's edges into the sky so the
    figure floats frameless over its star (no circular crop, no ring). A CSS
@@ -331,6 +344,12 @@ body {
   transition: transform .25s ease;
 }
 .nodes.focusing .node.lit:not(.selected) .core { opacity: 1; }
+
+/* A tail dot is 3.4px, so the shared 1.4x lit-scale leaves it invisible in a
+   constellation it genuinely belongs to. Scale the tail harder — enough for a
+   selected primary's leaf neighbours to read as stars, not specks. */
+.nodes.focusing .node.tier-3.lit:not(.selected) .core { transform: scale(2.8); }
+.nodes.focusing .node.tier-3.lit:not(.selected) .glow { transform: scale(3); }
 
 /* subtle scale on hover for immediate feedback */
 .node:hover .core,
