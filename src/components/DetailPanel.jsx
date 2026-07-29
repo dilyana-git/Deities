@@ -34,16 +34,6 @@ const _nodeMap = Object.fromEntries(allNodes.map(n => ({
 
 const GOLD = '#cdb88a'
 
-/* The atlas counts in roman numerals wherever it counts at all — chapters,
-   bonds, the overflow on a truncated list. */
-const _ROMAN = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],
-                [50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']]
-function roman(n) {
-  let out = ''
-  for (const [v, s] of _ROMAN) while (n >= v) { out += s; n -= v }
-  return out
-}
-
 /* ── holographic sigil ───────────────────────────────────────────────────
    Rotating 3D constellation projected above an emitter dais, shown in the
    figure's place when a node has no portrait. The hero star sits at the axis;
@@ -203,8 +193,9 @@ function Portrait({ nodeId, onLoaded }) {
 
 /* ── label → value row ───────────────────────────────────────────────────
    Same skeleton for every row — a Cinzel label on the left, dot-joined
-   values on the right, truncated with the remainder counted in roman — but
-   two registers, set by the group the row sits in (.col-rows-attr /
+   values on the right, truncated with the remainder spelled out ("+2 more")
+   so the count reads as information, not decoration — but two registers, set
+   by the group the row sits in (.col-rows-attr /
    .col-rows-nav in index.css). Attributes are italic, small and tight;
    navigation stands upright, larger, and underlines on hover, because those
    are the only lines you can press. Five identical italic rows read as a
@@ -228,7 +219,7 @@ function Row({ label, items, max = 4, emphasize, onPick, titleFor }) {
         {rest > 0 && (
           <>
             <span className="col-sep">&nbsp;·&nbsp;</span>
-            <span className="col-more">+{roman(rest)}</span>
+            <span className="col-more">+{rest} more</span>
           </>
         )}
       </span>
@@ -340,15 +331,19 @@ function PanelContent({ node, onClose, onNavigate, onOpenOrbit, onOpenTale }) {
       <div className="col-type">
 
         <div className="col-main panel-section" style={{ animationDelay:'.08s' }}>
+          {/* the eyebrow's accent is GOLD like the rest of the panel's chrome —
+              the family's coral/violet/etc. lives on the figure aura and the
+              map, not orphaned on a single glyph here. The rule is the LAST
+              child so it always runs to the measure's right edge — the same
+              column boundary the CTA below shares. */}
           <div className="col-eyebrow">
-            <span style={{ color:catColor, fontSize:9, lineHeight:1 }}>✦</span>
+            <span style={{ color:GOLD, fontSize:9, lineHeight:1 }}>✦</span>
             <span style={{
               fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.34em',
               color:'#a2916a', whiteSpace:'nowrap',
             }}>
               {(catCfg.label || node.category).toUpperCase()}
             </span>
-            <span className="col-eyebrow-rule"/>
             {node.roman_equivalent && (
               <span style={{
                 fontFamily:"'EB Garamond', Georgia, serif", fontStyle:'italic',
@@ -357,6 +352,7 @@ function PanelContent({ node, onClose, onNavigate, onOpenOrbit, onOpenTale }) {
                 ≡ {node.roman_equivalent}
               </span>
             )}
+            <span className="col-eyebrow-rule"/>
           </div>
 
           {/* Cinzel renders lowercase as small caps and runs ~0.71em per glyph
@@ -401,6 +397,9 @@ function PanelContent({ node, onClose, onNavigate, onOpenOrbit, onOpenTale }) {
             </div>
           </div>
 
+          {/* the panel's primary action — a real, bordered hit area (not a
+              caption), spanning the full measure so its right border lands on
+              the same column boundary as the eyebrow rule above it */}
           {canOrbit && (
             <button className="col-enter" onClick={onOpenOrbit}>
               <span style={{ color:GOLD, fontSize:11 }}>✦</span>
@@ -415,7 +414,7 @@ function PanelContent({ node, onClose, onNavigate, onOpenOrbit, onOpenTale }) {
                 fontFamily:'Cinzel, serif', fontSize:9.5, letterSpacing:'.2em',
                 color:'#8c7d59', whiteSpace:'nowrap',
               }}>
-                {roman(beats.length)} CHAPTERS
+                {beats.length} CHAPTERS
               </span>
             </button>
           )}
