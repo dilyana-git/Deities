@@ -2,6 +2,6 @@ node_modules/
 dist/
 .DS_Store
 *.local
-public/
-# high-res portrait originals; served webp tiers are generated into public/portraits
+# high-res portrait originals stay local; the webp tiers generated into
+# public/portraits ARE tracked, because the host builds from the repo
 portraits-src/
