@@ -12,6 +12,13 @@ npm run preview  # Preview built output
 
 No test runner or linter is configured. `npm run build` is the only correctness gate — run it after editing data or components to catch broken imports/references.
 
+## Deployment
+
+Vercel, building from GitHub: every push to `claude/theogony-mythology-graph-79uv2` (the repo's default branch) redeploys production at **https://deities.vercel.app**. The per-deployment URLs (`deities-<hash>-dilyana.vercel.app`) sit behind Vercel login. The host builds from the repo, so `public/portraits/` and the portrait manifest are **tracked** — commit them after running the generator.
+
+- **`vercel.json` sets browser caching.** `/assets/*` is content-hashed by Vite, so it is `immutable` for a year. `/portraits/*` is **not** hashed, so it gets `max-age=86400`: a regenerated portrait can take up to a day to reach a returning visitor — hard-refresh (Ctrl+F5) to check one. Don't drop the portrait header: the panel's hero warming depends on it (see Portrait loading).
+- **`server.allowedHosts: ['.vercel.run']`** in `vite.config.js` lets the dev server answer inside a Vercel Sandbox preview. It affects `npm run dev`/`preview` only — production is static files.
+
 ## Stack
 
 | Layer | Tech |
@@ -261,6 +268,8 @@ Each node `<g>` stacks: a `glow` halo circle, a gold `sel-halo` bloom circle (in
   - **Tier 2 draws the `node` tier, tier 1 draws `head`** (`nodeVariant` in `SkyGraph`). A tier-2 star spans ~30–45 CSS px at rest and ~65–100 at the k=1.9–2.2 that `flyTo` and search land on, so the 360px crop it used to load was 16–36× the pixels it could ever show. Measured: the tier-2 sweep on a zoom-in went **1738KB → 513KB (−71%)**, with a quarter of the decode. Past ~2.5× manual zoom `node` does go soft — that is the deliberate ceiling, and the node mask (full alpha only to 55% of the box) carries most of it. Don't "fix" it with an upgrade fetch; that spends the win back on the one path nobody navigates.
   - **The 12 primaries are queued at the foot of the effect, not from `finishIgnition`.** The cosmogony is a ~13.4s film (`IGNITION_MS`) with an idle network under it, and the primaries used to wait it out — so **not one image byte was requested for the first 13.4 seconds** and the first face landed well after the sky did. Starting at t=0 is invisible either way: the `<image>` holds opacity 0 until it loads and its node is dark for most of the film. **Secondaries deliberately do not come forward with them** — `loadVisibleSecondaryPortraits` gates on `_ignitionDone`, because phase 5's parallax settle drives `zoom.transform` at k > 1 and would otherwise fire a secondary sweep mid-film that takes the four queue slots from the faces the entrance is about to reveal.
   - **`prefetchFull` warms the DetailPanel hero on hover *dwell*, not on hover.** ~180ms of rest, because pointer-crossing the field fires `hoverOn` for every node under the path and speculating on each would put megabytes of full-tier art on the wire. It is **not tier-gated** — a tail dot has no portrait on the map but opens the same panel, and is the case with nothing cached — and sits outside the portrait queue, so one speculative image can't take a slot from a face on screen. Skipped under `navigator.connection.saveData`.
+  - **The panel warms where the reader goes next.** Once its own hero's bytes arrive (or it turns out to have no art), `PanelContent` warms the heroes of its linked Bonds — `BOND_MAX` (3), the same constant that caps the row, ~700KB — through **`warmFullPortrait(id)`**, exported from `SkyGraph` at module scope so the hover dwell and the panel share one ledger and never fetch a plate twice. Never *before* the hero lands, so a warm can't slow the figure being opened. Measured on bond-to-bond navigation at 20 Mbit/s, 150ms RTT: median hero-ready **~420ms → ~100ms**, worst 1022 → 258.
+  - **Warming only pays off with the `vercel.json` cache header.** Under Vercel's default `max-age=0, must-revalidate`, a warmed plate is *still* revalidated when the panel mounts it — a 0-byte 304 that costs the whole round trip, which is most of the wait. `/portraits/*` now carries `max-age=86400` (see Deployment), so a warmed or previously-seen plate comes off disk in ~2ms.
 - Always-on; no toggle — but **only for tiers 1 and 2** (see the tier table above; tier 3 has no `<image>` element at all). Nodes carry `.tier-1` / `.tier-2` / `.tier-3`, which drive both label visibility and the lit-state scale; `degree === 0` additionally gets `.nolabel`.
 
 ## Detail Panel — "Colossus"

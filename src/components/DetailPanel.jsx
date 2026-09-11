@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { nodes as allNodes, links as allLinks } from '../data/mythology.js'
-import { CAT, portraitEntries, portraitSources, mapPortraitVariant } from './SkyGraph.jsx'
+import { CAT, portraitEntries, portraitSources, mapPortraitVariant, warmFullPortrait } from './SkyGraph.jsx'
 import { categoryConfig } from '../data/categoryConfig.js'
 import { deityStories } from '../data/deityStories.js'
 import { TOURS } from '../data/tours.js'
@@ -206,6 +206,7 @@ function HoloSigil({ node, catColor }) {
    The hero's own chain still walks full → head → node, so a damaged file
    degrades instead of blanking. */
 const FIG_FADE_MS = 500          // keep in step with .col-figure-img's transition
+const BOND_MAX = 3               // Bonds linked in the foot — and heroes warmed ahead
 
 function Portrait({ nodeId, onLoaded, onGone }) {
   const chain = portraitSources(nodeId, 'full')
@@ -381,6 +382,10 @@ function PanelContent({ node, onClose, onNavigate, onOpenOrbit, onOpenTale }) {
     .map(id => _nodeMap[id]).filter(Boolean)
     .sort((a, b) => b.degree - a.degree)
     .map(m => ({ key: m.id, label: m.name, id: m.id }))
+  /* The linked Bonds are where a reader goes next, so their heroes are warmed
+     the moment this one's bytes are in (or it turns out to have none) — never
+     sooner, so they cannot slow the figure being opened. */
+  const warmNext = () => bonds.slice(0, BOND_MAX).forEach(b => warmFullPortrait(b.id))
   const tales = ((onOpenTale && _talesByFig[node.id]) || [])
     .map(t => ({ key: t.id, label: t.title, ...t }))
 
@@ -397,7 +402,9 @@ function PanelContent({ node, onClose, onNavigate, onOpenOrbit, onOpenTale }) {
         <div className={`col-figure-in ${shaped ? 'ready' : ''}`}
           style={shaped ? { '--fig-ar': ratio.toFixed(4) } : undefined}>
           <div className="col-figure-veil">
-            <Portrait nodeId={node.id} onLoaded={setRatio} onGone={() => setNoArt(true)}/>
+            <Portrait nodeId={node.id}
+              onLoaded={r => { setRatio(r); warmNext() }}
+              onGone={() => { setNoArt(true); warmNext() }}/>
             {!shaped && (
               <div className="col-sigil">
                 <HoloSigil node={node} catColor={catColor}/>
@@ -467,7 +474,7 @@ function PanelContent({ node, onClose, onNavigate, onOpenOrbit, onOpenTale }) {
             </div>
             <div className="col-rows-nav">
               <Row
-                label="Bonds" items={bonds} max={3}
+                label="Bonds" items={bonds} max={BOND_MAX}
                 onPick={onNavigate ? b => onNavigate(b.id) : undefined}
                 titleFor={b => `Fly to ${b.label}`}
               />

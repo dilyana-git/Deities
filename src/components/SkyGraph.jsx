@@ -94,6 +94,25 @@ function portraitSources(id, prefer = 'head') {
   return portraitEntries(id, prefer).map(entry => entry.src)
 }
 
+/* Fetch a figure's 820px DetailPanel hero ahead of the click, so the panel
+   reads it back out of the browser's cache instead of the network. Module
+   scope because two callers share one ledger: the map's hover dwell (below,
+   in the effect) and the panel itself, which warms its Bonds — the figures a
+   reader goes to next. Low priority and outside the node-portrait queue, so
+   a speculative plate never takes a slot from a face on screen. */
+const _fullWarmed = new Set()
+const _saveData = typeof navigator !== 'undefined' && !!navigator.connection?.saveData
+function warmFullPortrait(id) {
+  if (!id || _saveData || _fullWarmed.has(id)) return
+  const src = portraitSources(id, 'full')[0]
+  if (!src) return
+  _fullWarmed.add(id)
+  const img = new Image()
+  img.decoding = 'async'
+  if ('fetchPriority' in img) img.fetchPriority = 'low'
+  img.src = src
+}
+
 /* ── renown tiers, at module scope ───────────────────────────────────────
    The three registers (1 primary / 2 secondary / 3 tail) fall out of the
    static dataset alone, so they are derived once here rather than inside the
@@ -1059,9 +1078,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        slot from the faces actually on screen, and the browser's own cache is
        what the panel will read it back out of. */
     const PREFETCH_DWELL_MS = 180
-    const _fullPrefetched = new Set()
     let _prefetchTimer = null
-    const _saveData = typeof navigator !== 'undefined' && navigator.connection?.saveData
 
     function cancelFullPrefetch() {
       clearTimeout(_prefetchTimer)
@@ -1072,16 +1089,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       cancelFullPrefetch()
       /* tier is irrelevant here: a tail dot has no portrait ON THE MAP but
          still opens the same panel, and is the case with nothing cached */
-      if (!d || _saveData || _fullPrefetched.has(d.id)) return
-      const src = portraitSources(d.id, 'full')[0]
-      if (!src) return
-      _prefetchTimer = setTimeout(() => {
-        _fullPrefetched.add(d.id)
-        const img = new Image()
-        img.decoding = 'async'
-        if ('fetchPriority' in img) img.fetchPriority = 'low'
-        img.src = src
-      }, PREFETCH_DWELL_MS)
+      if (!d) return
+      _prefetchTimer = setTimeout(() => warmFullPortrait(d.id), PREFETCH_DWELL_MS)
     }
 
     function loadPrimaryPortraits() {
@@ -2655,4 +2664,4 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 })
 
 export default SkyGraph
-export { CAT, LCOL, portraitEntries, portraitSources, mapPortraitVariant, cosmogonySeen }
+export { CAT, LCOL, portraitEntries, portraitSources, mapPortraitVariant, warmFullPortrait, cosmogonySeen }
