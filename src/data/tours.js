@@ -3,9 +3,16 @@
    beat names a `fig` (a real node id in mythology.js) and the line of
    narration shown while that figure's constellation is on screen. `name`,
    `epithet`, and `category` are looked up from mythology.js at render time —
-   keep this file to ids + prose so the two never drift out of sync. */
+   keep this file to ids + prose so the two never drift out of sync.
+
+   `hero` names the figure the tale follows — the one who burns at the centre
+   of the Guided Sky constellation while the chapters scatter around it, and
+   the one the reading column's "Following …" line credits. It is an editorial
+   choice, not the first beat: several tours open on the god who sets things in
+   motion rather than on their protagonist (the Argonautica opens on Hera, and
+   is Jason's). Absent, GuidedSky falls back to the first beat's figure. */
 export const TOURS = [
-  { id: 'titans', title: 'The Fall of the Titans', kicker: 'A Cosmogony',
+  { id: 'titans', title: 'The Fall of the Titans', kicker: 'A Cosmogony', hero: 'cronus',
     beats: [
       { fig: 'chaos',  text: "In the beginning there was neither earth nor sky nor sea — only Chaos, the vast and yawning dark, the first gap out of which all things would one day be drawn." },
       { fig: 'gaia',   text: "Out of that emptiness rose Gaia, the broad-breasted Earth, the firm ground beneath all that lives. From herself alone, without seed or mate, she brought forth the world's first shapes." },
@@ -15,7 +22,7 @@ export const TOURS = [
       { fig: 'zeus',   text: "That hidden child was Zeus. Grown to his strength, he forced his father to disgorge the swallowed gods, and in a ten-year war he cast the Titans down into the bottomless pit of Tartarus." },
     ] },
 
-  { id: 'night', title: 'The Children of Night', kicker: 'A Genealogy of Dread',
+  { id: 'night', title: 'The Children of Night', kicker: 'A Genealogy of Dread', hero: 'nyx',
     beats: [
       { fig: 'nyx',      text: "Nyx, the Lady of Night, is among the eldest powers of all — so ancient and so dread that even Zeus, king of the gods, feared to do anything that might cross her." },
       { fig: 'erebus',   text: "With Erebus, the deep primordial darkness, she keeps the unlit places between the worlds; and from those two shadows, strangely, came the shining Day and the bright upper air." },
@@ -25,7 +32,7 @@ export const TOURS = [
       { fig: 'eris',     text: "And Eris, Strife, the mother of quarrel and ruin — whose single golden apple, tossed unbidden among the goddesses, would one day set the whole world to war beneath the walls of Troy." },
     ] },
 
-  { id: 'gorgon', title: 'Perseus & the Gorgon', kicker: "A Hero's Tale",
+  { id: 'gorgon', title: 'Perseus & the Gorgon', kicker: "A Hero's Tale", hero: 'perseus',
     beats: [
       { fig: 'poseidon',  text: "It began with a violation: Poseidon, lord of the sea, took the lovely maiden Medusa by force within the sacred walls of Athena's own temple." },
       { fig: 'medusa',    text: "Unable to strike at a god, Athena turned her wrath upon the girl instead — and Medusa's glorious hair became a nest of hissing serpents, her gaze a thing that froze every living man to stone." },
@@ -34,7 +41,7 @@ export const TOURS = [
       { fig: 'andromeda', text: "With that same terrible head he turned a rising sea-beast to stone and freed Andromeda from her chains — becoming one of the very few heroes ever to win a happy ending." },
     ] },
 
-  { id: 'odyssey', title: 'The Long Way Home', kicker: 'An Epic Voyage',
+  { id: 'odyssey', title: 'The Long Way Home', kicker: 'An Epic Voyage', hero: 'odysseus',
     beats: [
       { fig: 'odysseus',  text: "Odysseus, cleverest of the Greeks, broke ten-walled Troy with the trick of the wooden horse — and then turned for home, where the wide sea would turn ten more years against him." },
       { fig: 'poseidon',  text: "For he had blinded the Cyclops Polyphemus, a son of Poseidon; and the sea-god swore in his fury that the wanderer would not look upon his island of Ithaca for a weary age." },
@@ -46,7 +53,7 @@ export const TOURS = [
       { fig: 'athena',    text: "Through every trial it was grey-eyed Athena, his unwavering champion, who watched over him — and won the wanderer, at the very last, his long-denied return to Ithaca." },
     ] },
 
-  { id: 'theseus', title: 'Theseus & the Labyrinth', kicker: 'A Cretan Legend',
+  { id: 'theseus', title: 'Theseus & the Labyrinth', kicker: 'A Cretan Legend', hero: 'theseus',
     beats: [
       { fig: 'poseidon', text: "Poseidon sent a magnificent white bull surging from the waves as a sign of favor to King Minos of Crete — but Minos, struck by the beast's beauty, kept it for himself instead of sacrificing it as the god demanded. For that broken promise, the sea-god's curse would fall not on the king but on his house." },
       { fig: 'minotaur', text: "In punishment, Poseidon drove the queen Pasiphae to a monstrous passion for the bull, and from that union was born the Minotaur — a creature with a man's body and a bull's black head, raging and insatiable. Minos imprisoned it in the Labyrinth, a maze so cunning that no one who entered could ever find the way out, and fed it on Athenian youths sent across the sea as tribute." },
@@ -54,7 +61,7 @@ export const TOURS = [
       { fig: 'theseus',  text: "In the deepest chamber of the maze Theseus found the bellowing Minotaur and killed it with his bare fists, then followed the thread back through the winding dark to the open air. He sailed at once with Ariadne — and left her sleeping on the shore of Naxos, his triumph forever shadowed by a betrayal he never explained. The hero who conquered the labyrinth could not find his way through his own heart." },
     ] },
 
-  { id: 'argonautica', title: 'Jason & the Golden Fleece', kicker: 'A Quest for Glory',
+  { id: 'argonautica', title: 'Jason & the Golden Fleece', kicker: 'A Quest for Glory', hero: 'jason',
     beats: [
       { fig: 'hera',            text: "Hera, queen of the gods, loathed the usurper King Pelias for failing to honor her shrine. She set young Jason upon an errand she meant to be his death — to sail beyond the edge of the known world and bring back the Golden Fleece that hung in a sacred grove in far Colchis, guarded by a dragon that never slept." },
       { fig: 'jason',           text: "But Jason did not go alone. He gathered the greatest heroes of the age — Heracles, Orpheus, Castor and Polydeuces, Atalanta — aboard the ship Argo, and sailed east into waters no Greek had crossed before. Through the Clashing Rocks that ground ships to splinters, past the war-like Amazons and the bronze-beaked Stymphalian birds, all the way to Colchis at the far shore of the Black Sea." },
@@ -62,7 +69,7 @@ export const TOURS = [
       { fig: 'colchian_dragon', text: "By her drugs and her whispered charms, Medea lulled the sleepless Colchian dragon — coiled a hundred times about the sacred oak — into its first and only slumber. Jason lifted the gleaming Fleece from the bough while the great serpent's eyes closed at last, and the quest that was meant to kill him became the glory that made his name." },
     ] },
 
-  { id: 'labours', title: 'The Labours of Heracles', kicker: 'Twelve Trials',
+  { id: 'labours', title: 'The Labours of Heracles', kicker: 'Twelve Trials', hero: 'heracles',
     beats: [
       { fig: 'heracles',       text: "Driven to madness by the unrelenting hatred of Hera, Heracles killed his own wife Megara and their children with his bare hands, not knowing what he did until the blood was already on the floor. To purge that unspeakable horror, the Oracle at Delphi bound him to twelve impossible labours in service to his cousin Eurystheus — a man far lesser than himself, which was precisely the punishment." },
       { fig: 'nemean_lion',    text: "The first labour sent him against the Nemean Lion, a monstrous beast whose golden hide turned aside every blade, every arrow, every spear. Finding no weapon in the world that could pierce it, Heracles tracked the lion to its cave, blocked the second entrance with a boulder, and strangled it with his bare arms. He skinned the beast with its own claws and wore the impenetrable pelt as armor for the rest of his life." },
@@ -72,7 +79,7 @@ export const TOURS = [
       { fig: 'cerberus',       text: "And for the last and hardest labour, Heracles descended living into the realm of the dead — past the river Styx, past the shades of the unburied, past the judges and the fields of asphodel — and with nothing but his lion-skin and his own strength, he seized Cerberus, the three-headed guardian of the underworld, and dragged the howling beast up into the light of day. Even Hades stood aside. The man who had begun in madness and blood ended his labours at the very threshold of death, and walked back out." },
     ] },
 
-  { id: 'metamorphoses', title: 'Bodies Changed', kicker: 'Tales of Transformation',
+  { id: 'metamorphoses', title: 'Bodies Changed', kicker: 'Tales of Transformation', hero: 'daphne',
     beats: [
       { fig: 'daphne',   text: "Fleeing the god Apollo through the woods, the nymph Daphne begged the earth to take from her the beauty that doomed her — and felt bark close over her heart as she became the laurel tree." },
       { fig: 'io',       text: "Io, loved by Zeus and hidden in the shape of a white heifer, was given no rest by jealous Hera, who set a single stinging fly to drive her wandering across the whole width of the world." },
@@ -82,7 +89,7 @@ export const TOURS = [
       { fig: 'scylla',   text: "And Scylla, a sea-nymph poisoned by a rival's envy, watched in horror as a ring of baying dogs burst howling from her waist — and became the six-mouthed terror that haunts the strait." },
     ] },
 
-  { id: 'brood', title: 'The Brood of Typhon', kicker: 'A Lineage of Monsters',
+  { id: 'brood', title: 'The Brood of Typhon', kicker: 'A Lineage of Monsters', hero: 'typhon',
     beats: [
       { fig: 'typhon',         text: "Typhon, the last and most terrible child of Gaia, was storm-born and crowned with a hundred serpent heads that spoke in the voices of every beast. So vast was he that his head scraped the stars and his outstretched arms touched east and west at once, and when he rose against Olympus the gods themselves fled in terror — all but Zeus, who stood alone against him with nothing but his thunderbolts and the desperate courage of a king who knows that if he falls, everything falls." },
       { fig: 'echidna',        text: "With Echidna he made his den — she who was half a lovely dark-eyed woman from the waist up and half a monstrous speckled serpent from the waist down, dwelling in a cave beneath the earth far from gods and men. Together, in that sunless place, they sired the whole brood of horrors that the heroes of later ages would be born to hunt and to kill — a lineage of monsters that would test the courage of every generation." },
@@ -92,7 +99,7 @@ export const TOURS = [
       { fig: 'sphinx',         text: "And the Sphinx, most cunning of the brood — lion-bodied, eagle-winged, and woman-faced — who crouched on a rock before the gates of Thebes and put a riddle to every traveler who sought to pass. None could answer it, and she strangled them all, one by one, until young Oedipus came and spoke the word 'man' — and the Sphinx, undone by the simplest truth, hurled herself from the cliff and was broken on the rocks below." },
     ] },
 
-  { id: 'phorcys', title: 'The House of Phorcys & Ceto', kicker: 'A Genealogy of Terror',
+  { id: 'phorcys', title: 'The House of Phorcys & Ceto', kicker: 'A Genealogy of Terror', hero: 'phorcys',
     beats: [
       { fig: 'pontus',  text: "Pontus, the primal Sea, was born of Gaia alone before there was any sailor to cross him or any god to rule his waves — the salt deep in person, grey and unfathomable, the oldest face of the ocean. From him descends the elder bloodline of sea powers, far older than Poseidon's bright trident." },
       { fig: 'phorcys', text: "His son Phorcys, grey-bearded god of the sea's hidden dangers — the unseen reef that splits a hull, the sudden whirlpool, the dark unfathomed deep where no light reaches — took his own sister Ceto to wife. Together they kept the treacherous waters at the edge of the known world, where the maps ran out and the monsters began." },
@@ -102,7 +109,7 @@ export const TOURS = [
       { fig: 'ladon',   text: "And Ladon, the hundred-headed serpent that Hera set to guard the golden apples of the Hesperides at the sunset rim of the world. He coiled about the tree in an embrace that never loosened, and his hundred pairs of eyes took turns sleeping so that some were always open — the perfect watchman, who rested in shifts with himself. When Heracles came for the apples, even that vigilance was not enough." },
     ] },
 
-  { id: 'ovid', title: 'Tales from Ovid', kicker: 'Fables of Change',
+  { id: 'ovid', title: 'Tales from Ovid', kicker: 'Fables of Change', hero: 'narcissus',
     beats: [
       { fig: 'daphne',         text: "Daphne, fleeing Apollo's pursuit, chose to lose herself rather than be caught — and as the god's hands closed upon her, her body stiffened into the first laurel tree." },
       { fig: 'actaeon',        text: "Actaeon, a hunter who by sheer ill chance glimpsed the goddess Artemis bathing, was turned into a stag for the trespass — and run down and torn apart by his own faithful hounds." },

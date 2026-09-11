@@ -10,11 +10,17 @@ const _nodeMap = Object.fromEntries(allNodes.map(n => [n.id, n]))
 /* autoplay dwell: long enough to read the beat — base + per-character */
 const beatMs = b => 4200 + Math.min(b.text.length, 360) * 26
 
-/* walk the shared portrait candidate chain (both folders × name styles × formats) */
+/* Walk only the exact generated variants that exist for this figure. These
+   faces are drawn into orbs of 18-74px, so they ask for the 192px `node` tier
+   rather than the 360px one the primaries wear on the map. */
 function usePortrait(id) {
-  const chain = useMemo(() => portraitSources(id), [id])
-  const [idx, setIdx] = useState(0)
-  return { src: idx < chain.length ? chain[idx] : null, onError: () => setIdx(i => i + 1) }
+  const chain = useMemo(() => portraitSources(id, 'node'), [id])
+  const [attempt, setAttempt] = useState({ id, idx: 0 })
+  const idx = attempt.id === id ? attempt.idx : 0
+  return {
+    src: idx < chain.length ? chain[idx] : null,
+    onError: () => setAttempt(a => ({ id, idx: a.id === id ? a.idx + 1 : 1 })),
+  }
 }
 
 /* figure chip with a tiny portrait — falls back to the coloured dot */
@@ -165,7 +171,7 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
   const catLabel = (categoryConfig[node.category]?.label || node.category).toUpperCase()
 
   return (
-    <div className="so-root" style={{ '--accent': accent }}>
+    <div className={`so-root ${taleOpen ? 'reading' : ''}`} style={{ '--accent': accent }}>
       <div className="so-wash"/>
       {bgStars.map((s, i) => (
         <div key={i} className="so-star" style={{

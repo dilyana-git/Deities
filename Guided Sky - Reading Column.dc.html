@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,400&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; height: 100%; background: #05070c; overflow: hidden; }
+  a { color: #cdb88a; }
+  a:hover { color: #e6d2a4; }
+  @keyframes gsFade { from { opacity: 0; transform: translateY(14px); filter: blur(6px) } to { opacity: 1; transform: none; filter: blur(0) } }
+  @keyframes gsHead { from { opacity: 0; letter-spacing: .5em } to { opacity: 1 } }
+  @keyframes gsFloat { 0%, 100% { transform: translateY(-4px) } 50% { transform: translateY(5px) } }
+  @keyframes gsPulse { 0% { transform: scale(1); opacity: .55 } 70% { transform: scale(1.9); opacity: 0 } 100% { transform: scale(1.9); opacity: 0 } }
+  @keyframes gsDraw { from { stroke-dashoffset: 1 } to { stroke-dashoffset: 0 } }
+  @keyframes gsSpin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+  @keyframes gsBloom { 0% { opacity: .25 } 50% { opacity: .55 } 100% { opacity: .25 } }
+  @keyframes gsGlow { 0%, 100% { opacity: .3 } 50% { opacity: .85 } }
+  @keyframes gsShimmer { 0%, 100% { opacity: .2 } 50% { opacity: .7 } }
+  @keyframes gsInk { from { opacity: 0 } to { opacity: .85 } }
+  @keyframes gsInkB { from { opacity: 0 } to { opacity: .85 } }
+  @keyframes gsFadeB { from { opacity: 0; transform: translateY(14px); filter: blur(6px) } to { opacity: 1; transform: none; filter: blur(0) } }
+  @keyframes gsHeadB { from { opacity: 0; letter-spacing: .5em } to { opacity: 1 } }
+  @keyframes gsDrawB { from { stroke-dashoffset: 1 } to { stroke-dashoffset: 0 } }
+</style>
+</helmet>
+
+<div style="position:fixed;inset:0;font-family:'Crimson Pro',Georgia,serif;color:#d6dbe6;background:radial-gradient(120% 90% at 64% 46%,#131a2b 0%,#0a0e18 46%,#05070c 100%);overflow:hidden">
+
+  <div style="position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(1px 1px at 12% 22%,rgba(214,219,230,.5),transparent),radial-gradient(1px 1px at 28% 71%,rgba(214,219,230,.35),transparent),radial-gradient(1px 1px at 47% 14%,rgba(214,219,230,.45),transparent),radial-gradient(1px 1px at 63% 83%,rgba(214,219,230,.3),transparent),radial-gradient(1px 1px at 78% 33%,rgba(214,219,230,.5),transparent),radial-gradient(1px 1px at 88% 62%,rgba(214,219,230,.35),transparent),radial-gradient(1px 1px at 35% 44%,rgba(214,219,230,.25),transparent),radial-gradient(1px 1px at 71% 8%,rgba(214,219,230,.4),transparent),radial-gradient(1px 1px at 8% 55%,rgba(214,219,230,.3),transparent),radial-gradient(1px 1px at 55% 92%,rgba(214,219,230,.3),transparent),radial-gradient(1px 1px at 22% 38%,rgba(214,219,230,.28),transparent),radial-gradient(1px 1px at 84% 16%,rgba(214,219,230,.3),transparent)"></div>
+
+  <div style="{{ planeStyle }}">
+    <div style="position:absolute;left:6%;top:8%;width:88%;height:84%;background:radial-gradient(50% 50% at 46% 60%,rgba(122,142,190,.14) 0%,rgba(122,142,190,.05) 45%,transparent 72%);filter:blur(24px);animation:gsBloom 16s ease-in-out infinite"></div>
+
+    <sc-for list="{{ dust }}" as="s" hint-placeholder-count="9">
+      <span style="{{ s.style }}"></span>
+    </sc-for>
+
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible">
+      <polyline points="{{ allPts }}" fill="none" stroke="#39414f" stroke-width="1" stroke-dasharray="2 7" stroke-linecap="round" vector-effect="non-scaling-stroke"></polyline>
+      <polyline points="{{ tracePts }}" fill="none" stroke="#cdb88a" stroke-width="1.4" stroke-dasharray="3 8" stroke-linecap="round" vector-effect="non-scaling-stroke" style="{{ traceStyle }}"></polyline>
+    </svg>
+
+    <div style="{{ heroWrapStyle }}">
+      <div style="position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;background:radial-gradient(closest-side,rgba(205,184,138,.5) 0%,rgba(205,184,138,.16) 42%,transparent 72%);filter:blur(16px);animation:gsGlow 5.5s ease-in-out infinite;pointer-events:none"></div>
+      <div style="{{ heroOrbStyle }}"></div>
+    </div>
+
+    <sc-for list="{{ planets }}" as="p" hint-placeholder-count="8">
+      <button onClick="{{ p.go }}" style="{{ p.btnStyle }}">
+        <span style="{{ p.floatStyle }}">
+          <span style="{{ p.haloStyle }}"></span>
+          <span style="{{ p.orbStyle }}"></span>
+        </span>
+        <span style="{{ p.labelStyle }}">{{ p.label }}</span>
+      </button>
+    </sc-for>
+  </div>
+
+  <div style="position:absolute;left:0;top:0;bottom:0;width:34%;min-width:420px;max-width:560px;background:linear-gradient(90deg,rgba(5,7,12,.93) 55%,rgba(5,7,12,0) 100%);padding:clamp(22px,5.2vh,56px) 56px clamp(20px,4.4vh,48px) clamp(30px,4vw,60px);box-sizing:border-box;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:clamp(12px,2.6vh,24px);align-content:stretch">
+    <div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+      <div style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.4em;color:#8c7d59;text-transform:uppercase">{{ kicker }}</div>
+      <div style="font-family:Cinzel,serif;font-size:clamp(19px,3.1vh,29px);line-height:1.15;letter-spacing:.04em;color:#ece6d6">{{ title }}</div>
+      <div style="margin-top:clamp(2px,1vh,10px);font-family:'EB Garamond',serif;font-style:italic;font-size:clamp(12px,1.7vh,15px);color:#7e879c">Following {{ heroName }}</div>
+      <button onClick="{{ toggleTales }}" style="margin-top:clamp(4px,1.2vh,10px);align-self:flex-start;font-family:Cinzel,serif;font-size:11px;letter-spacing:.24em;color:#8c7d59;background:none;border:none;padding:0;cursor:pointer" style-hover="color:#cdb88a">OTHER STORIES ▾</button>
+    <sc-if value="{{ talesOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:2px;max-height:30vh;overflow:auto">
+        <sc-for list="{{ tales }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.go }}" style="text-align:left;background:none;border:none;padding:10px 0;cursor:pointer;display:flex;flex-direction:column;gap:3px" style-hover="opacity:.8">
+            <span style="font-family:Cinzel,serif;font-size:9px;letter-spacing:.26em;color:#8c7d59;text-transform:uppercase">{{ t.kicker }}</span>
+            <span style="{{ t.titleStyle }}">{{ t.title }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+    </div>
+
+    <div style="display:flex;flex-direction:column;justify-content:flex-start;gap:clamp(8px,1.8vh,18px);min-height:0;overflow:hidden">
+      <div style="flex:1 1 auto;min-height:0"></div>
+      <div style="{{ headStyle }}">
+        <span style="font-family:Cinzel,serif;font-size:13px;letter-spacing:.1em;color:#cdb88a">{{ numeral }}</span>
+        <span style="font-family:Cinzel,serif;font-size:15px;letter-spacing:.22em;color:#cdb88a">{{ figName }}</span>
+        <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.22em;color:#5c6678;margin-left:auto">{{ figCat }}</span>
+      </div>
+      <p style="{{ beatStyle }}">{{ beatText }}</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;min-height:0">
+      <div style="height:1px;background:rgba(126,135,156,.22);position:relative">
+        <div style="{{ progressStyle }}"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:18px">
+        <button onClick="{{ togglePlay }}" style="width:34px;height:34px;border:1px solid rgba(205,184,138,.4);border-radius:50%;color:#cdb88a;background:none;cursor:pointer;font-size:11px;font-family:inherit" style-hover="border-color:#cdb88a">{{ playGlyph }}</button>
+        <button onClick="{{ prev }}" style="font-size:20px;color:#8f98a9;background:none;border:none;cursor:pointer;padding:0 4px" style-hover="color:#cdb88a">‹</button>
+        <button onClick="{{ next }}" style="font-size:20px;color:#8f98a9;background:none;border:none;cursor:pointer;padding:0 4px" style-hover="color:#cdb88a">›</button>
+        <span style="margin-left:auto;font-family:Cinzel,serif;font-size:12px;letter-spacing:.14em;color:#5c6678">{{ counter }}</span>
+      </div>
+      <div style="font-family:'EB Garamond',serif;font-style:italic;font-size:14px;color:#4d5566">← → to move · space to play · esc to close</div>
+    </div>
+  </div>
+
+  <button style="position:absolute;right:40px;top:40px;width:38px;height:38px;border:1px solid rgba(126,135,156,.35);border-radius:50%;color:#9aa3b4;background:none;cursor:pointer;font-size:13px" style-hover="border-color:#cdb88a;color:#cdb88a">✕</button>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const NUM = ['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ']
+
+const FIGS = {
+  odysseus:  { name: 'ODYSSEUS',  cat: 'HEROES',     epithet: 'the wanderer this tale follows', img: 'img/odysseus.webp' },
+  poseidon:  { name: 'POSEIDON',  cat: 'OLYMPIANS',  epithet: 'Earth-Shaker, Lord of the Sea',   img: 'img/poseidon.webp' },
+  circe:     { name: 'CIRCE',     cat: 'SORCERERS',  epithet: 'Enchantress of Aiaia',            img: 'img/circe.webp' },
+  scylla:    { name: 'SCYLLA',    cat: 'MONSTERS',   epithet: 'the Six-Mouthed Terror',          img: 'img/scylla.webp' },
+  charybdis: { name: 'CHARYBDIS', cat: 'MONSTERS',   epithet: 'the Swallowing Deep',             img: 'img/charybdis.webp' },
+  helios:    { name: 'HELIOS',    cat: 'TITANS',     epithet: 'who sees all beneath the light',  img: 'img/helios.webp' },
+  calypso:   { name: 'CALYPSO',   cat: 'NYMPHS',     epithet: 'of the hidden isle Ogygia',       img: 'img/calypso.webp' },
+  athena:    { name: 'ATHENA',    cat: 'OLYMPIANS',  epithet: 'Grey-Eyed Goddess of Wisdom',     img: 'img/athena.webp' },
+}
+
+const TOURS = [
+  { id: 'odyssey', title: 'The Long Way Home', kicker: 'An Epic Voyage', hero: 'odysseus', beats: [
+    { fig: 'odysseus',  text: "Odysseus, cleverest of the Greeks, broke ten-walled Troy with the trick of the wooden horse — and then turned for home, where the wide sea would turn ten more years against him." },
+    { fig: 'poseidon',  text: "For he had blinded the Cyclops Polyphemus, a son of Poseidon; and the sea-god swore in his fury that the wanderer would not look upon his island of Ithaca for a weary age." },
+    { fig: 'circe',     text: "On the green isle of Aiaia the enchantress Circe touched his crew with her wand and made them swine — then, her magic broken against him, took the hero as her lover and kept him a year in her hall." },
+    { fig: 'scylla',    text: "In the narrow strait he passed six-mouthed Scylla, who reached down from her cliff and snatched six screaming men from the deck before he could so much as draw his sword." },
+    { fig: 'charybdis', text: "Across the same water her sister Charybdis swallowed the whole sea and spat it roaring back; between the two terrors there was no safe passage, and he threaded the deadly gap by a hair." },
+    { fig: 'helios',    text: "Marooned and starving, his men slaughtered the forbidden cattle of the Sun — and Helios, who sees all that is done beneath the light, swore that not one of them would ever come home." },
+    { fig: 'calypso',   text: "Wrecked and alone, the last of all his fleet, he was held seven long years by the nymph Calypso, who loved him and offered him a deathless, ageless life — which, weeping for home, he refused." },
+    { fig: 'athena',    text: "Through every trial it was grey-eyed Athena, his unwavering champion, who watched over him — and won the wanderer, at the very last, his long-denied return to Ithaca." },
+  ] },
+]
+
+const beatMs = b => 4200 + Math.min(b.text.length, 360) * 26
+
+/* Hand-set constellation: the voyage sweeps from the lower left up and across,
+   irregular on purpose — no orbit, no symmetry (see index.css "no hard strokes") */
+const POS = [
+  { x: 20, y: 74 }, { x: 32, y: 51 }, { x: 27, y: 27 }, { x: 44, y: 15 },
+  { x: 58, y: 30 }, { x: 67, y: 57 }, { x: 79, y: 73 }, { x: 88, y: 40 },
+]
+const HERO = { x: 47, y: 63 }
+
+const DUST = [
+  { x: 8, y: 34, d: 0 }, { x: 21, y: 12, d: 1.4 }, { x: 36, y: 45, d: 2.9 },
+  { x: 51, y: 84, d: 0.7 }, { x: 62, y: 12, d: 3.6 }, { x: 71, y: 40, d: 2.1 },
+  { x: 83, y: 20, d: 4.4 }, { x: 93, y: 62, d: 1.1 }, { x: 34, y: 66, d: 5.2 },
+]
+
+class Component extends DCLogic {
+  state = { tourIdx: 0, cur: 7, playing: false, talesOpen: false, seq: 0 }
+
+  componentDidMount() {
+    this._key = e => {
+      if (e.key === 'ArrowRight') this.next()
+      else if (e.key === 'ArrowLeft') this.prev()
+      else if (e.key === ' ') { e.preventDefault(); this.setState(s => ({ playing: !s.playing })) }
+      else if (e.key === 'Escape') this.setState({ talesOpen: false })
+    }
+    window.addEventListener('keydown', this._key)
+    this.tick()
+  }
+  componentDidUpdate(_, prev) {
+    if (prev.cur !== this.state.cur || prev.playing !== this.state.playing || prev.tourIdx !== this.state.tourIdx) this.tick()
+    /* flip the animation-name so each beat replays its entrance without remounting */
+    if (prev.cur !== this.state.cur || prev.tourIdx !== this.state.tourIdx) this.setState(s => ({ seq: s.seq ? 0 : 1 }))
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this._key); clearTimeout(this._t) }
+
+  tick() {
+    clearTimeout(this._t)
+    const { playing, cur } = this.state
+    const beats = TOURS[this.state.tourIdx].beats
+    if (!playing) return
+    this._t = setTimeout(() => {
+      if (cur >= beats.length - 1) this.setState({ playing: false })
+      else this.setState({ cur: cur + 1 })
+    }, beatMs(beats[cur]))
+  }
+
+  next = () => this.setState(s => ({ cur: Math.min(s.cur + 1, TOURS[s.tourIdx].beats.length - 1) }))
+  prev = () => this.setState(s => ({ cur: Math.max(s.cur - 1, 0) }))
+
+  renderVals() {
+    const { tourIdx, cur, playing, talesOpen } = this.state
+    const tour = TOURS[tourIdx]
+    const beats = tour.beats
+    const beat = beats[cur]
+    const fig = FIGS[beat.fig] || {}
+    const hero = FIGS[tour.hero] || {}
+
+    const pos = POS
+
+    const planets = beats.map((b, i) => {
+      const f = FIGS[b.fig] || {}
+      const on = i === cur
+      const told = i < cur
+      const sz = on ? 96 : 50 + ((i * 5) % 3) * 7
+      const glow = sz * 2.1
+      return {
+        btnStyle: {
+          position: 'absolute', left: pos[i].x + '%', top: pos[i].y + '%',
+          transform: 'translate(-50%,-50%)', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', gap: '10px', background: 'none', border: 'none',
+          padding: 0, cursor: 'pointer', transition: 'all .6s',
+        },
+        floatStyle: {
+          position: 'relative', display: 'block',
+          animation: 'gsFloat ' + (11 + i * 1.7) + 's ease-in-out ' + (i * -1.9) + 's infinite',
+        },
+        /* blurred bloom disc instead of a stroked ring — the project's
+           gold-bloom / node-twinkle language */
+        haloStyle: {
+          position: 'absolute', left: '50%', top: '50%', width: glow + 'px', height: glow + 'px',
+          marginLeft: -glow / 2 + 'px', marginTop: -glow / 2 + 'px', borderRadius: '50%',
+          background: on
+            ? 'radial-gradient(closest-side,rgba(205,184,138,.55) 0%,rgba(205,184,138,.18) 40%,transparent 70%)'
+            : 'radial-gradient(closest-side,rgba(160,178,214,.3) 0%,rgba(160,178,214,.08) 40%,transparent 70%)',
+          filter: 'blur(12px)', pointerEvents: 'none', transition: 'background .6s',
+          animation: (on ? 'gsGlow 2.9s' : 'gsShimmer ' + (6 + i * 0.8) + 's') +
+                     ' ease-in-out ' + (i * -1.3) + 's infinite',
+        },
+        orbStyle: {
+          display: 'block', width: sz + 'px', height: sz + 'px', transition: 'all .6s',
+          backgroundImage: f.img ? 'url("' + f.img + '")' : 'none',
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          opacity: on ? 1 : told ? 0.8 : 0.42,
+          filter: on ? 'none' : told ? 'saturate(.8)' : 'saturate(.45)',
+          /* frameless portrait: edges dissolve into the sky, as `.node image` */
+          WebkitMaskImage: 'radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%)',
+          maskImage: 'radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%)',
+        },
+        labelStyle: {
+          fontFamily: "'EB Garamond', serif", letterSpacing: '.18em', whiteSpace: 'nowrap',
+          fontSize: on ? '15px' : '13px', transition: 'color .6s, opacity .6s',
+          color: on ? '#cdb88a' : '#8b93a4', opacity: on ? 1 : told ? 0.62 : 0.34,
+        },
+        img: f.img,
+        label: NUM[i],
+        go: () => this.setState({ cur: i, playing: false }),
+      }
+    })
+
+    /* slow camera: the sheet drifts a little against the chapter in play, so
+       every advance feels like the sky turning rather than a swap */
+    const bias = pos[cur] || HERO
+    return {
+      planeStyle: {
+        position: 'absolute', left: 'clamp(420px, 34%, 560px)', right: 0, top: 0, bottom: 0,
+        transform: 'translate(' + ((HERO.x - bias.x) * 0.13).toFixed(2) + '%,' + ((HERO.y - bias.y) * 0.13).toFixed(2) + '%)',
+        transition: 'transform 2.2s cubic-bezier(.22,.61,.36,1)',
+      },
+      dust: DUST.map(s => ({
+        style: {
+          position: 'absolute', left: s.x + '%', top: s.y + '%', width: '2px', height: '2px',
+          borderRadius: '50%', background: '#e7ebf2', filter: 'blur(.4px)',
+          animation: 'gsShimmer ' + (7 + s.d) + 's ease-in-out ' + -s.d + 's infinite',
+        },
+      })),
+      planets,
+      tracePts: pos.slice(0, cur + 1).map(p => p.x.toFixed(2) + ',' + p.y.toFixed(2)).join(' '),
+      allPts: pos.map(p => p.x + ',' + p.y).join(' '),
+      heroWrapStyle: {
+        position: 'absolute', left: HERO.x + '%', top: HERO.y + '%',
+        transform: 'translate(-50%,-50%)',
+      },
+      heroOrbStyle: {
+        position: 'relative', width: '164px', height: '164px',
+        backgroundImage: hero.img ? 'url("' + hero.img + '")' : 'none',
+        backgroundSize: 'cover', backgroundPosition: 'center',
+        WebkitMaskImage: 'radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%)',
+        maskImage: 'radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%)',
+      },
+      heroName: hero.name, heroEpithet: hero.epithet,
+      kicker: tour.kicker, title: tour.title,
+      numeral: NUM[cur], figName: fig.name || beat.fig, figCat: fig.cat || '',
+      beatText: beat.text,
+      headStyle: {
+        display: 'flex', alignItems: 'baseline', gap: '12px',
+        animation: (this.state.seq ? 'gsHeadB' : 'gsHead') + ' .9s ease both',
+      },
+      beatStyle: {
+        margin: 0, fontSize: 'clamp(16px,min(1.55vw,3.1vh),27px)', lineHeight: 1.5,
+        color: '#e4e8f0', textWrap: 'pretty',
+        animation: (this.state.seq ? 'gsFadeB' : 'gsFade') + ' 1s cubic-bezier(.22,.61,.36,1) .12s both',
+      },
+      traceStyle: {
+        animation: (this.state.seq ? 'gsInkB' : 'gsInk') + ' 1.6s ease both',
+      },
+      counter: 'CHAPTER ' + (cur + 1) + ' / ' + beats.length,
+      progressStyle: {
+        position: 'absolute', left: 0, top: 0, height: '1px', background: '#cdb88a',
+        transition: 'width .5s', width: ((cur + 1) / beats.length * 100) + '%',
+      },
+      playGlyph: playing ? '❚❚' : '▶',
+      togglePlay: () => this.setState(s => ({ playing: !s.playing })),
+      toggleTales: () => this.setState(s => ({ talesOpen: !s.talesOpen })),
+      talesOpen,
+      tales: TOURS.map((t, i) => ({
+        kicker: t.kicker, title: t.title,
+        titleStyle: { fontFamily: 'Cinzel, serif', fontSize: '14px', letterSpacing: '.06em', color: i === tourIdx ? '#ece6d6' : '#8f98a9' },
+        go: () => this.setState({ tourIdx: i, cur: 0, talesOpen: false }),
+      })),
+      next: this.next, prev: this.prev,
+    }
+  }
+}
+
+</script>
+</body>
+</html>

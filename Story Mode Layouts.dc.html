@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,400&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #14161c; }
+  a { color: #cdb88a; }
+  a:hover { color: #e6d2a4; }
+</style>
+</helmet>
+
+<div style="font-family:'Crimson Pro',Georgia,serif;color:#d6dbe6;padding:56px 56px 120px;display:flex;flex-direction:column;gap:56px">
+
+  <section style="display:flex;flex-direction:column;gap:36px">
+    <div style="max-width:900px;display:flex;flex-direction:column;gap:14px">
+      <div style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.4em;color:#8c7d59;text-transform:uppercase">Guided Sky · story mode</div>
+      <div style="font-family:Cinzel,serif;font-size:26px;letter-spacing:.04em;color:#ece6d6">Three layouts for the same tale</div>
+      <p style="margin:0;font-size:19px;line-height:1.55;color:#9aa3b4;text-wrap:pretty">Today the frame is four disconnected corners: a title top-left, a picker top-right, a hint bottom-left and a boxed caption bottom-centre, with the constellation floating small in the middle and roughly 300px of dead sky between the figure and the words about it. Each option below closes that gap a different way, keeps one progress indicator instead of three, and lets the sky grow to fill the frame.</p>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start">
+
+      <div id="1a" style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;gap:14px">
+          <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.2em;color:#0a0e18;background:#cdb88a;padding:4px 9px">1a</span>
+          <span style="font-family:Cinzel,serif;font-size:15px;letter-spacing:.14em;color:#ece6d6">Reading column</span>
+          <span style="font-size:17px;color:#7e879c">Narration is a flush-left column; the sky takes the rest of the frame and grows by ~60%.</span>
+        </div>
+
+        <div style="position:relative;width:1440px;height:810px;overflow:hidden;background:radial-gradient(120% 90% at 62% 45%,#131a2b 0%,#0a0e18 46%,#05070c 100%)">
+          <div style="position:absolute;inset:0;background-image:radial-gradient(1px 1px at 12% 22%,rgba(214,219,230,.5),transparent),radial-gradient(1px 1px at 28% 71%,rgba(214,219,230,.35),transparent),radial-gradient(1px 1px at 47% 14%,rgba(214,219,230,.45),transparent),radial-gradient(1px 1px at 63% 83%,rgba(214,219,230,.3),transparent),radial-gradient(1px 1px at 78% 33%,rgba(214,219,230,.5),transparent),radial-gradient(1px 1px at 88% 62%,rgba(214,219,230,.35),transparent),radial-gradient(1px 1px at 35% 44%,rgba(214,219,230,.25),transparent),radial-gradient(1px 1px at 71% 8%,rgba(214,219,230,.4),transparent),radial-gradient(1px 1px at 8% 55%,rgba(214,219,230,.3),transparent),radial-gradient(1px 1px at 55% 92%,rgba(214,219,230,.3),transparent)"></div>
+
+          <div style="position:absolute;left:500px;top:0;width:940px;height:810px">
+            <div style="position:absolute;left:130px;top:185px;width:680px;height:420px;border:1px solid rgba(126,135,156,.18);border-radius:50%"></div>
+            <div style="position:absolute;left:255px;top:262px;width:430px;height:266px;border:1px solid rgba(126,135,156,.13);border-radius:50%"></div>
+            <svg viewBox="0 0 940 810" width="940" height="810" style="position:absolute;left:0;top:0">
+              <polyline points="411,188 593,286 805,359 646,471 529,602 347,504 135,431 294,319" fill="none" stroke="rgba(205,184,138,.34)" stroke-width="1"></polyline>
+            </svg>
+
+            <div style="position:absolute;left:470px;top:395px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:14px">
+              <div style="width:156px;height:156px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.35),0 0 70px rgba(205,184,138,.22)">
+                <img src="img/odysseus.webp" alt="" style="width:100%;height:100%;object-fit:cover">
+              </div>
+              <div style="text-align:center;display:flex;flex-direction:column;gap:5px">
+                <div style="font-family:Cinzel,serif;font-size:19px;letter-spacing:.24em;color:#f3efe4">ODYSSEUS</div>
+                <div style="font-family:'EB Garamond',serif;font-style:italic;font-size:15px;color:#7e879c">the wanderer this tale follows</div>
+              </div>
+            </div>
+
+            <div style="position:absolute;left:411px;top:188px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+              <span style="width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3),0 0 18px rgba(205,184,138,.14)"><img src="img/odysseus.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.9"></span>
+              <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#8f98a9;white-space:nowrap">Ⅰ ODYSSEUS</span>
+            </div>
+            <div style="position:absolute;left:593px;top:286px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+              <span style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3),0 0 18px rgba(205,184,138,.14)"><img src="img/poseidon.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.9"></span>
+              <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#8f98a9;white-space:nowrap">Ⅱ POSEIDON</span>
+            </div>
+            <div style="position:absolute;left:805px;top:359px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+              <span style="width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3),0 0 18px rgba(205,184,138,.14)"><img src="img/circe.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.9"></span>
+              <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#8f98a9;white-space:nowrap">Ⅲ CIRCE</span>
+            </div>
+            <div style="position:absolute;left:646px;top:471px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+              <span style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3),0 0 18px rgba(205,184,138,.14)"><img src="img/scylla.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.9"></span>
+              <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#8f98a9;white-space:nowrap">Ⅳ SCYLLA</span>
+            </div>
+            <div style="position:absolute;left:529px;top:602px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+              <span style="width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3),0 0 18px rgba(205,184,138,.14)"><img src="img/charybdis.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.9"></span>
+              <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#8f98a9;white-space:nowrap">Ⅴ CHARYBDIS</span>
+            </div>
+            <div style="position:absolute;left:347px;top:504px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+              <span style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3),0 0 18px rgba(205,184,138,.14)"><img src="img/helios.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.9"></span>
+              <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#8f98a9;white-space:nowrap">Ⅵ HELIOS</span>
+            </div>
+            <div style="position:absolute;left:135px;top:431px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+              <span style="width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3),0 0 18px rgba(205,184,138,.14)"><img src="img/calypso.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.9"></span>
+              <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#8f98a9;white-space:nowrap">Ⅶ CALYPSO</span>
+            </div>
+            <div style="position:absolute;left:294px;top:319px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:10px">
+              <span style="width:72px;height:72px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.85),0 0 44px rgba(205,184,138,.4)"><img src="img/athena.webp" alt="" style="width:100%;height:100%;object-fit:cover"></span>
+              <span style="font-family:Cinzel,serif;font-size:13px;letter-spacing:.2em;color:#f3efe4;white-space:nowrap">Ⅷ ATHENA</span>
+            </div>
+          </div>
+
+          <div style="position:absolute;left:0;top:0;width:500px;height:810px;background:linear-gradient(90deg,rgba(5,7,12,.92) 55%,rgba(5,7,12,0) 100%);padding:64px 72px 56px 64px;box-sizing:border-box;display:flex;flex-direction:column">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.4em;color:#8c7d59">AN EPIC VOYAGE</div>
+              <div style="font-family:Cinzel,serif;font-size:30px;line-height:1.15;letter-spacing:.04em;color:#ece6d6">The Long Way Home</div>
+              <button style="margin-top:10px;align-self:flex-start;font-family:Cinzel,serif;font-size:11px;letter-spacing:.24em;color:#8c7d59;background:none;border:none;padding:0;cursor:pointer" style-hover="color:#cdb88a">OTHER STORIES ▾</button>
+            </div>
+
+            <div style="margin-top:auto;display:flex;flex-direction:column;gap:20px">
+              <div style="display:flex;align-items:baseline;gap:12px">
+                <span style="font-family:Cinzel,serif;font-size:13px;letter-spacing:.1em;color:#cdb88a">Ⅷ</span>
+                <span style="font-family:Cinzel,serif;font-size:15px;letter-spacing:.22em;color:#cdb88a">ATHENA</span>
+                <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.22em;color:#5c6678;margin-left:auto">OLYMPIANS</span>
+              </div>
+              <p style="margin:0;font-size:27px;line-height:1.5;color:#e4e8f0;text-wrap:pretty">Through every trial it was grey-eyed Athena, his unwavering champion, who watched over him — and won the wanderer, at the very last, his long-denied return to Ithaca.</p>
+            </div>
+
+            <div style="margin-top:44px;display:flex;flex-direction:column;gap:16px">
+              <div style="height:1px;background:rgba(126,135,156,.22);position:relative">
+                <div style="position:absolute;left:0;top:0;height:1px;width:100%;background:#cdb88a"></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:18px">
+                <button style="width:34px;height:34px;border:1px solid rgba(205,184,138,.4);border-radius:50%;color:#cdb88a;background:none;cursor:pointer;font-size:12px" style-hover="border-color:#cdb88a">❚❚</button>
+                <button style="font-size:20px;color:#8f98a9;background:none;border:none;cursor:pointer;padding:0 4px" style-hover="color:#cdb88a">‹</button>
+                <button style="font-size:20px;color:#8f98a9;background:none;border:none;cursor:pointer;padding:0 4px" style-hover="color:#cdb88a">›</button>
+                <span style="margin-left:auto;font-family:Cinzel,serif;font-size:12px;letter-spacing:.14em;color:#5c6678">CHAPTER 8 / 8</span>
+              </div>
+              <div style="font-family:'EB Garamond',serif;font-style:italic;font-size:14px;color:#4d5566">← → to move · space to play · esc to close</div>
+            </div>
+          </div>
+
+          <button style="position:absolute;right:40px;top:40px;width:38px;height:38px;border:1px solid rgba(126,135,156,.35);border-radius:50%;color:#9aa3b4;background:none;cursor:pointer;font-size:13px" style-hover="border-color:#cdb88a;color:#cdb88a">✕</button>
+        </div>
+      </div>
+
+      <div id="1b" style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;gap:14px">
+          <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.2em;color:#0a0e18;background:#cdb88a;padding:4px 9px">1b</span>
+          <span style="font-family:Cinzel,serif;font-size:15px;letter-spacing:.14em;color:#ece6d6">Lower third</span>
+          <span style="font-size:17px;color:#7e879c">Closest to today: the box dissolves into a full-width band, and the chapter strip replaces dots, hint and counter.</span>
+        </div>
+
+        <div style="position:relative;width:1440px;height:810px;overflow:hidden;background:radial-gradient(110% 80% at 50% 32%,#131a2b 0%,#0a0e18 48%,#05070c 100%)">
+          <div style="position:absolute;inset:0;background-image:radial-gradient(1px 1px at 12% 22%,rgba(214,219,230,.5),transparent),radial-gradient(1px 1px at 28% 71%,rgba(214,219,230,.3),transparent),radial-gradient(1px 1px at 47% 14%,rgba(214,219,230,.45),transparent),radial-gradient(1px 1px at 63% 83%,rgba(214,219,230,.25),transparent),radial-gradient(1px 1px at 78% 33%,rgba(214,219,230,.5),transparent),radial-gradient(1px 1px at 88% 62%,rgba(214,219,230,.3),transparent),radial-gradient(1px 1px at 35% 44%,rgba(214,219,230,.25),transparent),radial-gradient(1px 1px at 71% 8%,rgba(214,219,230,.4),transparent),radial-gradient(1px 1px at 8% 55%,rgba(214,219,230,.3),transparent)"></div>
+
+          <div style="position:absolute;left:290px;top:125px;width:860px;height:350px;border:1px solid rgba(126,135,156,.16);border-radius:50%"></div>
+          <div style="position:absolute;left:445px;top:188px;width:550px;height:224px;border:1px solid rgba(126,135,156,.11);border-radius:50%"></div>
+          <svg viewBox="0 0 1440 810" width="1440" height="810" style="position:absolute;left:0;top:0">
+            <polyline points="645,128 878,208 1143,270 945,364 795,472 562,392 297,330 495,236" fill="none" stroke="rgba(205,184,138,.32)" stroke-width="1"></polyline>
+          </svg>
+
+          <div style="position:absolute;left:645px;top:128px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+            <span style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3)"><img src="img/odysseus.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.85"></span>
+            <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#7e879c;white-space:nowrap">Ⅰ ODYSSEUS</span>
+          </div>
+          <div style="position:absolute;left:878px;top:208px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+            <span style="width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3)"><img src="img/poseidon.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.85"></span>
+            <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#7e879c;white-space:nowrap">Ⅱ POSEIDON</span>
+          </div>
+          <div style="position:absolute;left:1143px;top:270px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+            <span style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3)"><img src="img/circe.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.85"></span>
+            <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#7e879c;white-space:nowrap">Ⅲ CIRCE</span>
+          </div>
+          <div style="position:absolute;left:945px;top:364px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+            <span style="width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3)"><img src="img/scylla.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.85"></span>
+            <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#7e879c;white-space:nowrap">Ⅳ SCYLLA</span>
+          </div>
+          <div style="position:absolute;left:795px;top:472px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+            <span style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3)"><img src="img/charybdis.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.85"></span>
+            <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#7e879c;white-space:nowrap">Ⅴ CHARYBDIS</span>
+          </div>
+          <div style="position:absolute;left:562px;top:392px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+            <span style="width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3)"><img src="img/helios.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.85"></span>
+            <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#7e879c;white-space:nowrap">Ⅵ HELIOS</span>
+          </div>
+          <div style="position:absolute;left:297px;top:330px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:9px">
+            <span style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.3)"><img src="img/calypso.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.85"></span>
+            <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.16em;color:#7e879c;white-space:nowrap">Ⅶ CALYPSO</span>
+          </div>
+          <div style="position:absolute;left:495px;top:236px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:13px">
+            <span style="width:132px;height:132px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.8),0 0 66px rgba(205,184,138,.35)"><img src="img/athena.webp" alt="" style="width:100%;height:100%;object-fit:cover"></span>
+            <span style="font-family:Cinzel,serif;font-size:17px;letter-spacing:.26em;color:#f3efe4;white-space:nowrap">ATHENA</span>
+            <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:15px;color:#7e879c;margin-top:-6px">Grey-Eyed Goddess of Wisdom</span>
+          </div>
+
+          <div style="position:absolute;left:56px;top:44px;display:flex;flex-direction:column;gap:6px">
+            <div style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.4em;color:#8c7d59">AN EPIC VOYAGE</div>
+            <div style="font-family:Cinzel,serif;font-size:22px;letter-spacing:.05em;color:#ece6d6">The Long Way Home</div>
+          </div>
+          <div style="position:absolute;right:56px;top:46px;display:flex;align-items:center;gap:22px">
+            <button style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.24em;color:#8c7d59;background:none;border:none;cursor:pointer;padding:0" style-hover="color:#cdb88a">STORIES ▾</button>
+            <button style="width:36px;height:36px;border:1px solid rgba(126,135,156,.35);border-radius:50%;color:#9aa3b4;background:none;cursor:pointer;font-size:12px" style-hover="border-color:#cdb88a;color:#cdb88a">✕</button>
+          </div>
+
+          <div style="position:absolute;left:0;right:0;bottom:0;height:300px;background:linear-gradient(180deg,rgba(5,7,12,0) 0%,rgba(5,7,12,.86) 42%,rgba(5,7,12,.97) 100%);padding:0 56px 40px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end;gap:26px">
+            <div style="display:flex;align-items:flex-end;gap:64px">
+              <div style="flex:1;display:flex;flex-direction:column;gap:14px;max-width:820px">
+                <div style="display:flex;align-items:baseline;gap:12px">
+                  <span style="font-family:Cinzel,serif;font-size:13px;color:#cdb88a">Ⅷ</span>
+                  <span style="font-family:Cinzel,serif;font-size:14px;letter-spacing:.22em;color:#cdb88a">ATHENA</span>
+                  <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.22em;color:#5c6678">OLYMPIANS</span>
+                </div>
+                <p style="margin:0;font-size:28px;line-height:1.45;color:#e4e8f0;text-wrap:pretty">Through every trial it was grey-eyed Athena, his unwavering champion, who watched over him — and won the wanderer, at the very last, his long-denied return to Ithaca.</p>
+              </div>
+              <div style="display:flex;align-items:center;gap:16px;padding-bottom:6px">
+                <button style="width:38px;height:38px;border:1px solid rgba(205,184,138,.4);border-radius:50%;color:#cdb88a;background:none;cursor:pointer;font-size:12px" style-hover="border-color:#cdb88a">❚❚</button>
+                <button style="font-size:22px;color:#8f98a9;background:none;border:none;cursor:pointer;padding:0 6px" style-hover="color:#cdb88a">‹</button>
+                <button style="font-size:22px;color:#8f98a9;background:none;border:none;cursor:pointer;padding:0 6px" style-hover="color:#cdb88a">›</button>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:0;border-top:1px solid rgba(126,135,156,.16)">
+              <button style="display:flex;flex-direction:column;gap:6px;padding:14px 0 0;background:none;border:none;border-top:1px solid rgba(205,184,138,.5);margin-top:-1px;text-align:left;cursor:pointer" style-hover="border-top-color:#cdb88a">
+                <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.16em;color:#8c7d59">Ⅰ</span>
+                <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.14em;color:#8f98a9">ODYSSEUS</span>
+              </button>
+              <button style="display:flex;flex-direction:column;gap:6px;padding:14px 0 0;background:none;border:none;border-top:1px solid rgba(205,184,138,.5);margin-top:-1px;text-align:left;cursor:pointer" style-hover="border-top-color:#cdb88a">
+                <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.16em;color:#8c7d59">Ⅱ</span>
+                <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.14em;color:#8f98a9">POSEIDON</span>
+              </button>
+              <button style="display:flex;flex-direction:column;gap:6px;padding:14px 0 0;background:none;border:none;border-top:1px solid rgba(205,184,138,.5);margin-top:-1px;text-align:left;cursor:pointer" style-hover="border-top-color:#cdb88a">
+                <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.16em;color:#8c7d59">Ⅲ</span>
+                <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.14em;color:#8f98a9">CIRCE</span>
+              </button>
+              <button style="display:flex;flex-direction:column;gap:6px;padding:14px 0 0;background:none;border:none;border-top:1px solid rgba(205,184,138,.5);margin-top:-1px;text-align:left;cursor:pointer" style-hover="border-top-color:#cdb88a">
+                <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.16em;color:#8c7d59">Ⅳ</span>
+                <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.14em;color:#8f98a9">SCYLLA</span>
+              </button>
+              <button style="display:flex;flex-direction:column;gap:6px;padding:14px 0 0;background:none;border:none;border-top:1px solid rgba(205,184,138,.5);margin-top:-1px;text-align:left;cursor:pointer" style-hover="border-top-color:#cdb88a">
+                <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.16em;color:#8c7d59">Ⅴ</span>
+                <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.14em;color:#8f98a9">CHARYBDIS</span>
+              </button>
+              <button style="display:flex;flex-direction:column;gap:6px;padding:14px 0 0;background:none;border:none;border-top:1px solid rgba(205,184,138,.5);margin-top:-1px;text-align:left;cursor:pointer" style-hover="border-top-color:#cdb88a">
+                <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.16em;color:#8c7d59">Ⅵ</span>
+                <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.14em;color:#8f98a9">HELIOS</span>
+              </button>
+              <button style="display:flex;flex-direction:column;gap:6px;padding:14px 0 0;background:none;border:none;border-top:1px solid rgba(205,184,138,.5);margin-top:-1px;text-align:left;cursor:pointer" style-hover="border-top-color:#cdb88a">
+                <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.16em;color:#8c7d59">Ⅶ</span>
+                <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.14em;color:#8f98a9">CALYPSO</span>
+              </button>
+              <button style="display:flex;flex-direction:column;gap:6px;padding:14px 0 0;background:none;border:none;border-top:2px solid #cdb88a;margin-top:-1px;text-align:left;cursor:pointer">
+                <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.16em;color:#cdb88a">Ⅷ</span>
+                <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.14em;color:#f3efe4">ATHENA</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1c" style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;gap:14px">
+          <span style="font-family:Cinzel,serif;font-size:12px;letter-spacing:.2em;color:#0a0e18;background:#cdb88a;padding:4px 9px">1c</span>
+          <span style="font-family:Cinzel,serif;font-size:15px;letter-spacing:.14em;color:#ece6d6">Cropped sky + index rail</span>
+          <span style="font-size:17px;color:#7e879c">The orbit runs off the left edge so it feels vast; a standing index on the right is the whole table of contents.</span>
+        </div>
+
+        <div style="position:relative;width:1440px;height:810px;overflow:hidden;background:radial-gradient(100% 100% at 34% 40%,#141c2e 0%,#0a0e18 50%,#05070c 100%)">
+          <div style="position:absolute;inset:0;background-image:radial-gradient(1px 1px at 14% 18%,rgba(214,219,230,.45),transparent),radial-gradient(1px 1px at 31% 77%,rgba(214,219,230,.3),transparent),radial-gradient(1px 1px at 52% 12%,rgba(214,219,230,.45),transparent),radial-gradient(1px 1px at 66% 88%,rgba(214,219,230,.25),transparent),radial-gradient(1px 1px at 80% 28%,rgba(214,219,230,.4),transparent),radial-gradient(1px 1px at 91% 68%,rgba(214,219,230,.3),transparent),radial-gradient(1px 1px at 41% 49%,rgba(214,219,230,.25),transparent),radial-gradient(1px 1px at 74% 6%,rgba(214,219,230,.35),transparent)"></div>
+
+          <div style="position:absolute;left:50px;top:80px;width:940px;height:500px;border:1px solid rgba(126,135,156,.15);border-radius:50%"></div>
+          <div style="position:absolute;left:220px;top:170px;width:600px;height:320px;border:1px solid rgba(126,135,156,.1);border-radius:50%"></div>
+          <svg viewBox="0 0 1440 810" width="1440" height="810" style="position:absolute;left:0;top:0">
+            <polyline points="438,84 692,199 983,287 766,422 602,576 348,461 57,373 274,238" fill="none" stroke="rgba(205,184,138,.3)" stroke-width="1"></polyline>
+          </svg>
+
+          <div style="position:absolute;left:438px;top:84px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px">
+            <span style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.28)"><img src="img/odysseus.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.8"></span>
+            <span style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.16em;color:#6d7689;white-space:nowrap">Ⅰ</span>
+          </div>
+          <div style="position:absolute;left:692px;top:199px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px">
+            <span style="width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.28)"><img src="img/poseidon.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.8"></span>
+            <span style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.16em;color:#6d7689;white-space:nowrap">Ⅱ</span>
+          </div>
+          <div style="position:absolute;left:983px;top:287px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px">
+            <span style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.28)"><img src="img/circe.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.8"></span>
+            <span style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.16em;color:#6d7689;white-space:nowrap">Ⅲ</span>
+          </div>
+          <div style="position:absolute;left:766px;top:422px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px">
+            <span style="width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.28)"><img src="img/scylla.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.8"></span>
+            <span style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.16em;color:#6d7689;white-space:nowrap">Ⅳ</span>
+          </div>
+          <div style="position:absolute;left:602px;top:576px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px">
+            <span style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.28)"><img src="img/charybdis.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.8"></span>
+            <span style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.16em;color:#6d7689;white-space:nowrap">Ⅴ</span>
+          </div>
+          <div style="position:absolute;left:348px;top:461px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px">
+            <span style="width:44px;height:44px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.28)"><img src="img/helios.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.8"></span>
+            <span style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.16em;color:#6d7689;white-space:nowrap">Ⅵ</span>
+          </div>
+          <div style="position:absolute;left:57px;top:373px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px">
+            <span style="width:40px;height:40px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.28)"><img src="img/calypso.webp" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.8"></span>
+            <span style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.16em;color:#6d7689;white-space:nowrap">Ⅶ</span>
+          </div>
+          <div style="position:absolute;left:274px;top:238px;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:12px">
+            <span style="width:150px;height:150px;border-radius:50%;overflow:hidden;box-shadow:0 0 0 1px rgba(205,184,138,.8),0 0 76px rgba(205,184,138,.32)"><img src="img/athena.webp" alt="" style="width:100%;height:100%;object-fit:cover"></span>
+            <span style="font-family:Cinzel,serif;font-size:18px;letter-spacing:.26em;color:#f3efe4;white-space:nowrap">ATHENA</span>
+          </div>
+
+          <div style="position:absolute;left:56px;top:44px;display:flex;flex-direction:column;gap:6px">
+            <div style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.4em;color:#8c7d59">AN EPIC VOYAGE</div>
+            <div style="font-family:Cinzel,serif;font-size:22px;letter-spacing:.05em;color:#ece6d6">The Long Way Home</div>
+          </div>
+
+          <div style="position:absolute;left:56px;bottom:56px;width:520px;display:flex;flex-direction:column;gap:20px">
+            <div style="display:flex;align-items:baseline;gap:12px">
+              <span style="font-family:Cinzel,serif;font-size:13px;color:#cdb88a">Ⅷ</span>
+              <span style="font-family:Cinzel,serif;font-size:14px;letter-spacing:.22em;color:#cdb88a">ATHENA</span>
+              <span style="font-family:Cinzel,serif;font-size:10px;letter-spacing:.22em;color:#5c6678">OLYMPIANS</span>
+            </div>
+            <p style="margin:0;font-size:26px;line-height:1.5;color:#e4e8f0;text-shadow:0 2px 24px rgba(5,7,12,.9);text-wrap:pretty">Through every trial it was grey-eyed Athena, his unwavering champion, who watched over him — and won the wanderer, at the very last, his long-denied return to Ithaca.</p>
+            <div style="display:flex;align-items:center;gap:16px">
+              <button style="width:36px;height:36px;border:1px solid rgba(205,184,138,.4);border-radius:50%;color:#cdb88a;background:none;cursor:pointer;font-size:12px" style-hover="border-color:#cdb88a">❚❚</button>
+              <button style="font-size:20px;color:#8f98a9;background:none;border:none;cursor:pointer;padding:0 6px" style-hover="color:#cdb88a">‹</button>
+              <button style="font-size:20px;color:#8f98a9;background:none;border:none;cursor:pointer;padding:0 6px" style-hover="color:#cdb88a">›</button>
+              <span style="font-family:'EB Garamond',serif;font-style:italic;font-size:14px;color:#4d5566;margin-left:10px">← → to move · space to play · esc to close</span>
+            </div>
+          </div>
+
+          <div style="position:absolute;right:0;top:0;bottom:0;width:360px;background:linear-gradient(270deg,rgba(5,7,12,.94) 60%,rgba(5,7,12,0) 100%);padding:44px 56px 44px 40px;box-sizing:border-box;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:36px">
+              <button style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.24em;color:#8c7d59;background:none;border:none;cursor:pointer;padding:0" style-hover="color:#cdb88a">STORIES ▾</button>
+              <button style="width:34px;height:34px;border:1px solid rgba(126,135,156,.35);border-radius:50%;color:#9aa3b4;background:none;cursor:pointer;font-size:12px" style-hover="border-color:#cdb88a;color:#cdb88a">✕</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px;margin-top:auto;margin-bottom:auto">
+              <div style="display:flex;align-items:baseline;gap:14px;padding:9px 0;cursor:pointer">
+                <span style="font-family:Cinzel,serif;font-size:11px;color:#5c6678;width:26px">Ⅰ</span>
+                <span style="font-family:Cinzel,serif;font-size:13px;letter-spacing:.14em;color:#8f98a9">ODYSSEUS</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:14px;padding:9px 0;cursor:pointer">
+                <span style="font-family:Cinzel,serif;font-size:11px;color:#5c6678;width:26px">Ⅱ</span>
+                <span style="font-family:Cinzel,serif;font-size:13px;letter-spacing:.14em;color:#8f98a9">POSEIDON</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:14px;padding:9px 0;cursor:pointer">
+                <span style="font-family:Cinzel,serif;font-size:11px;color:#5c6678;width:26px">Ⅲ</span>
+                <span style="font-family:Cinzel,serif;font-size:13px;letter-spacing:.14em;color:#8f98a9">CIRCE</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:14px;padding:9px 0;cursor:pointer">
+                <span style="font-family:Cinzel,serif;font-size:11px;color:#5c6678;width:26px">Ⅳ</span>
+                <span style="font-family:Cinzel,serif;font-size:13px;letter-spacing:.14em;color:#8f98a9">SCYLLA</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:14px;padding:9px 0;cursor:pointer">
+                <span style="font-family:Cinzel,serif;font-size:11px;color:#5c6678;width:26px">Ⅴ</span>
+                <span style="font-family:Cinzel,serif;font-size:13px;letter-spacing:.14em;color:#8f98a9">CHARYBDIS</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:14px;padding:9px 0;cursor:pointer">
+                <span style="font-family:Cinzel,serif;font-size:11px;color:#5c6678;width:26px">Ⅵ</span>
+                <span style="font-family:Cinzel,serif;font-size:13px;letter-spacing:.14em;color:#8f98a9">HELIOS</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:14px;padding:9px 0;cursor:pointer">
+                <span style="font-family:Cinzel,serif;font-size:11px;color:#5c6678;width:26px">Ⅶ</span>
+                <span style="font-family:Cinzel,serif;font-size:13px;letter-spacing:.14em;color:#8f98a9">CALYPSO</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:14px;padding:9px 0;border-left:2px solid #cdb88a;padding-left:14px;margin-left:-16px">
+                <span style="font-family:Cinzel,serif;font-size:11px;color:#cdb88a;width:26px">Ⅷ</span>
+                <span style="font-family:Cinzel,serif;font-size:13px;letter-spacing:.14em;color:#f3efe4">ATHENA</span>
+              </div>
+            </div>
+            <div style="font-family:Cinzel,serif;font-size:11px;letter-spacing:.18em;color:#5c6678">8 / 8</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+
+</x-dc>
+</body>
+</html>

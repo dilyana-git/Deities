@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { nodes as allNodes, links as allLinks } from '../data/mythology.js'
-import { CAT, portraitSources } from './SkyGraph.jsx'
+import { CAT, portraitEntries, portraitSources, mapPortraitVariant } from './SkyGraph.jsx'
 import { categoryConfig } from '../data/categoryConfig.js'
 import { deityStories } from '../data/deityStories.js'
 import { TOURS } from '../data/tours.js'
@@ -170,24 +170,99 @@ function HoloSigil({ node, catColor }) {
   )
 }
 
-/* ── portrait image with fallback chain ──────────────────────────────── */
-function Portrait({ nodeId, onLoaded }) {
-  const chain = portraitSources(nodeId, true)
+/* ── portrait image, in two passes ───────────────────────────────────────
+   The hero is an 820px plate, ~230KB, and it used to be the ONLY thing in
+   this box — so opening a figure meant a blank stage until the whole of it
+   arrived. Three cheap things fill that gap without adding a byte to the
+   bundle:
+
+   1. The box's shape no longer waits for a decode. `--fig-ar` used to be set
+      from naturalWidth/naturalHeight in onLoad, which is the last moment it
+      could possibly be known; the manifest has carried the exact dimensions
+      of every variant since it was generated, so the stage takes the art's
+      shape on the first render instead.
+   2. A ground underneath — the same crop the MAP drew for this star, so it is
+      already in the browser's cache. It is a head crop standing in for a whole
+      figure, so it is not pretending to be the artwork: blurred past
+      legibility and scaled to cover, it contributes the plate's colour and
+      value in roughly the right place and nothing else, which is the entire
+      job of a placeholder.
+
+      `mapPortraitVariant`, not a hardcoded 'node': the map draws the 192px
+      node crop for tier 2 but the 360px head for the 12 primaries, so asking
+      every figure for `node` made the placeholder a second, COLD request on
+      exactly the dozen faces most likely to be clicked — the one case the
+      two-pass exists for, and the one case it was missing.
+   3. The two images CROSS-FADE. `load` is not the moment the hero is visible,
+      it is the moment it starts a half-second climb from opacity 0 — so
+      dropping the ground there emptied the stage for precisely the interval
+      the ground was mounted to cover. It is held through the fade instead and
+      taken out from under a hero that is already up. That dissolve, blurred
+      plate → sharp figure, is also what now carries the "materialize": the
+      keyframe's animated blur was re-rasterizing this whole subtree (the
+      ground's own 26px blur included) on every frame of every switch, to
+      restate a softness the ground was already supplying for free.
+
+   The hero's own chain still walks full → head → node, so a damaged file
+   degrades instead of blanking. */
+const FIG_FADE_MS = 500          // keep in step with .col-figure-img's transition
+
+function Portrait({ nodeId, onLoaded, onGone }) {
+  const chain = portraitSources(nodeId, 'full')
   const [idx, setIdx] = useState(0)
   const [gone, setGone] = useState(false)
+  const [up, setUp] = useState(false)          // hero decoded — begin the dissolve
+  const [swapped, setSwapped] = useState(false) // dissolve over — drop the ground
+  const ground = portraitSources(nodeId, mapPortraitVariant(nodeId))[0]
+  /* Set in the body, not just torn down in the cleanup: StrictMode mounts,
+     unmounts and remounts in dev, so a guard that is only ever flipped to
+     false would stay false and the hero would never fade in. */
+  const alive = useRef(true)
+  useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
+
+  /* No resync-on-nodeId effect: DetailPanel keys PanelContent by node.id, so a
+     new figure remounts this whole subtree and both passes start over. */
+
+  /* `gone` alone: the callback is an inline closure, so keeping it in the deps
+     re-fires this on every render once the chain is exhausted. */
+  useEffect(() => { if (gone) onGone?.() }, [gone])   // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* A timer rather than the hero's `transitionend`: if the browser collapses
+     the fade (reduced motion, an offscreen panel, a class landing in the mount
+     frame) that event never fires and the ground would sit in the DOM forever,
+     invisible but still a blurred layer to composite. */
+  useEffect(() => {
+    if (!up) return
+    const t = setTimeout(() => alive.current && setSwapped(true), FIG_FADE_MS + 60)
+    return () => clearTimeout(t)
+  }, [up])
+
   if (gone || idx >= chain.length) return null
   return (
-    <img
-      key={chain[idx]}
-      className="col-figure-img"
-      src={chain[idx]}
-      alt=""
-      /* report the art's own ratio so the figure box can take its shape — see
-         .col-figure-in: the masks only dissolve the real edges if the box and
-         the rendered image are the same rectangle */
-      onLoad={e => onLoaded(e.currentTarget.naturalWidth / e.currentTarget.naturalHeight)}
-      onError={() => idx + 1 < chain.length ? setIdx(idx + 1) : setGone(true)}
-    />
+    <>
+      {!swapped && ground && (
+        <img className={`col-figure-ground ${up ? 'out' : ''}`} src={ground} alt="" aria-hidden="true"/>
+      )}
+      <img
+        key={chain[idx]}
+        className={`col-figure-img ${up ? 'loaded' : ''}`}
+        src={chain[idx]}
+        alt=""
+        decoding="async"
+        onLoad={e => {
+          const img = e.currentTarget
+          onLoaded(img.naturalWidth / img.naturalHeight)
+          /* `load` means the bytes arrived, not that there is a bitmap ready to
+             paint — with decoding="async" the first frames of the fade can land
+             on nothing. Waiting for decode() costs a few ms underneath a
+             placeholder that is still up, and buys a dissolve that starts on
+             real pixels. */
+          const start = () => { if (alive.current) setUp(true) }
+          img.decode ? img.decode().then(start, start) : start()
+        }}
+        onError={() => idx + 1 < chain.length ? setIdx(idx + 1) : setGone(true)}
+      />
+    </>
   )
 }
 
@@ -283,9 +358,16 @@ export default function DetailPanel({ nodeId, onClose, onNavigate, onOpenOrbit, 
 function PanelContent({ node, onClose, onNavigate, onOpenOrbit, onOpenTale }) {
   const catCfg   = categoryConfig[node.category] || {}
   const catColor = CAT[node.category] || '#888'
-  /* the portrait's own aspect ratio, once it has loaded — null while it hasn't,
-     which is also what raises the HoloSigil fallback */
-  const [ratio, setRatio] = useState(null)
+  /* The stage's shape, known up front: the manifest records the exact pixel
+     dimensions of the hero plate, so the box can be correct on the very first
+     frame rather than reflowing when a 225KB decode finishes. State still
+     exists because onLoad refines it from the real file, and because a figure
+     with no art at all has to fall through to the HoloSigil. */
+  const heroDims  = portraitEntries(node.id, 'full')[0]
+  const heroRatio = heroDims ? heroDims.width / heroDims.height : null
+  const [ratio, setRatio] = useState(heroRatio)
+  const [noArt, setNoArt] = useState(false)
+  const shaped = ratio != null && !noArt
 
   const story    = deityStories[node.id]
   const beats    = story?.beats
@@ -312,11 +394,11 @@ function PanelContent({ node, onClose, onNavigate, onOpenOrbit, onOpenTale }) {
           right, the image itself carries the radial vignette. Together they
           take all four edges to zero. */}
       <div className="col-figure">
-        <div className={`col-figure-in ${ratio ? 'ready' : ''}`}
-          style={ratio ? { '--fig-ar': ratio.toFixed(4) } : undefined}>
+        <div className={`col-figure-in ${shaped ? 'ready' : ''}`}
+          style={shaped ? { '--fig-ar': ratio.toFixed(4) } : undefined}>
           <div className="col-figure-veil">
-            <Portrait nodeId={node.id} onLoaded={setRatio}/>
-            {!ratio && (
+            <Portrait nodeId={node.id} onLoaded={setRatio} onGone={() => setNoArt(true)}/>
+            {!shaped && (
               <div className="col-sigil">
                 <HoloSigil node={node} catColor={catColor}/>
               </div>

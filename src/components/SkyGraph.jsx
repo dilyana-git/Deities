@@ -3,6 +3,7 @@ import * as d3 from 'd3'
 import { nodes as rawNodes, links as rawLinks } from '../data/mythology.js'
 import { linkTypeConfig } from '../data/linkTypeConfig.js'
 import { categoryConfig } from '../data/categoryConfig.js'
+import { portraitManifest } from '../data/portraitManifest.generated.js'
 
 /* ── category palettes (OKLCH) ─────────────────────────────────────────
    Each of the 9 families gets a distinct hue with enough chroma to read as
@@ -59,18 +60,91 @@ const LINK_DASH = {
 
 const W = 1200, H = 740
 
-/* Portrait URL candidates for a node id, most- to least-preferred. Tries both
-   image folders (`/portraits/` per the current convention, `/deities/` kept
-   from the legacy system), three name styles, and three formats, so drop-in
-   images are found regardless of which convention they follow. */
-function portraitSources(id, preferFull = false) {
-  const names = preferFull ? [`${id}-full`, `${id}-head`, id] : [`${id}-head`, `${id}-full`, id]
-  const out = []
-  for (const dir of ['portraits', 'deities'])
-    for (const name of names)
-      for (const ext of ['webp', 'png', 'jpg'])
-        out.push(`/${dir}/${name}.${ext}`)
-  return out
+/* Exact portrait variants generated alongside the image tiers. Absence in the
+   manifest means absence on disk, so the UI can use its sigil/orb fallback
+   immediately instead of discovering missing art through a chain of 404s.
+
+   A consumer asks for the size it is about to DRAW, not for "a portrait":
+   `node` (192px head crop), `head` (360px head crop) or `full` (820px figure).
+   Everything after the first entry is a fallback, so a figure that is missing
+   a tier still renders instead of vanishing. Ordering the rest largest-first
+   matters — a fallback is a last resort, and arriving too sharp is a wasted
+   download while arriving too soft is a visible defect.
+
+   Why `node` exists at all: a tier-2 star spans ~30-45 CSS px at rest and
+   ~65-100 at the k=1.9-2.2 that flyTo and search land on, so 192px covers
+   every path the UI actually navigates, at ~8KB against the 360px tier's
+   ~28KB. Past roughly 2.5x manual zoom it does go soft — that is the
+   deliberate ceiling of the level-of-detail system, and the node mask (full
+   alpha only to 55% of the box) carries most of it. */
+const PORTRAIT_CHAIN = {
+  node: ['node', 'head', 'full'],
+  head: ['head', 'full', 'node'],
+  full: ['full', 'head', 'node'],
+}
+
+function portraitEntries(id, prefer = 'head') {
+  const entry = portraitManifest[id]
+  if (!entry) return []
+  return (PORTRAIT_CHAIN[prefer] || PORTRAIT_CHAIN.head)
+    .map(variant => entry[variant]).filter(Boolean)
+}
+
+function portraitSources(id, prefer = 'head') {
+  return portraitEntries(id, prefer).map(entry => entry.src)
+}
+
+/* ── renown tiers, at module scope ───────────────────────────────────────
+   The three registers (1 primary / 2 secondary / 3 tail) fall out of the
+   static dataset alone, so they are derived once here rather than inside the
+   simulation effect, and the effect stamps them onto its own node clones.
+   Hoisting them buys one thing the effect could not: `mapPortraitVariant`,
+   which lets a consumer OUTSIDE the graph ask which crop the map drew for a
+   figure.
+
+   That matters to the DetailPanel's placeholder. Its whole premise is that the
+   192px `node` crop is already in the browser's cache — it is the star the
+   viewer just clicked — but the map only draws that crop for tier 2. The 12
+   primaries are drawn from the 360px `head`, so asking them for `node` was a
+   second, cold request for the same face, on exactly the dozen figures most
+   likely to be clicked. Ask for what was drawn and it costs nothing.
+
+   Tier 1 is rank-based (top N) so the count stays at a dozen as the dataset
+   grows; 2/3 split on degree, where the distribution has its own shelf. */
+const PRIMARY_COUNT = 12
+const TIER_BY_ID = (() => {
+  const adj = {}
+  rawNodes.forEach(n => (adj[n.id] = new Set()))
+  rawLinks.forEach(l => { adj[l.source]?.add(l.target); adj[l.target]?.add(l.source) })
+  const deg = id => adj[id]?.size || 0
+  const maxDeg = Math.max(...rawNodes.map(n => deg(n.id)))
+  const prom = id => Math.sqrt(deg(id)) / Math.sqrt(maxDeg)
+  const rank = rawNodes.map(n => prom(n.id)).sort((a, b) => b - a)
+  const hub  = rank[Math.min(PRIMARY_COUNT - 1, rank.length - 1)] || 0.4
+  return Object.fromEntries(rawNodes.map(n =>
+    [n.id, prom(n.id) >= hub ? 1 : deg(n.id) >= 3 ? 2 : 3]))
+})()
+
+/* Which crop the MAP draws for a figure: the 12 primaries span ~110-165 CSS px
+   and take the 360px head, everything else in tier 2 draws at a fraction of
+   that and takes the 192px one. Tier 3 draws no portrait at all, so it falls
+   to `node` — the cheapest thing to fetch cold. */
+const mapPortraitVariant = id => (TIER_BY_ID[id] === 1 ? 'head' : 'node')
+
+/* The cosmogony is a first-arrival event within a page's lifetime, not the
+   cost of every re-render: it is a ~13s film, and replaying it on, say, a
+   StrictMode remount would turn the sky's opening into a toll. A plain
+   in-memory flag (not sessionStorage) is what gives it that scope exactly —
+   it lives only as long as this module does, so it resets itself on every
+   real refresh for free, with nothing to clear. `#intro` on the URL still
+   forces a replay on demand within a load. */
+let _cosmogonySeenThisLoad = false
+function cosmogonySeen() {
+  if (typeof location !== 'undefined' && location.hash === '#intro') return false
+  return _cosmogonySeenThisLoad
+}
+function markCosmogonySeen() {
+  _cosmogonySeenThisLoad = true
 }
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -80,6 +154,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
   const svgEl  = useRef(null)
   const apiRef = useRef(null)
 
+  /* The D3 setup below is a single ~2000-line effect that owns the whole
+     simulation, forces, and event listeners — it must not tear down and
+     rebuild just because a parent re-render happened to hand it a new
+     onSelect closure identity. Routing calls through a ref keeps onSelect
+     out of that effect's dependency array entirely. */
+  const onSelectRef = useRef(onSelect)
+  useEffect(() => { onSelectRef.current = onSelect }, [onSelect])
+
   useImperativeHandle(ref, () => ({
     select           : (id, fly, opts) => apiRef.current?.select(id, fly, opts),
     clearSelection   : ()         => apiRef.current?.clearSelection(),
@@ -88,6 +170,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     highlightPath    : (ids)      => apiRef.current?.highlightPath(ids),
     clearPathHighlight: ()        => apiRef.current?.clearPathHighlight(),
     setTourLock      : (v)        => apiRef.current?.setTourLock(v),
+    setDormant       : (v)        => apiRef.current?.setDormant(v),
     litEdge          : (a, b)     => apiRef.current?.litEdge(a, b),
     clearLitEdge     : ()         => apiRef.current?.clearLitEdge(),
   }))
@@ -110,6 +193,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     nodes.forEach(n => { n.degree = adj[n.id].size })
     const maxDeg = Math.max(...nodes.map(n => n.degree))
     nodes.forEach(n => { n.prom = Math.sqrt(n.degree) / Math.sqrt(maxDeg) })
+    /* prom, ranked high to low. Tier membership no longer needs it — that rule
+       moved to module scope as `TIER_BY_ID` — but the hub BREATH does: it is a
+       tighter set than tier 1 (the top ~6, not the top 12), so it still has to
+       ask where a given prom falls in the ranking. */
+    const promRank = nodes.map(n => n.prom).sort((a, b) => b - a)
 
     /* ── three tiers of renown ──────────────────────────────────────
        ~137 stars drawn on one continuous size curve average out into
@@ -126,11 +214,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
        Tier 1 is rank-based (top N) rather than a degree cutoff so the count
        stays at a dozen as the dataset grows; 2/3 split on degree, where the
-       distribution has its own shelf (29 nodes at degree 3, 40 at degree 2). */
-    const PRIMARY_COUNT = 12
-    const promRank     = nodes.map(n => n.prom).sort((a, b) => b - a)
-    const hubThreshold = promRank[Math.min(PRIMARY_COUNT - 1, promRank.length - 1)] || 0.4
-    nodes.forEach(n => { n.tier = n.prom >= hubThreshold ? 1 : n.degree >= 3 ? 2 : 3 })
+       distribution has its own shelf (29 nodes at degree 3, 40 at degree 2).
+
+       The rule itself lives at module scope (`TIER_BY_ID`) so the DetailPanel
+       can read it too — see `mapPortraitVariant`. This only stamps it onto the
+       clones the simulation owns. */
+    nodes.forEach(n => { n.tier = TIER_BY_ID[n.id] || 3 })
 
     /* String alias for the same three registers. The lineage trace, band-label
        repulsion and portrait scheduling all read the tier by name; keeping one
@@ -176,6 +265,35 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        beyond the star and fade into the sky (see the `portrait-mask` in defs)
        instead of being cropped to a circle. */
     const IMG_SCALE = 1.45
+
+    /* What a node actually OCCUPIES on screen. For tiers 1 and 2 that is the
+       portrait, not the star: the <image> spans IMG_SCALE × the radius, so a
+       primary's art overhangs its own core by half again. Anything that has to
+       clear the glyph — its own label, the band labels — measures against
+       this; `radius()` alone puts a name on top of the face it belongs to.
+       Tier 3 has no <image> at all, so there the star IS the glyph. */
+    const glyphRAt = (n, r) => n.tier === 3 ? r : r * IMG_SCALE
+    const glyphR   = n => glyphRAt(n, radius(n))
+
+    /* …but for art-vs-art spacing the fringe doesn't count. The portrait mask
+       holds full alpha only to 55% of the box and is under .55 by 80%, so two
+       portraits whose outermost fifths interleave don't read as a collision —
+       reserving the whole box would spread the primaries for nothing. The
+       forces reserve the SOLID footprint; opaque type clears the whole thing. */
+    const IMG_SOLID = 0.8
+    const bodyR = n => n.tier === 3 ? radius(n) : radius(n) * IMG_SCALE * IMG_SOLID
+
+    /* Core radius as a multiple of the star radius. Tiers 2 and 3 keep the full
+       disc — there the disc IS the mark. A primary does not: at 30–44px a
+       full-radius pale disc is a lit plate the portrait sits on, and its hard
+       circular edge reads as a bezel around the face no matter how softly the
+       portrait's own mask fades. Shrunk to a pip it becomes what a star on a
+       chart actually is — a bright point — and the gradient halo carries the
+       light out from it, so the figure floats in that light instead of on a
+       plate. Sized once here because two paths draw a core (birth and
+       `sizeNode`) and a pip on one of them only is a flicker on selection. */
+    const CORE_R = 0.2
+    const coreRadius = (n, r) => n.tier === 1 ? r * CORE_R : r
 
     /* Resting-camera bleed. A disc floating dead-centre with even margins on
        every side reads as small — a coin on a table. Overscaling it slightly
@@ -283,6 +401,10 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const catHaloLayer = floatXLayer.append('g').attr('class','cat-halos').attr('pointer-events','none')
     const clusterLayer = floatXLayer.append('g').attr('class','clusters')
     const linkLayer    = floatXLayer.append('g').attr('class','links')
+    /* residues holds what the ambient lineage traces leave behind — one faint
+       thread per descent, kept OUTSIDE traceLayer because the path-finder
+       clears that layer wholesale and the accumulated web has to survive it. */
+    const residueLayer = floatXLayer.append('g').attr('class','residues').attr('pointer-events','none')
     const traceLayer   = floatXLayer.append('g').attr('class','traces')
     const linkLabelLayer = floatXLayer.append('g').attr('class','link-labels')
     const nodeLayer    = floatXLayer.append('g').attr('class','nodes')
@@ -404,6 +526,10 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const DOME = { cx: W / 2, cy: H / 2, rx: W * 0.465, ry: H * 0.47 }
     /* normalized ellipse-metric distance from dome centre: 1 = on the horizon */
     const domeRho = (x, y) => Math.hypot((x - DOME.cx) / DOME.rx, (y - DOME.cy) / DOME.ry)
+    /* fisheye strength of that bake (applied far below, after the pre-settle).
+       Declared up here because the collide force has to undo it — see
+       `bakeScaleAt` in the simulation block. */
+    const DOME_A = 1.15
 
     /* remap category anchors: uniformly scale the anchor constellation about
        the dome centre so the outermost anchor lands at ρ ≈ 0.8 — clusters keep
@@ -417,8 +543,13 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* dome furniture — planisphere-style celestial grid behind the field:
        a limb glow, a core shade, concentric declination rings, meridian
-       spokes, a glowing horizon ring with degree ticks, and a tilted dashed
+       spokes, a whispered horizon ring with degree ticks, and a tilted dashed
        ecliptic.
+
+       THE HORIZON IS THE LIMB GLOW, not the ring. The boundary is a bright
+       band that fades outward to nothing and inward into the core shade — no
+       edge exists at any radius, and the sphere still ends somewhere you can
+       point to. The ring is held at 0.05 for that reason.
 
        VALUE STRUCTURE — the dome is lit from its RIM, not its centre. The
        sky's brightest band sits just outside the horizon and the core falls
@@ -432,21 +563,51 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const { cx, cy, rx, ry } = DOME
       const GRID = 'rgb(130,155,205)'
 
-      /* limb glow: an annulus peaking just past the horizon. Drawn on an
-         ellipse 1.15× the dome so the gradient has room to fall off outward
-         — that outer tail clips at the frame edge, which is the intent: the
-         glow reads as atmosphere continuing past the view. Goes into
+      /* limb glow: THE horizon. Not a halo behind a drawn ring — the boundary
+         itself, carried entirely by a gradient that peaks ON the horizon and
+         falls to nothing in both directions. There is no edge anywhere in it,
+         yet the eye reads exactly where the sphere ends, because a band of
+         light is a boundary just as legibly as a line is.
+         (Same reasoning as `.glow` on a node: a stroke or a hard-edged fill at
+         this scale is a bezel, and a bezel announces the drawing instead of
+         the sphere. See the ring below, now near-zero.)
+
+         Drawn on an ellipse 1.22× the dome so the gradient has room to fall
+         off outward — the outer tail clips at the frame edge on the sides the
+         resting camera already bleeds off, and runs out into open void at the
+         top-left, which is where the fade is actually read. Goes into
          `limbLayer` (outside float-x) so it can screen-blend over the stars. */
-      const RIM = 1.15
+      const RIM = 1.22
+      /* the horizon sits at offset 1/RIM ≈ 82% — the peak is pinned there.
+
+         AMPLITUDE IS CALIBRATED TO THE ZODIAC SPHERE, deliberately. That view
+         builds a boundary with no glow and no ring at all: a feathered mask
+         (opaque to 68%, .45 at 88%, 0 at 100%) over a disc whose entire lift
+         above the page background is #111828 over #06090f — about +11,+15,+25
+         of 255. The sphere ends because its contents dissolve, and that is
+         enough. So the peak here screens a *desaturated* navy at 0.30, which
+         adds ≈ +11,+15,+23 — the same delta, matched on purpose.
+         The band does not need to be bright, because it is not lighting the
+         sky; it is the inflection between two darker zones. The core shade
+         sinks everything inside it, the frame vignette sinks everything
+         outside it, and `rimBias` peaks the starfield at this same radius. Four
+         things agree on where the horizon is, so the band only has to whisper.
+         Don't push these stops back up to read it on a bright monitor — a
+         saturated blue band at 0.5 becomes atmosphere with a colour, which is
+         a weather effect, not a limb. */
       const limbGrad = defs.append('radialGradient').attr('id', 'dome-limb-glow')
         .attr('cx', '50%').attr('cy', '50%').attr('r', '50%')
-      limbGrad.append('stop').attr('offset', '0%').attr('stop-color', '#16223a').attr('stop-opacity', 0)
-      limbGrad.append('stop').attr('offset', '52%').attr('stop-color', '#16223a').attr('stop-opacity', 0)
-      limbGrad.append('stop').attr('offset', '70%').attr('stop-color', '#22314f').attr('stop-opacity', 0.07)
-      limbGrad.append('stop').attr('offset', '82%').attr('stop-color', '#2b3a63').attr('stop-opacity', 0.26)
-      limbGrad.append('stop').attr('offset', '88%').attr('stop-color', '#31406e').attr('stop-opacity', 0.38)
-      limbGrad.append('stop').attr('offset', '94%').attr('stop-color', '#271f45').attr('stop-opacity', 0.16)
-      limbGrad.append('stop').attr('offset', '100%').attr('stop-color', '#1a1430').attr('stop-opacity', 0)
+      limbGrad.append('stop').attr('offset', '0%').attr('stop-color', '#141c2c').attr('stop-opacity', 0)
+      limbGrad.append('stop').attr('offset', '58%').attr('stop-color', '#141c2c').attr('stop-opacity', 0)
+      limbGrad.append('stop').attr('offset', '68%').attr('stop-color', '#1a2338').attr('stop-opacity', 0.04)
+      limbGrad.append('stop').attr('offset', '74%').attr('stop-color', '#1f2942').attr('stop-opacity', 0.11)
+      limbGrad.append('stop').attr('offset', '78%').attr('stop-color', '#232e49').attr('stop-opacity', 0.20)
+      limbGrad.append('stop').attr('offset', '82%').attr('stop-color', '#26324c').attr('stop-opacity', 0.30)
+      limbGrad.append('stop').attr('offset', '86%').attr('stop-color', '#232e46').attr('stop-opacity', 0.24)
+      limbGrad.append('stop').attr('offset', '90%').attr('stop-color', '#1e2740').attr('stop-opacity', 0.15)
+      limbGrad.append('stop').attr('offset', '94%').attr('stop-color', '#1b1e35').attr('stop-opacity', 0.08)
+      limbGrad.append('stop').attr('offset', '97%').attr('stop-color', '#181829').attr('stop-opacity', 0.03)
+      limbGrad.append('stop').attr('offset', '100%').attr('stop-color', '#16162a').attr('stop-opacity', 0)
       limbLayer.append('ellipse')
         .attr('class', 'dome-limb')
         .attr('cx', cx).attr('cy', cy).attr('rx', rx * RIM).attr('ry', ry * RIM)
@@ -487,15 +648,29 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
           .attr('stroke', GRID).attr('stroke-width', 0.5).attr('opacity', 0.075)
       }
 
-      /* horizon ring: blurred under-glow + crisp line + degree ticks */
+      /* horizon ring — near zero, and no under-glow at all. The limb gradient
+         above IS the horizon now; a line drawn on top of it re-supplies the
+         hard edge the band exists to avoid, and (as with the primary's core
+         pip) that edge reads as a bezel around the sphere however soft the
+         light behind it is. What survives is 0.03 of a hairline: enough that
+         the band has a locus at very close range, not enough to be seen as a
+         drawn circle. The blurred 2.4px under-glow is gone outright — a blur
+         held at 0.12 is fog, and the gradient covers that job across 250px
+         instead of 3. Don't restore either one.
+
+         0.03 is tied to the band's amplitude, not chosen for itself: GRID at
+         0.05 adds ~+7 of 255, a quarter of the band's whole peak concentrated
+         into one pixel, so on a Zodiac-calibrated band the line was reading
+         *louder* than the horizon it sits on. Raise the band and this can rise
+         with it; leave the band quiet and this stays inaudible. */
       domeLayer.append('ellipse')
         .attr('cx', cx).attr('cy', cy).attr('rx', rx).attr('ry', ry)
         .attr('fill', 'none').attr('stroke', GRID)
-        .attr('stroke-width', 2.4).attr('opacity', 0.12).attr('filter', 'url(#glow)')
-      domeLayer.append('ellipse')
-        .attr('cx', cx).attr('cy', cy).attr('rx', rx).attr('ry', ry)
-        .attr('fill', 'none').attr('stroke', GRID)
-        .attr('stroke-width', 1).attr('opacity', 0.28)
+        .attr('stroke-width', 1).attr('opacity', 0.03)
+      /* degree ticks — radial, so they mark the boundary without closing it
+         into a line. Dimmed with the ring: at their old values 36 strokes on a
+         vanished ring read as a dashed bezel, which is the same edge by
+         another name. Here they are a fringe in the band. */
       for (let i = 0; i < 36; i++) {
         const a = (i / 36) * Math.PI * 2
         const major = i % 3 === 0
@@ -505,7 +680,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
           .attr('x2', cx + Math.cos(a) * rx * 1.012)
           .attr('y2', cy + Math.sin(a) * ry * 1.012)
           .attr('stroke', GRID).attr('stroke-width', major ? 0.9 : 0.5)
-          .attr('opacity', major ? 0.22 : 0.12)
+          .attr('opacity', major ? 0.07 : 0.035)
       }
 
       /* ecliptic — the sun's path, a tilted dashed gold band */
@@ -558,15 +733,39 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     /* Personal space per tier. The old flat +26 was label clearance for a
        field where every node was roughly one size; with a 13x spread between
        a primary and a tail dot it has to follow the glyph, or the primaries
-       have no room to stand and the tail wastes the space they need. */
+       have no room to stand and the tail wastes the space they need.
+       Both forces measure `bodyR`, not `radius` — a primary's star is 32px
+       but the art on it is 46, so spacing computed off the core let Typhon's
+       and Echidna's portraits sit inside each other while the simulation
+       considered them a comfortable 30px apart. */
     const COLLIDE_PAD = { 1: 18, 2: 20, 3: 13 }
+    const spaceFor = d => bodyR(d) + COLLIDE_PAD[d.tier]
+
+    /* The spherical bake below is not a uniform scale, and the pads above are
+       written in the screen space that comes out the far side of it. Radially
+       it multiplies spacing by dρ'/dρ = A·cos(ρA)/sin(A) — 1.26x at the centre
+       but 0.76x at ρ 0.8 and 0.64x at 0.9 — so a gap the simulation satisfies
+       exactly out in the monster/sea pocket arrives on screen a fifth to a
+       third short. That is the whole of the residual overlap: measured by
+       inverting the bake, every offending pair is `simSatisfied: true` at
+       110.6px against 110.7 required, then squeezed to 88 (Typhon/Echidna),
+       50 (Echidna/Chimera), 21 (Sphinx/Hector). Dividing the collide radius
+       by the local radial scale asks the sim for the pre-bake gap that lands
+       on the intended one — tighter at the centre, wider at the rim, uniform
+       once baked. Radial (not tangential, which the bake *expands* by
+       sin(ρA)/ρsin(A)) because a circle can only carry one and the
+       compressive axis is the one that collides. */
+    const bakeScaleAt = (x, y) => {
+      const rho = Math.min(domeRho(x, y), 1)
+      return Math.max(0.5, DOME_A * Math.cos(rho * DOME_A) / Math.sin(DOME_A))
+    }
     const sim = d3.forceSimulation(nodes)
       .force('link',    d3.forceLink(links).id(d => d.id)
-        .distance(l => 52 + (radius(l.source) + radius(l.target)) * 0.55).strength(0.23))
+        .distance(l => 52 + (bodyR(l.source) + bodyR(l.target)) * 0.55).strength(0.23))
       .force('charge',  d3.forceManyBody().strength(-250).distanceMax(480))
       .force('cluster', clusterForce(0.065))
       .force('dome',    domeForce(0.6))
-      .force('collide', d3.forceCollide().radius(d => radius(d) + COLLIDE_PAD[d.tier]).strength(0.92))
+      .force('collide', d3.forceCollide().radius(spaceFor).strength(0.92))
       .alpha(1).alphaDecay(0.028)
 
     /* ── links ──────────────────────────────────────────────────── */
@@ -606,7 +805,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       labelSize.set(c, { w: this.getComputedTextLength() + LABEL_PAD, h: LABEL_H })
     })
     const labelPos  = new Map()
+    const labelDim  = new Map()   // category -> still overlapping a portrait after the relax
     const catNodes  = new Map(cats.map(c => [c, nodes.filter(n => n.category === c)]))
+    /* Dimmed labels fall to this fraction of whatever opacity the zoom level
+       (or the ignition wave-in) would otherwise give them — routing failed
+       to clear a dense pocket, so the label steps back rather than sitting
+       on the portrait at full brightness. */
+    const LABEL_DIM_FACTOR = 0.35
+    const labelOpacity = (c, base) => base * (labelDim.get(c) ? LABEL_DIM_FACTOR : 1)
 
     /* ── category territory halos ───────────────────────────────────
        A soft radial colour field behind each cluster, tinted with the
@@ -717,17 +923,23 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('filter',  'url(#glow)')
       .attr('opacity', 0)
 
-    /* the core disc. Under a primary it is just the backing the portrait sits
-       on, so it stays pale; but for the secondaries and the tail — which show
-       NO portrait at rest — the disc IS the mark, so it carries far more of the
-       family colour. Those saturated little discs are the most legible things
-       on the field, and here they do the identifying work portraits used to. */
+    /* the core. For the secondaries and the tail — which show NO portrait at
+       rest — it is a full-radius disc carrying a lot of the family colour;
+       those saturated little discs are the most legible things on the field and
+       do the identifying work portraits used to. A primary instead gets a `pip`
+       at CORE_R (see above): the same near-white/gold mark the constellation
+       stages use for a hero star (`.cl-core.hero`), so the same vocabulary
+       stands for a figure on the map as in its tale. It stays under the
+       portrait — the light the face is lit by, not a glint punched over it —
+       and needs no prom ramp, since the tier's radius ramp already carries the
+       size difference into the pip. */
     gNode.append('circle').attr('class','core')
-      .attr('r',       d => radius(d))
-      .attr('fill',    d => d._tier === 'primary'
-        ? `color-mix(in oklab, ${CAT[d.category]} 32%, #f0ead9)`
+      .classed('pip',  d => d.tier === 1)
+      .attr('r',       d => coreRadius(d, radius(d)))
+      .attr('fill',    d => d.tier === 1
+        ? '#fff7e0'
         : `color-mix(in oklab, ${CAT[d.category]} 66%, #efe8d6)`)
-      .attr('opacity', d => d._tier === 'primary' ? 0.72 + d.prom * 0.28 : 0.92)
+      .attr('opacity', d => d.tier === 1 ? 1 : 0.92)
 
     /* head portrait — unframed. Drawn ~45% larger than the star and softened
        into the sky by a CSS radial-gradient mask (`.node image` in index.css;
@@ -735,74 +947,187 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        any zoom — an SVG objectBoundingBox mask pixelates when zoomed). The
        figure floats over its category-tinted core like an apparition — no
        circular crop or ring competing with the artwork. The `href` is set
-       LATER, by loadPortraits(), so ~100 mostly-missing portraits don't fire
-       ~390 failed requests + onerror DOM churn during the opening ignition
-       (that contention was a main source of load-time jank).
+       later by the bounded portrait queue, and only when the node's tier or an
+       interaction calls for it.
 
        Tier 3 is skipped entirely: a portrait inside a 3.4px dot is an
        unreadable smudge, and 62 of them turn the tail into noise. Those
        figures keep their portrait where it can actually be seen — the
        DetailPanel — and stay plain dots on the map. */
-    gNode.filter(d => d.tier !== 3).append('image')
+    /* The 12 primaries draw at ~110-165 CSS px and are the faces the map is
+       composed around, so they take the 360px crop. Everything in tier 2 draws
+       at a fraction of that and takes the 192px one — same framing, a quarter
+       of the bytes and of the decode. */
+    const nodeVariant = d => mapPortraitVariant(d.id)
+
+    gNode.filter(d => d.tier !== 3 && portraitEntries(d.id).length > 0).append('image')
       .attr('x',                  d => -radius(d) * IMG_SCALE)
       .attr('y',                  d => -radius(d) * IMG_SCALE)
       .attr('width',              d => radius(d) * 2 * IMG_SCALE)
       .attr('height',             d => radius(d) * 2 * IMG_SCALE)
       .attr('preserveAspectRatio','xMidYMid slice')
-      /* invisible until a candidate actually loads — otherwise the browser
-         paints a broken-image glyph while the fallback chain walks its 404s */
+      /* invisible until an exact manifest entry loads — this also suppresses a
+         broken-image glyph if a generated file is damaged after manifesting */
       .attr('opacity', 0)
-      .on('load', function() { d3.select(this).attr('opacity', 0.95) })
+      .on('load', function() {
+        d3.select(this).attr('opacity', 0.95)
+        finishPortraitRequest(this)
+      })
       .on('error', function(_, d) {
         const el = d3.select(this)
-        const chain = portraitSources(d.id)
+        const chain = portraitSources(d.id, nodeVariant(d))
         const i = +(el.attr('data-fb') || 0) + 1
         el.attr('data-fb', i)
         if (i < chain.length) el.attr('href', chain[i])
-        else el.remove()
+        else {
+          finishPortraitRequest(this)
+          el.remove()
+        }
       })
 
-    /* Kick off portrait loading. Called once the entrance has finished (or the
-       moment the user interacts, via finishIgnition) so the request/404 storm
-       lands on an idle main thread instead of mid-animation. The onerror
-       fallback chain above still resolves .png / -full variants per the
-       drop-in-by-id convention. */
-    /* Tiers 1 and 2 wear their portrait at rest — those are the stars with
-       enough glyph to carry a face. The tail has no <image> element at all, so
-       the opening requests ~75 portraits rather than one per node, and the
-       deferral above (loadPortraits fires after the ignition) is what keeps the
-       request/404 storm off the animating main thread. */
+    /* Portrait scheduling is intentionally a level-of-detail system:
+         - the 12 primaries are queued immediately, during the cosmogony;
+         - secondaries load only on hover, selection, or when they enter a
+           zoomed-in viewport, and not before the entrance ends;
+         - the tail never receives a graph portrait.
+       Four in flight is enough to fill faces quickly without releasing a burst
+       of image decodes onto the main thread. A direct interaction moves an
+       already-queued portrait to the front.
+
+       The primaries are queued at the FOOT OF THE EFFECT, not from
+       finishIgnition, because the cosmogony is a ~13.4s film (IGNITION_MS) with
+       an idle network under it, and that used to be 13.4s in which not one
+       image byte was requested — the first face then landed well after the sky
+       did. Starting them at t=0 is invisible either way: the <image> holds
+       opacity 0 until it loads, and its node is still dark for most of the
+       film. Secondaries deliberately do NOT come forward with them (see
+       loadVisibleSecondaryPortraits) — they would compete for the four slots
+       against the faces the entrance is actually about to reveal. */
+    const MAX_PORTRAIT_LOADS = 4
+    const _portraitRequested = new Set()
     const _portraitShown = new Set()
-    function showPortrait(d) {
-      if (_portraitShown.has(d.id)) return
-      _portraitShown.add(d.id)
-      gNode.filter(n => n.id === d.id).select('image')
-        .attr('href', portraitSources(d.id)[0])
-    }
-    let _portraitsLoaded = false
-    function loadPortraits() {
-      if (_portraitsLoaded) return
-      _portraitsLoaded = true
-      gNode.filter(d => d.tier !== 3).each(function(d) {
+    const _portraitQueue = []
+    let _portraitActive = 0
+    let _primariesQueued = false
+
+    function pumpPortraitQueue() {
+      while (_portraitActive < MAX_PORTRAIT_LOADS && _portraitQueue.length) {
+        const d = _portraitQueue.shift()
+        const src = portraitSources(d.id, nodeVariant(d))[0]
+        const image = gNode.filter(n => n.id === d.id).select('image')
+        if (!src || image.empty()) continue
         _portraitShown.add(d.id)
-        d3.select(this).select('image').attr('href', portraitSources(d.id)[0])
-      })
+        _portraitActive++
+        image.attr('data-loading', '1').attr('href', src)
+      }
     }
 
+    function finishPortraitRequest(element) {
+      const image = d3.select(element)
+      if (image.attr('data-loading') !== '1') return
+      image.attr('data-loading', null)
+      _portraitActive = Math.max(0, _portraitActive - 1)
+      pumpPortraitQueue()
+    }
+
+    function showPortrait(d, urgent = false) {
+      if (!d || d.tier === 3 || !portraitEntries(d.id).length) return
+      if (_portraitRequested.has(d.id)) {
+        if (urgent && !_portraitShown.has(d.id)) {
+          const i = _portraitQueue.findIndex(n => n.id === d.id)
+          if (i > 0) _portraitQueue.unshift(..._portraitQueue.splice(i, 1))
+        }
+        return
+      }
+      _portraitRequested.add(d.id)
+      if (urgent) _portraitQueue.unshift(d)
+      else _portraitQueue.push(d)
+      pumpPortraitQueue()
+    }
+
+    /* Warm the DetailPanel's 820px hero while the viewer is still deciding.
+       Clicking a star otherwise means ~225KB of silence before the figure
+       appears, because the panel only starts that fetch once React has
+       rendered it — and the head crop already on the node is a different
+       image, not a smaller version of the same one, so it cannot stand in.
+
+       Gated on DWELL, not on hover: pointer-crossing the field fires hoverOn
+       for every node under the path, and speculating on each one would put
+       megabytes of unwanted full-tier art on the wire. ~180ms of rest is the
+       difference between passing over a star and looking at it. Deliberately
+       outside the node-portrait queue — this is one image, it must not take a
+       slot from the faces actually on screen, and the browser's own cache is
+       what the panel will read it back out of. */
+    const PREFETCH_DWELL_MS = 180
+    const _fullPrefetched = new Set()
+    let _prefetchTimer = null
+    const _saveData = typeof navigator !== 'undefined' && navigator.connection?.saveData
+
+    function cancelFullPrefetch() {
+      clearTimeout(_prefetchTimer)
+      _prefetchTimer = null
+    }
+
+    function prefetchFull(d) {
+      cancelFullPrefetch()
+      /* tier is irrelevant here: a tail dot has no portrait ON THE MAP but
+         still opens the same panel, and is the case with nothing cached */
+      if (!d || _saveData || _fullPrefetched.has(d.id)) return
+      const src = portraitSources(d.id, 'full')[0]
+      if (!src) return
+      _prefetchTimer = setTimeout(() => {
+        _fullPrefetched.add(d.id)
+        const img = new Image()
+        img.decoding = 'async'
+        if ('fetchPriority' in img) img.fetchPriority = 'low'
+        img.src = src
+      }, PREFETCH_DWELL_MS)
+    }
+
+    function loadPrimaryPortraits() {
+      if (_primariesQueued) return
+      _primariesQueued = true
+      nodes.filter(d => d.tier === 1).forEach(d => showPortrait(d))
+    }
+
+    /* `_ignitionDone`, not `_primariesQueued`: the primaries are now queued
+       before the film starts, so the old flag no longer marks the end of the
+       entrance. The parallax settle in phase 5 drives `zoom.transform` at
+       k > 1, which reaches this handler — without the gate a secondary sweep
+       would fire mid-film and take the queue slots. */
+    function loadVisibleSecondaryPortraits(transform) {
+      if (!_ignitionDone || transform.k <= 1) return
+      const margin = 48
+      const visible = nodes.filter(d => {
+        if (d.tier !== 2 || _portraitRequested.has(d.id)) return false
+        const x = transform.applyX(d.x), y = transform.applyY(d.y)
+        return x >= -margin && x <= W + margin && y >= -margin && y <= H + margin
+      })
+      visible.sort((a, b) => {
+        const ax = transform.applyX(a.x) - W / 2, ay = transform.applyY(a.y) - H / 2
+        const bx = transform.applyX(b.x) - W / 2, by = transform.applyY(b.y) - H / 2
+        return ax * ax + ay * ay - bx * bx - by * by
+      })
+      visible.forEach(d => showPortrait(d))
+    }
+
+    /* The name clears the PORTRAIT, not the star (`glyphR`) — offset off
+       `radius` alone lands "Typhon" across the dragon's own face, since the
+       art overhangs the core it is drawn on by 45%. */
     gNode.append('text').attr('class','node-label')
-      .attr('x', d => radius(d) + 6).attr('y', 4)
+      .attr('x', d => glyphR(d) + 6).attr('y', 4)
       .text(d => d.name)
 
     /* ── label placement — avoid overlapping nearby nodes ─────── */
     function assignLabelSides() {
       const labelW = 60
       gNode.each(function (d) {
-        const r = radius(d)
+        const r = glyphR(d)
         let rightBlocked = false
         for (const other of nodes) {
           if (other.id === d.id) continue
           const dx = other.x - d.x, dy = other.y - d.y
-          const ro = radius(other)
+          const ro = glyphR(other)
           if (dx > -ro && dx < r + labelW + ro && Math.abs(dy) < ro + 8) {
             rightBlocked = true
             break
@@ -872,10 +1197,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       for (const c of cats) {
         if (!labelPos.has(c)) labelPos.set(c, { ...anchor.get(c) })
       }
-      /* the primary stars are the field's landmarks — a band label must never
-         sit on one (the "OLYMPIANS on Helios" collision). We repel labels off
-         them explicitly, since the label-vs-label pass below can't see nodes. */
-      const bigNodes = nodes.filter(n => n._tier === 'primary')
+      /* Portrait-bearing stars (tiers 1 and 2) are the field's landmarks — a
+         band label must never sit on one (the "OLYMPIANS on Helios",
+         "MONSTERS on Typhon" collision). We repel labels off them explicitly,
+         since the label-vs-label pass below can't see nodes. Clearance uses
+         the *portrait's* footprint (IMG_SCALE × radius), not the bare core
+         radius — the collide-force clearance is right for star-vs-star
+         spacing but under-covers the image, which visibly overhangs it. */
+      const portraitNodes = nodes.filter(n => n.tier !== 3)
       for (let iter = 0; iter < 80; iter++) {
         let moved = false
         for (const c of cats) {
@@ -886,8 +1215,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         }
         for (const c of cats) {
           const p = labelPos.get(c), b = labelSize.get(c)
-          for (const n of bigNodes) {
-            const rr = radius(n) + 12
+          for (const n of portraitNodes) {
+            const rr = glyphR(n) + 10
             const dx = p.x - n.x, dy = p.y - n.y
             const ox = b.w / 2 + rr - Math.abs(dx)
             const oy = b.h / 2 + rr - Math.abs(dy)
@@ -926,6 +1255,22 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         p.y = Math.min(Math.max(p.y, b.h / 2), H - b.h / 2)
       }
 
+      /* A dense pocket (the monster/sea-deity tangle) can leave no position
+         that clears every nearby portrait within 80 iterations — check what
+         actually landed against the portraits' real footprint (no padding,
+         unlike the repel pass above) and dim any label still sitting on one,
+         instead of shipping a readable-on-paper position that isn't. */
+      for (const c of cats) {
+        const p = labelPos.get(c), b = labelSize.get(c)
+        let dim = false
+        for (const n of portraitNodes) {
+          const rr = glyphR(n)
+          const dx = p.x - n.x, dy = p.y - n.y
+          if (b.w / 2 + rr - Math.abs(dx) > 0 && b.h / 2 + rr - Math.abs(dy) > 0) { dim = true; break }
+        }
+        labelDim.set(c, dim)
+      }
+
       clusterSel.attr('x', c => labelPos.get(c).x).attr('y', c => labelPos.get(c).y)
     }
 
@@ -959,12 +1304,29 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     sim.stop()
     for (let i = 0; i < 160; i++) sim.tick()
 
+    /* Second pass: re-arm collide with bake-corrected radii and relax again.
+       It has to be a second pass because `forceCollide` reads its radius
+       accessor once, in initialize() — at that point every node is still at
+       its random start position, so a ρ-dependent radius would be computed
+       from noise. Re-setting the force re-initializes it, now against settled
+       positions. Alpha is re-energised for it rather than left at the ~0.01
+       it has decayed to: collide can only push apart, never draw together, so
+       a pass with the other forces asleep is a one-way inflation — the field
+       grew past the resting camera's fit, which pulled back, which shrank
+       every glyph and dropped the tier-2 labels below their zoom threshold.
+       With cluster/dome/link awake the correction stays redistributive, which
+       is what it is: tighter at the centre, wider at the rim, uniform once
+       baked. */
+    sim.force('collide', d3.forceCollide()
+      .radius(d => spaceFor(d) / bakeScaleAt(d.x, d.y)).strength(0.92))
+    sim.alpha(0.4)
+    for (let i = 0; i < 200; i++) sim.tick()
+
     /* spherical bake — remap the settled layout through a mild fisheye:
        ρ' = sin(ρA)/sin(A) expands the mid-field and compresses spacing toward
        the horizon, the signature foreshortening of a sphere seen face-on.
        Baked into d.x/d.y once so every downstream consumer (camera, labels,
        hover, drag) keeps working in a single coordinate space. */
-    const DOME_A = 1.15
     nodes.forEach(n => {
       const ex = (n.x - DOME.cx) / DOME.rx
       const ey = (n.y - DOME.cy) / DOME.ry
@@ -975,6 +1337,68 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       n.x = DOME.cx + ex * s * DOME.rx
       n.y = DOME.cy + ey * s * DOME.ry
     })
+
+    /* ── portrait separation — the last word on overlap ──────────────
+       The forces above reserve `bodyR` (the solid 80% of the box) in the
+       PRE-bake space, and both of those are approximations: collide is a soft
+       force at strength .92 in a field that is ~60% reserved area, and the
+       bake correction is radial-only. Neither can promise anything about the
+       rectangle the browser actually paints. So the final geometry gets one
+       deterministic pass in the space the art is drawn in: no two portraits
+       may come within SEP_GAP of each other, measured on `drawnR` — the
+       LARGEST box a node ever draws, i.e. its selected size, so the guarantee
+       holds through hover, selection and a highlighted path and not merely at
+       rest. (Tier 3 draws no <image> at all, so there the star is the mark.)
+
+       It is surgical, not a re-layout: measured over 6 settles, 24-35 of the
+       139 nodes move at all, the median move is 0, the largest ~19px, and the
+       field's ρmax is unchanged (1.07-1.10, against 1.085-1.12 without it).
+       Overlaps across every interaction state go 43 → 0, and the tightest
+       resting gap between two portraits goes 8-14px → 24px. Doing the same job
+       by inflating the collide radius to the full box instead needs ~22% more
+       reserved area, still leaves a residual pair or two (a soft force cannot
+       promise a hard constraint), and pushes ρmax out to 1.12 — which pulls
+       the resting camera back and shrinks every glyph.
+
+       Half the correction per pass, split so the smaller node yields more;
+       ~60 passes converge to a 0.1px shortfall, and it breaks early once the
+       worst pair is within a quarter-pixel. O(n²) once, off-screen, next to
+       360 sim ticks that already ran. */
+    const SEP_GAP = 4
+    const drawnR  = n => n.tier === 3 ? radius(n) : selRadius(n) * IMG_SCALE
+    const sepR    = nodes.map(n => drawnR(n) + SEP_GAP)
+    for (let pass = 0; pass < 60; pass++) {
+      let worst = 0
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j]
+          const want = sepR[i] + sepR[j]
+          const dx = b.x - a.x, dy = b.y - a.y
+          const d = Math.hypot(dx, dy) || 0.01
+          if (d >= want) continue
+          if (want - d > worst) worst = want - d
+          const shift = (want - d) * 0.5
+          const ux = dx / d, uy = dy / d
+          const sa = sepR[j] / want, sb = sepR[i] / want   // the smaller node yields
+          a.x -= ux * shift * sa; a.y -= uy * shift * sa
+          b.x += ux * shift * sb; b.y += uy * shift * sb
+        }
+      }
+      if (worst < 0.25) break
+    }
+
+    /* From here the simulation only ever runs on BAKED positions — a drag is
+       the only thing that wakes it — so the collide force stops correcting for
+       a bake that has already happened. Dividing by `bakeScaleAt` a second
+       time inflates the rim radii by up to 1/0.64, and the field blows outward
+       on every drag: measured over 4 settles, one 120px haul of Zeus leaves
+       ρmax at 1.28-1.35 with the correction still in, against 1.14-1.19
+       without it. It reserves the drawn box instead, so a drag maintains the
+       separation the pass above just established (measured: 0 overlaps after
+       the same drag, against an occasional 3px pair), floored at the pre-bake
+       per-tier reserve so the tail keeps its own spacing. */
+    sim.force('collide', d3.forceCollide()
+      .radius(d => Math.max(drawnR(d) + SEP_GAP, spaceFor(d))).strength(0.92))
 
     updateClusterLabels()
     updateCatHalos()
@@ -991,19 +1415,18 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         zoomLayer.attr('transform', e.transform)
         svg.classed('zoomed-mid', e.transform.k > 1.0)
         svg.classed('zoomed-in', e.transform.k > 1.7)
+        loadVisibleSecondaryPortraits(e.transform)
         /* cluster labels dim as you zoom in (individual names take over) */
         const clOp = e.transform.k > 1.7 ? 0.12 : e.transform.k > 1.0 ? 0.28 : 0.45
-        clusterSel.attr('opacity', clOp)
+        clusterSel.attr('opacity', c => labelOpacity(c, clOp))
       })
     svg.call(zoom).on('dblclick.zoom', null)
     svg.on('click', () => api.clearSelection())
 
-    /* pause CSS animations AND the warm sim when the tab is hidden — the sim
-       would otherwise tick forever in the background, wasting CPU */
-    const handleVisibility = () => {
-      svg.classed('paused', document.hidden)
-      if (document.hidden) sim.stop()
-    }
+    /* The sky sleeps when nothing can see it — see `applyDormancy` below.
+       A hidden tab and a full-screen overlay are the same condition, so they
+       share one switch instead of fighting over the `paused` class. */
+    const handleVisibility = () => applyDormancy()
     document.addEventListener('visibilitychange', handleVisibility)
 
     /* fit view — fill ~80% of the viewport (tight padding) */
@@ -1211,7 +1634,10 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
       /* phase 4: nodes ignite in genealogical waves with sparkle + flare */
       gNode.each(function (d) {
-        const isHub = d.prom >= hubThreshold
+        /* `d.tier === 1` IS the old `prom >= hubThreshold`: that threshold was
+           `promRank[PRIMARY_COUNT - 1]`, which is precisely the tier-1 cutoff
+           `TIER_BY_ID` now applies. Reading the tier keeps one rule. */
+        const isHub = d.tier === 1
         const stagger = isHub ? pace(300) : rnd() * pace(250)
         const delay = WAVE_MS[d._wave] + stagger
         const g = d3.select(this)
@@ -1238,7 +1664,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         const wave = CAT_WAVE[c] ?? 5
         d3.select(this)
           .transition('ign').duration(pace(800)).delay(WAVE_MS[wave] + pace(400))
-          .attr('opacity', 0.45)
+          .attr('opacity', labelOpacity(c, 0.45))
       })
 
       /* phase 5: parallax settle — ease back from over-zoom to rest */
@@ -1291,13 +1717,18 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         .each(function (d) {
           d3.select(this).attr('opacity', 0.07 + d.prom * 0.14).attr('r', radius(d) * GLOW_R)
         })
-      clusterSel.interrupt('ign').attr('opacity', 0.45)
+      clusterSel.interrupt('ign').attr('opacity', c => labelOpacity(c, 0.45))
       bloom.interrupt('ign').remove()
       sparkLayer.selectAll('*').interrupt('spark').remove()
       genTitleLayer.selectAll('*').interrupt('ign').remove()
       svg.interrupt('ign').call(zoom.transform, restTx)
 
-      loadPortraits()
+      /* Marked here rather than at the start, so only a cosmogony the viewer
+         actually reached the end of (or deliberately skipped past) counts as
+         seen — a reload halfway through, or StrictMode's throwaway first mount
+         in dev, still owes them the film. */
+      markCosmogonySeen()
+
       scheduleAmbient(3200)   // let the sky settle, then begin its heartbeat
       teardownSkip()
     }
@@ -1351,8 +1782,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       document.removeEventListener('visibilitychange', onIgnitionVisibility)
     }
 
-    armIgnition()
-    if (!document.hidden) startIgnition()
+    /* the sequence is kicked off at the very foot of this effect, once every
+       declaration it reaches into exists — see "opening state" below */
 
     /* ── tooltip positioning ────────────────────────────────────── */
     const tip = document.getElementById('tip')
@@ -1495,12 +1926,13 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const t = d3.transition().duration(280).ease(d3.easeCubicOut)
       g.select('.glow').transition(t).attr('r', r * GLOW_R)
       g.select('.sel-halo').transition(t).attr('r', r * 1.45)
-      g.select('.core').transition(t).attr('r', r)
+      g.select('.core').transition(t).attr('r', coreRadius(d, r))
       g.select('image').transition(t)
         .attr('x', -r * IMG_SCALE).attr('y', -r * IMG_SCALE)
         .attr('width', r * 2 * IMG_SCALE).attr('height', r * 2 * IMG_SCALE)
       const side = d._labelSide || 1
-      g.select('.node-label').transition(t).attr('x', side > 0 ? r + 6 : -(r + 6))
+      const lr = glyphRAt(d, r) + 6
+      g.select('.node-label').transition(t).attr('x', side > 0 ? lr : -lr)
     }
     function enlargeSelected(id) {
       if (_grownId === id) return                // already correct — skip redundant transitions
@@ -1606,7 +2038,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       if (state.pathLock || state.tourLock || !_ignitionDone) return
       _hoverActive = true
       stopAmbient()                 // the viewer is driving now — hush the ambient sky
-      showPortrait(d)               // the face is the reward of leaning in
+      showPortrait(d, true)         // the face is the reward of leaning in
+      prefetchFull(d)               // and the panel's hero, if they linger
       const near = adj[d.id]
       nodeLayer.classed('focusing', true)
       gNode.classed('faded', n => n.id !== d.id && !near.has(n.id))
@@ -1668,6 +2101,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     function hoverOff() {
       if (state.pathLock || state.tourLock) return
+      cancelFullPrefetch()          // they were passing over, not looking
       _hoverActive = false
       if (!state.selected) scheduleAmbient(5000)   // idle again — let the sky resume its pulse
       if (tip) tip.style.opacity = '0'
@@ -1757,7 +2191,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
       const tx = (W / 2 - rightV  / 2) - k * cx                 // centre in the un-panelled width
       const ty = (H / 2 - bottomV / 2) - k * cy                 // lift above the tour caption bar
-      svg.transition().duration(820).call(
+      /* A tour drives this from behind its own opaque overlay — the camera has
+         to ARRIVE (closing the tour reveals the sky standing on the last
+         figure) but nobody can watch it travel, so while dormant it jumps.
+         That is ~800ms of full-graph repaint saved on every beat, under a
+         `backdrop-filter` that would otherwise re-blur across all of it. */
+      svg.transition().duration(_dormant ? 0 : 820).call(
         zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k))
     }
 
@@ -1849,26 +2288,130 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     let _ambientTimer = null
     let _ambientIdx = 0
+    let _flareId = null
+    let _dormant = false      // a full-screen overlay is covering the sky
+
+    /* The comet used to erase itself completely, so the sky at minute ten looked
+       exactly like the sky at minute one. Now each completed descent leaves a
+       hairline behind and the web of becoming literally draws itself.
+
+       Residue is keyed by lineage, one path each, replaced rather than stacked:
+       nine threads re-traced forever would otherwise pile 0.12 on 0.12 until the
+       genealogy was a bright cage. Re-laying also re-reads the current geometry,
+       so a thread stays true after a drag has moved its stars.
+
+       No `#trace-glow` here, unlike the live comet — a blur held at 0.12 reads as
+       fog rather than a line, and nine permanently filtered paths are a standing
+       cost on every frame the sky drifts. */
+    const RESIDUE_OP = 0.12
+    function layResidue(key, dstr) {
+      residueLayer.selectAll('.residue').filter(function () {
+        return this.getAttribute('data-lin') === String(key)
+      }).remove()
+      residueLayer.append('path')
+        .attr('class', 'residue').attr('data-lin', key)
+        .attr('d', dstr).attr('fill', 'none')
+        .attr('stroke', '#cdb88a').attr('stroke-width', 1)
+        .attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round')
+        .attr('opacity', 0)
+        .transition('residue').duration(4000).ease(d3.easeSinInOut)
+        .attr('opacity', RESIDUE_OP)
+    }
+
+    /* The thread has to arrive at somebody. Without this the comet just stops
+       being, and the descent it spent nine seconds tracing never names its heir
+       — so the terminal star takes one nova-sized breath as the trace lands.
+       Brightness rides --glow-base because the CSS twinkle owns `opacity`.
+
+       The radius is `max(nova, selection-halo)` rather than a bare
+       `r * GLOW_R_NOVA`, for the same reason `selRadius` floors tier 3 at an
+       absolute 13: `growLineage` walks each descent to its *furthest* heir, and
+       the furthest heir of a line is by construction a leaf — so this lands on a
+       tail dot far more often than on a primary. ×2.2 of a 5px halo is 7px of
+       nothing, and the arrival the whole feature exists to deliver goes unseen.
+       Floored to the halo the node would wear if you had clicked it, primaries
+       still take the full nova (it outruns the floor on its own). */
+    function flareTerminal(id) {
+      const d = byId[id]
+      if (!d || id === _grownId) return
+      const peak = Math.max(radius(d) * GLOW_R_NOVA, selRadius(d) * GLOW_R)
+      const baseOp = 0.07 + d.prom * 0.14
+      _flareId = id
+      gNode.filter(n => n.id === id).select('.glow')
+        .interrupt('ambient-flare')
+        .style('--glow-base', Math.min(baseOp * 3.2, 0.38).toFixed(3))
+        .transition('ambient-flare').duration(260).ease(d3.easeCubicOut)
+        .attr('r', peak)
+        .transition('ambient-flare').duration(440).ease(d3.easeCubicIn)
+        .attr('r', radius(d) * GLOW_R)
+        .on('end', () => { _flareId = null; restoreFlareGlow(id) })
+    }
+    /* Restored without a transition on purpose: hoverOn calls stopAmbient and
+       then immediately starts its own 'glow-shimmer' on `r`. Two live
+       transitions writing one attribute is a coin flip per frame. */
+    function restoreFlareGlow(id) {
+      const d = byId[id]; if (!d || id === _grownId) return
+      gNode.filter(n => n.id === id).select('.glow')
+        .style('--glow-base', (0.07 + d.prom * 0.14).toFixed(3))
+    }
+
     function stopAmbient() {
       clearTimeout(_ambientTimer)
       traceLayer.selectAll('.ambient').interrupt('ambient').remove()
+      residueLayer.classed('hushed', true)
+      if (_flareId) {
+        const id = _flareId, d = byId[id]
+        _flareId = null
+        const sel = gNode.filter(n => n.id === id).select('.glow').interrupt('ambient-flare')
+        if (d && id !== _grownId) sel.attr('r', radius(d) * GLOW_R)
+        restoreFlareGlow(id)
+      }
     }
     function scheduleAmbient(delay) {
       clearTimeout(_ambientTimer)
+      residueLayer.classed('hushed', false)
       _ambientTimer = setTimeout(runAmbient, delay)
     }
+    /* ── dormancy — the sky sleeps when nothing can see it ────────────
+       A full-screen overlay (Guided Sky, Story Orbit, Zodiac) is
+       `position: fixed; inset: 0` over an OPAQUE ground at z-index 1000, so
+       every frame the map draws under one is work nobody sees: ~63 shimmering
+       stars and 17 blurred flare blooms, 12 dash-flow links, the top 6 hubs'
+       breath, the drifting haze, the ambient comet's blurred stroke — and,
+       above all, the two float layers, which transform the whole graph group
+       (139 nodes and 258 edges) and so re-rasterize it every frame.
+       And it is not merely wasted — the overlays hold `backdrop-filter` panels
+       over that region (`.so-caption` blur(10px), `.so-tale-veil` blur(6px),
+       `.gs-exit` blur(6px)), and a backdrop that changes every frame can never
+       be cached: the blur is recomputed for each one. So animation under an
+       overlay is charged twice, once to paint and once to re-blur, which is
+       why the story overlays felt heavy on machines the map alone is fine on.
+       The camera is deliberately NOT frozen: GuidedSky flies the map to each
+       beat's figure underneath itself, so closing a tour reveals the sky
+       already standing on the last figure. `paused` only halts CSS animation;
+       zoom transitions and `select()` keep working. */
+    function applyDormancy() {
+      const asleep = _dormant || document.hidden
+      svg.classed('paused', asleep)
+      if (asleep) { sim.stop(); stopAmbient() }
+      /* Re-arm the heartbeat only if the viewer is not driving something:
+         `scheduleAmbient` un-hushes the residue web, which has to stay hushed
+         while a selection, a path or a tour owns the field. */
+      else if (!state.selected && !state.pathLock && !state.tourLock) scheduleAmbient(2500)
+    }
+
     function ambientIdle() {
-      return _ignitionDone && !reduced && !document.hidden
+      return _ignitionDone && !reduced && !document.hidden && !_dormant
         && !state.selected && !state.pathLock && !state.tourLock && !_hoverActive
     }
     function runAmbient() {
       if (!LINEAGES.length) return
       if (!ambientIdle()) { scheduleAmbient(4500); return }
-      const chain = LINEAGES[_ambientIdx % LINEAGES.length]
+      const key = _ambientIdx % LINEAGES.length
       _ambientIdx++
-      traceChain(chain)
+      traceChain(LINEAGES[key], key)
     }
-    function traceChain(chain) {
+    function traceChain(chain, key) {
       traceLayer.selectAll('.ambient').interrupt('ambient').remove()
       /* sample every hop path into one polyline, walked in ancestor→heir order */
       const pts = []
@@ -1898,13 +2441,21 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
          loses the hop it is following — so length sets the duration, floored at
          ~0.9s a hop so a short descent still reads as a journey. */
       const DUR = Math.min(9500, Math.max(900 * chain.hops.length, total * 3.4))
-      trail.transition('ambient').duration(DUR).ease(d3.easeSinInOut)
+      /* Arrival. Hung on this transition's 'end' rather than the fade's, and
+         deliberately on 'end' rather than a timer: an interrupted comet (the
+         viewer hovered, selected, opened a tour) fires 'interrupt' instead, so a
+         descent nobody watched to the finish leaves no residue and no flare. */
+      const run = trail.transition('ambient').duration(DUR).ease(d3.easeSinInOut)
         .attr('stroke-dashoffset', 0)
         .tween('comet', () => t => {
           const p = trail.node().getPointAtLength(t * total)
           comet.attr('cx', p.x).attr('cy', p.y)
         })
-        .transition('ambient').duration(1500).ease(d3.easeCubicIn)
+        .on('end', () => {
+          layResidue(key, dstr)
+          flareTerminal(chain.ids[chain.ids.length - 1])
+        })
+      run.transition('ambient').duration(1500).ease(d3.easeCubicIn)
         .attr('opacity', 0)
         .on('end', () => { trail.remove(); comet.remove(); scheduleAmbient(6000 + Math.random() * 4000) })
       comet.transition('ambient').delay(DUR).duration(1100).attr('opacity', 0)
@@ -1917,16 +2468,17 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         if (state.pathLock) return
         stopAmbient()
         state.selected = id
+        if (id) showPortrait(byId[id], true)
         applySelectVisual(id)
         if (fly && id) frameSelection(id, opts)
-        onSelect(id)
+        onSelectRef.current(id)
       },
       clearSelection() {
         if (state.pathLock || state.tourLock) return
         state.selected = null
         applySelectVisual(null)
         scheduleAmbient(5000)
-        onSelect(null)
+        onSelectRef.current(null)
       },
       flyTo(id, scale) {
         const n = byId[id]; if (!n) return
@@ -2035,6 +2587,12 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         applySelectVisual(state.selected)
         if (!state.selected) scheduleAmbient(5000)
       },
+      /* the sky is covered by a full-screen overlay — stop drawing under it */
+      setDormant(v) {
+        if (_dormant === !!v) return
+        _dormant = !!v
+        applyDormancy()
+      },
       setTourLock(v) {
         state.tourLock = v
         if (v) stopAmbient()
@@ -2051,9 +2609,30 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     apiRef.current = api
 
+    /* ── opening state ──────────────────────────────────────────────
+       Kicked off at the foot of the effect because finishIgnition starts the
+       ambient heartbeat, and that timer is declared most of the way down here
+       — called any earlier it lands in the temporal dead zone. Nothing has
+       painted yet either way, so this looks identical to running at the top. */
+    /* Ahead of the branch, so all three routes in (film, hidden-tab hold,
+       already-seen) start their image fetches at the same moment: now. */
+    loadPrimaryPortraits()
+
+    if (cosmogonySeen()) {
+      /* Already watched this session: open on the finished sky. finishIgnition
+         lands every layer on exactly the values phase 5 arrives at, and starts
+         the ambient heartbeat on its way out — so from here the only motion is
+         lineages painting themselves across the edges, now and then. */
+      finishIgnition()
+    } else {
+      armIgnition()
+      if (!document.hidden) startIgnition()
+    }
+
     return () => {
       clearTimeout(ignitionTimer)
       clearTimeout(dragHintTimer)
+      cancelFullPrefetch()
       clearTimeout(_meteorTimer)
       clearTimeout(_ambientTimer)
       teardownSkip()
@@ -2064,7 +2643,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       svg.selectAll('*').remove()
       apiRef.current = null
     }
-  }, [onSelect])
+  }, [])
 
   return (
     <svg
@@ -2076,4 +2655,4 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 })
 
 export default SkyGraph
-export { CAT, LCOL, portraitSources }
+export { CAT, LCOL, portraitEntries, portraitSources, mapPortraitVariant, cosmogonySeen }

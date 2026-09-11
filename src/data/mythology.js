@@ -126,6 +126,14 @@ export const nodes = [
     symbols:["spindle","measuring rod","shears","thread"], roman_equivalent:"Parcae",
     image_prompt:"Three ancient women weaving a cosmic thread, one cutting, eternal loom" },
 
+  { id:"erinyes", name:"The Erinyes", epithet:"The Furies",
+    category:"chthonic", gender:"female", domains:["vengeance","blood guilt","curses","the underworld"],
+    description:"Alecto, Tisiphone, and Megaera — three relentless avengers who hunt down kindred blood-guilt and broken oaths. They answer to no throne, and no distance or door can shut them out.",
+    origins:"Born of Gaia, quickened from the blood that fell when Cronus castrated Uranus.",
+    jungian_archetype:"Shadow", notable_myths:["Theogony","Orestes and the Eumenides"],
+    symbols:["serpent hair","black wings","whip","torch"], roman_equivalent:"Furiae",
+    image_prompt:"Three winged avenging goddesses, serpent hair, tears of blood, relentless pursuit through shadow" },
+
   // ── TITANS ─────────────────────────────────────────────────────────────────
   { id:"uranus",  name:"Uranus",  epithet:"The Sky Father",
     category:"titan", gender:"male", domains:["sky","heavens","stars","seasons"],
@@ -434,6 +442,14 @@ export const nodes = [
     jungian_archetype:"Wise Old Man", notable_myths:["Heracles and the Hesperides","Trojan War"],
     symbols:["sea serpent","fish tail","grey beard","trident"], roman_equivalent:null,
     image_prompt:"Ancient shape-shifting sea elder, fish tail, grey beard, wisdom of the deep" },
+
+  { id:"proteus", name:"Proteus", epithet:"The Shifting Shepherd of Seals",
+    category:"sea_deity", gender:"male", domains:["shape-shifting","prophecy","the sea","hidden knowledge"],
+    description:"An elder sea god who herds Poseidon's grey seals off the isle of Pharos. He knows all things but will only speak if seized and held through every monstrous shape he becomes.",
+    origins:"A son of Poseidon by some accounts; like Nereus before him, called the Old Man of the Sea.",
+    jungian_archetype:"Shapeshifter", notable_myths:["Odyssey"],
+    symbols:["shape-shifting form","seals","running water","hidden truth"], roman_equivalent:null,
+    image_prompt:"Ancient shape-shifting sea elder mid-transformation among seals on a sunlit shore" },
 
   { id:"phorcys", name:"Phorcys", epithet:"Hidden Dangers of the Deep",
     category:"sea_deity", gender:"male", domains:["hidden sea dangers","sea monsters","reefs"],
@@ -1473,6 +1489,7 @@ export const links = [
   { source:"gaia",     target:"theia",     type:"parent_of",  label:"with Uranus" },
   { source:"uranus",   target:"theia",     type:"parent_of",  label:"with Gaia" },
   { source:"cronus",   target:"uranus",    type:"enemy_of",   label:"castrated his father" },
+  { source:"gaia",     target:"erinyes",   type:"birthed",    label:"quickened from the blood of his castration" },
 
   // ── GAIA + PONTUS → SEA DEITIES ───────────────────────────────────────────
   { source:"gaia",     target:"phorcys",   type:"parent_of",  label:"with Pontus" },
@@ -1526,6 +1543,9 @@ export const links = [
   // ── NEREUS → NEREIDS ──────────────────────────────────────────────────────
   { source:"nereus",   target:"thetis",    type:"parent_of",  label:"most honored Nereid" },
   { source:"nereus",   target:"amphitrite",type:"parent_of",  label:"with Doris" },
+
+  // ── POSEIDON → PROTEUS ────────────────────────────────────────────────────
+  { source:"poseidon", target:"proteus",   type:"parent_of",  label:"a son who herds his seals, by some accounts" },
 
   // ── ZEUS UNIONS & CHILDREN ────────────────────────────────────────────────
   { source:"zeus",     target:"hera",      type:"lover_of",   label:"husband and wife — king and queen" },

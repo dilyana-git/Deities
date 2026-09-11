@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import SkyGraph, { CAT, LCOL } from './components/SkyGraph.jsx'
+import SkyGraph, { CAT, LCOL, cosmogonySeen } from './components/SkyGraph.jsx'
 import DetailPanel from './components/DetailPanel.jsx'
 import GuidedSky from './components/GuidedSky.jsx'
 import ZodiacSky from './components/ZodiacSky.jsx'
@@ -11,6 +11,26 @@ import { linkTypeConfig, linkTypeOrder } from './data/linkTypeConfig.js'
 /* Legacy guided-tour data lived here. The narratives now live in
    src/data/tours.js (richer captions + kickers) and are presented by the
    Guided Sky "STORY" overlay — see components/GuidedSky.jsx. */
+
+/* ── adjacency helpers ───────────────────────────────────────────────────
+   D3 replaces a link's source/target string id with the node object once the
+   simulation is running elsewhere in the app; these two helpers are the one
+   place that normalizes either shape, shared by every adjacency/BFS user. */
+function linkEndpoints(l) {
+  return [
+    typeof l.source === 'object' ? l.source.id : l.source,
+    typeof l.target === 'object' ? l.target.id : l.target,
+  ]
+}
+function buildAdjacency(nodes, links) {
+  const a = {}
+  nodes.forEach(n => (a[n.id] = new Set()))
+  links.forEach(l => {
+    const [s, t] = linkEndpoints(l)
+    a[s]?.add(t); a[t]?.add(s)
+  })
+  return a
+}
 
 /* ── BFS path-finding ────────────────────────────────────────────────── */
 function bfs(adj, from, to) {
@@ -207,22 +227,11 @@ function EraAxis() {
 }
 
 /* ── path panel ──────────────────────────────────────────────────────── */
-function PathPanel({ sortedNodes, nodeById, onClose, onFlyTo, links, onHighlight }) {
+function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }) {
   const [fromQ, setFromQ] = useState('')
   const [toQ,   setToQ]   = useState('')
   const [from,  setFrom]  = useState(null)
   const [to,    setTo]    = useState(null)
-
-  const adj = useMemo(() => {
-    const a = {}
-    allNodes.forEach(n => (a[n.id] = new Set()))
-    allLinks.forEach(l => {
-      const s = typeof l.source === 'object' ? l.source.id : l.source
-      const t = typeof l.target === 'object' ? l.target.id : l.target
-      a[s]?.add(t); a[t]?.add(s)
-    })
-    return a
-  }, [])
 
   const path = useMemo(() => {
     if (!from || !to) return null
@@ -269,8 +278,7 @@ function PathPanel({ sortedNodes, nodeById, onClose, onFlyTo, links, onHighlight
                   if (!n) return null
                   const rel = i < path.length - 1 ? (() => {
                     const l = allLinks.find(l => {
-                      const s = typeof l.source === 'object' ? l.source.id : l.source
-                      const t = typeof l.target === 'object' ? l.target.id : l.target
+                      const [s, t] = linkEndpoints(l)
                       return (s === id && t === path[i+1]) || (t === id && s === path[i+1])
                     })
                     return l ? (linkTypeConfig[l.type]?.label || l.type) : 'linked'
@@ -403,13 +411,7 @@ export default function App() {
 
   /* precompute for autocomplete + BFS */
   const { sortedNodes, nodeById, adj } = useMemo(() => {
-    const a = {}
-    allNodes.forEach(n => (a[n.id] = new Set()))
-    allLinks.forEach(l => {
-      const s = typeof l.source === 'object' ? l.source.id : l.source
-      const t = typeof l.target === 'object' ? l.target.id : l.target
-      a[s]?.add(t); a[t]?.add(s)
-    })
+    const a = buildAdjacency(allNodes, allLinks)
     const maxDeg = Math.max(...allNodes.map(n => a[n.id]?.size || 0))
     const enriched = allNodes.map(n => ({
       ...n, degree: a[n.id]?.size || 0,
@@ -422,9 +424,14 @@ export default function App() {
     }
   }, [])
 
-  /* fade hint on first interaction / just after the ignition lands (~13.4 s) */
+  /* fade hint on first interaction, or just after the sky settles — which is
+     the ignition's ~13.4 s on a first arrival, and almost immediately on a
+     later load, where the cosmogony is skipped and there is nothing to wait on */
   const fadeHint = useCallback(() => setHintFaded(true), [])
-  useEffect(() => { const t = setTimeout(fadeHint, 14000); return () => clearTimeout(t) }, [fadeHint])
+  useEffect(() => {
+    const t = setTimeout(fadeHint, cosmogonySeen() ? 5000 : 14000)
+    return () => clearTimeout(t)
+  }, [fadeHint])
 
   /* "/" summons the search line from anywhere (unless already typing) */
   useEffect(() => {
@@ -442,6 +449,33 @@ export default function App() {
     return () => document.removeEventListener('keydown', onKey)
   }, [searchOpen, pathOpen, storyOpen, zodiacOpen, orbitOpen])
 
+  /* Esc closes the detail panel — advertised in the Shortcuts overlay ("Esc —
+     Close panel / overlay") but never actually wired up for it. Guarded so it
+     defers to whichever full-screen overlay is on top, since GuidedSky/
+     ZodiacSky/StoryOrbit already own Escape for themselves; without the guard,
+     dismissing one of those would also blow away the selection underneath. */
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key !== 'Escape') return
+      if (searchOpen || pathOpen || storyOpen || zodiacOpen || orbitOpen || shortcutsOpen) return
+      if (selectedId) closeDetail()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [selectedId, searchOpen, pathOpen, storyOpen, zodiacOpen, orbitOpen, shortcutsOpen])
+
+  /* The three full-screen overlays are opaque and cover the map completely,
+     so the sky is told to stop drawing under them. It keeps animating
+     otherwise — both float layers re-rasterizing the whole graph every frame,
+     the shimmer, the flares, the ambient comet — and the overlays' own
+     `backdrop-filter` panels then have to re-blur that moving backdrop every
+     frame on top of it. GuidedSky still flies the
+     camera underneath (dormancy pauses animation, not the camera), so closing
+     a tour still reveals the sky standing on the last figure. */
+  useEffect(() => {
+    graphRef.current?.setDormant(storyOpen || zodiacOpen || orbitOpen)
+  }, [storyOpen, zodiacOpen, orbitOpen])
+
   /* path panel: when it opens, clear selection; when closed, restore */
   function openPath() {
     setPathOpen(true)
@@ -452,6 +486,14 @@ export default function App() {
   function closePath() {
     setPathOpen(false)
     graphRef.current?.clearPathHighlight()
+  }
+
+  /* detail panel close — shared by the panel's own ✕, the reset-view button,
+     and Escape (below), so all three ways out of a figure agree */
+  function closeDetail() {
+    setSelectedId(null)
+    graphRef.current?.clearSelection()
+    graphRef.current?.resetView()
   }
 
   /* ── Guided Sky (cinematic story mode) ──────────────────────────── */
@@ -541,11 +583,9 @@ export default function App() {
             Legend
           </button>
           <button style={hbtn(storyOpen)} {...navHover(storyOpen)} onClick={openStory}>
-            <span style={{ width:5, height:5, borderRadius:'50%', background:'currentColor', opacity:.7 }}/>
             Story
           </button>
           <button style={hbtn(zodiacOpen)} {...navHover(zodiacOpen)} onClick={() => setZodiacOpen(true)}>
-            <span style={{ fontSize:11, lineHeight:1, opacity:.8 }}>✦</span>
             Zodiac
           </button>
           <button style={hbtn(false)} {...navHover(false)}
@@ -557,7 +597,7 @@ export default function App() {
           <PathPanel
             sortedNodes={sortedNodes}
             nodeById={nodeById}
-            links={allLinks}
+            adj={adj}
             onClose={closePath}
             onFlyTo={id => graphRef.current?.flyTo(id, 2.2)}
             onHighlight={ids => ids ? graphRef.current?.highlightPath(ids) : graphRef.current?.clearPathHighlight()}
@@ -575,11 +615,7 @@ export default function App() {
         <DetailPanel
           nodeId={selectedId}
           nodeById={nodeById}
-          onClose={() => {
-            setSelectedId(null)
-            graphRef.current?.clearSelection()
-            graphRef.current?.resetView()   // return to the opening overview
-          }}
+          onClose={closeDetail}
           onNavigate={id => {
             graphRef.current?.select(id, true)
             setSelectedId(id)
@@ -600,7 +636,7 @@ export default function App() {
 
         {/* reset view — dissolved to bare small caps like the rest of the chrome */}
         <button
-          onClick={() => { setSelectedId(null); graphRef.current?.clearSelection(); graphRef.current?.resetView() }}
+          onClick={closeDetail}
           style={{
             position:'absolute', right:24, bottom:18, zIndex:22,
             fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.2em', color:'#3e4654',
@@ -679,6 +715,12 @@ export default function App() {
           onClose={() => setOrbitOpen(false)}
           onNavigate={id => {
             setOrbitOpen(false)
+            /* Wake the sky BEFORE the camera call: `setOrbitOpen` only lands in
+               the effect after this handler returns, and a dormant graph jumps
+               its camera instead of flying it. Here the viewer asked to travel
+               to a figure and is about to be looking at the map, so they get
+               the flight. */
+            graphRef.current?.setDormant(false)
             graphRef.current?.select(id, true)
             setSelectedId(id)
           }}

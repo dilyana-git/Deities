@@ -10,73 +10,143 @@ const _nodeMap = Object.fromEntries(allNodes.map(n => [n.id, n]))
 /* autoplay dwell: long enough to read the beat — base + per-character */
 const beatMs = b => 4200 + Math.min(b.text.length, 360) * 26
 
-/* walk the shared portrait candidate chain (both folders × name styles × formats) */
-function usePortrait(id) {
-  const chain = useMemo(() => portraitSources(id), [id])
-  const [idx, setIdx] = useState(0)
-  return { src: idx < chain.length ? chain[idx] : null, onError: () => setIdx(i => i + 1) }
+/* Walk only the exact generated variants that exist for this figure. `size` is
+   the tier the caller is about to draw at: chapter stars are 44-96px and ask
+   for the 192px `node` crop, the hero orb is 164px and asks for the 360px
+   `head` one. */
+function usePortrait(id, size = 'node') {
+  const chain = useMemo(() => portraitSources(id, size), [id, size])
+  const [attempt, setAttempt] = useState({ id, idx: 0 })
+  const idx = attempt.id === id ? attempt.idx : 0
+  return {
+    src: idx < chain.length ? chain[idx] : null,
+    onError: () => setAttempt(a => ({ id, idx: a.id === id ? a.idx + 1 : 1 })),
+  }
 }
 
-/* orbital plane: sun centre + the two rings planets alternate between, all in
-   % of `.so-plane` — a square box sized from ONE base radius in min-axis units
-   (see index.css). Both radii of a ring derive from that base, so the ellipse
-   holds its shape at every aspect instead of stretching with the stage. */
-const CX = 50, CY = 50               // the sun, at the plane's centre
-const TILT = 0.62                    // ry ÷ rx — how far the plane is tipped
-const RINGS = [0.63, 1].map(f => ({ rx: 50 * f, ry: 50 * f * TILT }))
+/* ── the constellation ─────────────────────────────────────────────────────
+   Hand-set scatters, one per beat count, in % of the plane. Each sweeps from
+   the lower left up over the top and back down to the right — irregular on
+   purpose: no orbit, no symmetry, no equal spacing, so the tale reads as a
+   figure someone traced in the sky rather than as a diagram. Every path is
+   drawn to leave HERO its room. */
+const PATHS = {
+  4: [[22, 70], [34, 40], [58, 20], [83, 47]],
+  5: [[20, 73], [30, 44], [46, 18], [65, 33], [84, 58]],
+  6: [[19, 75], [31, 50], [29, 24], [48, 15], [66, 34], [82, 60]],
+  7: [[18, 76], [30, 54], [26, 28], [45, 14], [60, 31], [72, 58], [86, 44]],
+  8: [[20, 74], [32, 51], [27, 27], [44, 15], [58, 30], [67, 57], [79, 73], [88, 40]],
+}
+const HERO = { x: 47, y: 63 }
 
-/* one tour beat = a planet. Its face is the figure's portrait, dissolving to
-   the gradient orb if none loads */
-function BeatPlanet({ beat, i, cur, planet, onSelect }) {
-  const p = planet
+/* separate b from a until they are `want` apart, closing half the shortfall
+   per pass. `pinA` gives a the whole correction's benefit — the hero holds the
+   centre and the chapters move around it. */
+function push(a, b, want, pinA) {
+  let dx = b.x - a.x, dy = b.y - a.y
+  let d = Math.hypot(dx, dy)
+  if (d >= want) return
+  if (d < 1e-6) { dx = 1; dy = 0; d = 1 }   // coincident — pick an axis to leave on
+  const step = (want - d) * 0.5 / d
+  b.x += dx * step * (pinA ? 1 : 0.5); b.y += dy * step * (pinA ? 1 : 0.5)
+  if (!pinA) { a.x -= dx * step * 0.5; a.y -= dy * step * 0.5 }
+}
+const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi)
+const pt = p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`
+
+/* Nothing hand-set for this length — lay the same corridor out evenly, jitter
+   it from a fixed hash so it still scatters rather than arcs (and scatters the
+   same way on every render), then relax it: no two chapters closer than `sep`,
+   none inside the hero's clearance, none off the frame. The hand-set paths run
+   ~20 units apart at their tightest and a pair of orbs starts touching around
+   10 on a small screen, so a longer tour trades spacing down toward that floor
+   instead of overlapping — the jitter alone leaves pairs 30px inside each
+   other by nine chapters. */
+function pathFor(n) {
+  if (PATHS[n]) return PATHS[n].map(([x, y]) => ({ x, y }))
+  const jitter = k => { const v = Math.sin(k) * 43758.5453; return v - Math.floor(v) - 0.5 }
+  const pts = Array.from({ length: n }, (_, i) => {
+    const t = n === 1 ? 0.5 : i / (n - 1)
+    return {
+      x: 18 + t * 70 + jitter((i + 1) * 12.9898) * 9,
+      y: 74 - Math.sin(t * Math.PI * 0.86) * 58 + jitter((i + 1) * 78.233) * 9,
+    }
+  })
+  const sep = clamp(160 / n, 13, 20)
+  const heroSep = Math.max(sep, 16)
+  for (let pass = 0; pass < 60; pass++) {
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) push(pts[i], pts[j], sep, false)
+      push(HERO, pts[i], heroSep, true)
+    }
+    for (const p of pts) { p.x = clamp(p.x, 8, 92); p.y = clamp(p.y, 8, 92) }
+  }
+  return pts
+}
+
+/* one chapter = a star in that constellation. Its face is the figure's
+   portrait, dissolving to a gradient orb if none loads. The label is the
+   numeral alone — the name belongs to the reading column, where it is set
+   once and can be read. */
+function ChapterStar({ beat, i, cur, at, onSelect }) {
   const { src, onError } = usePortrait(beat.fig)
   const node = _nodeMap[beat.fig]
+  const on = i === cur
+  const size = on ? 96 : 50 + ((i * 5) % 3) * 7
   return (
     <button
-      className={`so-planet ${i === cur ? 'on' : i < cur ? 'told' : 'ahead'}`}
+      className={`gsr-star ${on ? 'on' : i < cur ? 'told' : 'ahead'}`}
       style={{
-        left: `${p.left}%`, top: `${p.top}%`,
-        '--sz': `${p.size}px`, '--mid-c': p.color,
-        '--fdur': `${5 + i * 0.9}s`, '--fdelay': `${i * 0.7}s`,
-        '--ig': `${0.55 + i * 0.11}s`,
+        left: `${at.x}%`, top: `${at.y}%`,
+        '--sz': `${size}px`, '--halo': `${Math.round(size * 2.1)}px`,
+        '--fdur': `${(11 + i * 1.7).toFixed(1)}s`, '--fdelay': `${(i * -1.9).toFixed(1)}s`,
+        '--hdur': on ? '2.9s' : `${(6 + i * 0.8).toFixed(1)}s`, '--hdelay': `${(i * -1.3).toFixed(1)}s`,
+        '--ig': `${(0.35 + i * 0.11).toFixed(2)}s`,
       }}
       onClick={() => onSelect(i)}
       aria-label={`Chapter ${i + 1}: ${node?.name || beat.fig}`}
+      aria-current={on ? 'step' : undefined}
     >
-      <span className="so-float">
-        <span className={`so-orb ${src ? 'has-face' : ''}`}>
-          {src && <img className="face" src={src} alt="" draggable="false" onError={onError}/>}
+      <span className="gsr-float">
+        <span className="gsr-halo"/>
+        <span className="gsr-orb">
+          {src && <img src={src} alt="" draggable="false" onError={onError}/>}
         </span>
       </span>
-      <span className="so-tag"><span className="n">{NUMERALS[i] || i + 1}</span>{node?.name || beat.fig}</span>
+      <span className="gsr-num">{NUMERALS[i] || i + 1}</span>
     </button>
   )
 }
 
-/* the tour's current figure, burning at the centre — its portrait cross-fades
-   in whenever the tale moves to a new star (the component is keyed by fig) */
-function Sun({ fig }) {
-  const { src, onError } = usePortrait(fig)
-  const node = _nodeMap[fig]
+/* the figure the whole tale follows, anchored at the constellation's centre —
+   static across chapters, so the tour has one face to hold on to while the
+   narration travels */
+function HeroOrb({ fig }) {
+  const { src, onError } = usePortrait(fig, 'head')
   return (
-    <div className="so-sun" style={{ left: `${CX}%`, top: `${CY}%` }}>
-      <div className="so-sun-orb">
+    <div className="gsr-hero" style={{ left: `${HERO.x}%`, top: `${HERO.y}%` }}>
+      <div className="gsr-hero-glow"/>
+      <div className="gsr-hero-orb">
         {src && <img src={src} alt="" draggable="false" onError={onError}/>}
       </div>
-      <div className="so-sun-name">{node?.name || fig}</div>
-      {node?.epithet && <div className="so-sun-epithet">{node.epithet}</div>}
     </div>
   )
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   Guided Sky — full-screen cinematic story presentation, laid out as a small
-   solar system (mirroring the Story Orbit). Each tour is a constellation of
-   figures: every beat is a planet floating on its orbit, the figure the
-   narration currently dwells on burns at the centre as the sun, and a golden
-   thread is traced from chapter to chapter so the tale hangs in the sky. One
-   beat shows in the caption at a time; ▶ / spacebar autoplays at reading pace,
-   and the "Stories" picker switches between tours.
+   Guided Sky — full-screen cinematic story presentation, laid out as a
+   reading column against a constellation.
+
+   The left third is a quiet, opaque column of type on three fixed rows —
+   which tale this is at the top, the chapter in play in the middle, the
+   transport at the foot — so the reader's eye never has to hunt for the
+   prose. It never moves. The rest of the screen is the tale drawn as a
+   constellation: the tour's hero burns at the centre, every chapter is a
+   star scattered around it, a dashed grey line shows the whole figure and a
+   gold thread inks itself over the part already told. The plane drifts a
+   little against the chapter in play, so each advance reads as the sky
+   turning rather than a swap. ▶ / spacebar autoplays at reading pace;
+   OTHER STORIES switches tours.
    ════════════════════════════════════════════════════════════════════════ */
 export default function GuidedSky({ initialTourId, initialBeat = 0, onClose, onBeatChange }) {
   const initialIdx = Math.max(0, TOURS.findIndex(t => t.id === initialTourId))
@@ -93,12 +163,10 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, onClose, onB
   const beats = tour.beats
   const beat  = beats[cur]
   const node  = _nodeMap[beat.fig]
+  const heroFig  = tour.hero || beats[0].fig
+  const heroNode = _nodeMap[heroFig]
   const accent = CAT[node?.category] || CAT.primordial
   const catLabel = (categoryConfig[node?.category]?.label || node?.category || '').toUpperCase()
-
-  /* where the reader last was — staggers the trace draw on multi-beat jumps */
-  const prevCurRef = useRef(0)
-  useEffect(() => { prevCurRef.current = cur }, [cur])
 
   /* lock page scroll while the overlay is open */
   useEffect(() => {
@@ -119,28 +187,16 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, onClose, onB
       dur: 2.5 + Math.random() * 4, delay: Math.random() * 4,
     })), [])
 
-  /* planet placement: clockwise arc that skips the caption's sector,
-     alternating inner/outer rings so neighbours never crowd */
-  const planets = useMemo(() => {
-    const n = beats.length
-    return beats.map((b, i) => {
-      const a = (130 + i * (280 / Math.max(n - 1, 1))) * Math.PI / 180
-      const ring = RINGS[i % 2]
-      const color = CAT[_nodeMap[b.fig]?.category] || '#cdb88a'
-      return {
-        left: CX + ring.rx * Math.cos(a),
-        top: CY + ring.ry * Math.sin(a),
-        size: 32 + (i % 3) * 7,
-        color,
-      }
-    })
-  }, [beats])
+  /* the brighter motes drifting over the constellation itself */
+  const dust = useMemo(() =>
+    Array.from({ length: 14 }, () => ({
+      left: Math.random() * 100, top: Math.random() * 100,
+      dur: 7 + Math.random() * 6, delay: -Math.random() * 6,
+    })), [])
 
-  /* reserve room for the tour's longest narration so the caption never jumps */
-  const capMinHeight = useMemo(() => {
-    const maxLen = Math.max(0, ...beats.map(b => b.text.length))
-    return Math.ceil(maxLen / 78) * 26
-  }, [beats])
+  const stars = useMemo(() => pathFor(beats.length), [beats.length])
+  const allPts   = useMemo(() => stars.map(pt).join(' '), [stars])
+  const tracePts = stars.slice(0, cur + 1).map(pt).join(' ')
 
   const next = useCallback(() => setCur(c => Math.min(c + 1, beats.length - 1)), [beats.length])
   const prev = useCallback(() => setCur(c => Math.max(c - 1, 0)), [])
@@ -149,7 +205,6 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, onClose, onB
     setTourIdx(i)
     setCur(0)
     setTalesOpen(false)
-    prevCurRef.current = 0
   }
 
   /* autoplay — dwell scales with the beat's length, rests at the last beat */
@@ -182,107 +237,115 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, onClose, onB
     return () => document.removeEventListener('click', outside)
   }, [talesOpen])
 
+  /* the rail is the dwell timer as well as the place-marker: at rest it stands
+     at the end of the chapter in play, and under autoplay it crosses that
+     chapter's own segment over exactly the beat's dwell */
+  const railTo   = `${(cur + 1) / beats.length * 100}%`
+  const railFrom = `${cur / beats.length * 100}%`
+
   return (
-    <div className="so-root" style={{ '--accent': accent }}>
-      <div className="so-wash"/>
+    <div className="gsr-root" style={{ '--accent': accent }}>
       {bgStars.map((s, i) => (
-        <div key={i} className="so-star" style={{
+        <div key={i} className="gsr-bgstar" style={{
           left: `${s.left}%`, top: `${s.top}%`, width: s.size, height: s.size,
           '--lo': s.lo, '--hi': s.hi, '--dur': `${s.dur}s`, '--delay': `${s.delay}s`,
         }}/>
       ))}
 
-      {/* the orbital plane — square, so a percent is the same distance on
-          both axes and the orbit reads as a tipped circle, not a stretched one */}
-      <div className="so-plane">
-        {RINGS.map((r, i) => (
-          <div key={i} className="so-ring" style={{
-            left: `${CX - r.rx}%`, top: `${CY - r.ry}%`,
-            width: `${r.rx * 2}%`, height: `${r.ry * 2}%`,
+      {/* the constellation plane — the whole screen right of the column. It
+          drifts against the chapter in play (a fraction of the offset from
+          the hero, so the motion is a lean, not a pan). */}
+      <div className="gsr-plane" style={{
+        transform: `translate(${((HERO.x - stars[cur].x) * 0.13).toFixed(2)}%, ${((HERO.y - stars[cur].y) * 0.13).toFixed(2)}%)`,
+      }}>
+        <div className="gsr-bloom"/>
+
+        {dust.map((d, i) => (
+          <span key={i} className="gsr-dust" style={{
+            left: `${d.left}%`, top: `${d.top}%`,
+            '--dur': `${d.dur}s`, '--delay': `${d.delay}s`,
           }}/>
         ))}
 
-        {/* the tale traced so far: centre → chapter Ⅰ → … → current chapter */}
-        <svg className="so-thread" viewBox="0 0 100 100">
-          {planets.slice(0, cur + 1).map((p, i) => {
-            const from = i === 0 ? { left: CX, top: CY } : planets[i - 1]
-            const stag = i === 0 ? 1.05 : Math.max(0, i - 1 - prevCurRef.current) * 0.12
-            return (
-              <line key={i} className="so-trace"
-                x1={from.left} y1={from.top} x2={p.left} y2={p.top}
-                pathLength="1" style={{ '--tstag': `${stag}s` }}/>
-            )
-          })}
+        {/* the whole figure in dashed grey, the told part inked over it in
+            gold — so the tale's shape is legible from the first chapter and
+            the reader can see how much sky is left */}
+        <svg className="gsr-web" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <polyline className="gsr-web-all" points={allPts}/>
+          <polyline className="gsr-web-trace" key={`${tourIdx}-${cur}`} points={tracePts}/>
         </svg>
 
-        {/* the figure the tale currently dwells on, burning at the centre */}
-        <Sun key={beat.fig} fig={beat.fig}/>
+        <HeroOrb key={heroFig} fig={heroFig}/>
 
-        {/* beat planets — told chapters stay lit, ones ahead are faint embers */}
         {beats.map((b, i) => (
-          <BeatPlanet key={i} beat={b} i={i} cur={cur} planet={planets[i]} onSelect={setCur}/>
+          <ChapterStar key={`${tourIdx}-${i}`} beat={b} i={i} cur={cur} at={stars[i]} onSelect={setCur}/>
         ))}
       </div>
 
-      <button className="gs-exit" onClick={onClose} aria-label="Close story mode">✕</button>
-
-      {/* tour title */}
-      <div className="gs-top" style={{ pointerEvents: 'none' }}>
-        <div className="gs-story">
-          <div className="gs-kicker">{tour.kicker}</div>
-          <div className="gs-storytitle">{tour.title}</div>
-        </div>
-      </div>
-
-      {/* story switcher — pick a different tour */}
-      <div className={`gs-tales ${talesOpen ? 'open' : ''}`} ref={talesRef}>
-        <button className="gs-tales-btn" onClick={() => setTalesOpen(o => !o)}>
-          <span>Stories</span><span className="car">▾</span>
-        </button>
-        <div className="gs-tales-list">
-          {TOURS.map((t, i) => (
-            <button key={t.id} className={`gs-tale ${i === tourIdx ? 'on' : ''}`} onClick={() => selectTour(i)}>
-              <span className="gs-tale-k">{t.kicker}</span>
-              <span className="gs-tale-t">{t.title}</span>
-              <span className="gs-tale-n">{t.beats.length} chapters</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="gs-hint">← → to move · space to play · esc to close</div>
-
-      {/* caption — one beat at a time, fixed footprint */}
-      <div className="so-caption">
-        {playing && (
-          <div className="so-progress" key={`p${tourIdx}-${cur}`}
-            style={{ animationDuration: `${beatMs(beat)}ms` }}/>
-        )}
-        <div className="so-cap-head">
-          <span className="n">{NUMERALS[cur] || cur + 1}</span>
-          <span className="l">{node?.name || beat.fig}</span>
-          <span className="so-cap-cat" style={{ color: accent }}>{catLabel}</span>
-          <span className="c">{cur + 1} / {beats.length}</span>
-        </div>
-        <div className="so-cap-body" key={`${tourIdx}-${cur}`} style={{ '--capmin': `${capMinHeight}px` }}>
-          <p>{beat.text}</p>
-        </div>
-        <div className="so-cap-nav">
-          <button className={`so-nav-btn so-play ${playing ? 'on' : ''}`}
-            onClick={() => setPlaying(p => !p)}
-            aria-label={playing ? 'Pause the tale' : 'Play the tale'}>
-            {playing ? '❚❚' : '▶'}
+      {/* the reading column — three fixed rows: which tale, the chapter in
+          play, the transport. Nothing in it moves between chapters except
+          the prose. */}
+      <div className="gsr-column">
+        <div className="gsr-col-head" ref={talesRef}>
+          <div className="gsr-kicker">{tour.kicker}</div>
+          <div className="gsr-title">{tour.title}</div>
+          <div className="gsr-following">Following {heroNode?.name || heroFig}</div>
+          <button className={`gsr-tales-btn ${talesOpen ? 'open' : ''}`}
+            onClick={() => setTalesOpen(o => !o)} aria-expanded={talesOpen}>
+            OTHER STORIES <span className="car">▾</span>
           </button>
-          <button className="so-nav-btn" onClick={prev} aria-label="Previous chapter">‹</button>
-          <div className="so-dots">
-            {beats.map((_, i) => (
-              <button key={i} className={`so-dot ${i === cur ? 'on' : ''}`}
-                onClick={() => setCur(i)} aria-label={`Chapter ${i + 1}`}/>
-            ))}
+          {talesOpen && (
+            <div className="gsr-tales">
+              {TOURS.map((t, i) => (
+                <button key={t.id} className={`gsr-tale ${i === tourIdx ? 'on' : ''}`}
+                  onClick={() => selectTour(i)}>
+                  <span className="gsr-tale-k">{t.kicker}</span>
+                  <span className="gsr-tale-t">{t.title}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="gsr-col-read">
+          <div className="gsr-read-pad"/>
+          {/* the entrance rises from 14px below, and a transform counts toward
+              a scroll container's overflow — so without this clip the row grew
+              a scrollbar for the length of every chapter change */}
+          <div className="gsr-beat-block">
+            <div className="gsr-beat-head" key={`h${tourIdx}-${cur}`}>
+              <span className="n">{NUMERALS[cur] || cur + 1}</span>
+              <span className="l">{node?.name || beat.fig}</span>
+              <span className="cat" style={{ color: accent }}>{catLabel}</span>
+            </div>
+            <p className="gsr-beat" key={`b${tourIdx}-${cur}`}>{beat.text}</p>
           </div>
-          <button className="so-nav-btn" onClick={next} aria-label="Next chapter">›</button>
+        </div>
+
+        <div className="gsr-col-foot">
+          <div className="gsr-rail">
+            <div className={`gsr-rail-fill ${playing ? 'ticking' : ''}`}
+              key={playing ? `r${tourIdx}-${cur}` : 'rest'}
+              style={{
+                width: railTo, '--from': railFrom, '--to': railTo,
+                animationDuration: `${beatMs(beat)}ms`,
+              }}/>
+          </div>
+          <div className="gsr-transport">
+            <button className={`gsr-play ${playing ? 'on' : ''}`}
+              onClick={() => setPlaying(p => !p)}
+              aria-label={playing ? 'Pause the tale' : 'Play the tale'}>
+              {playing ? '❚❚' : '▶'}
+            </button>
+            <button className="gsr-step" onClick={prev} aria-label="Previous chapter">‹</button>
+            <button className="gsr-step" onClick={next} aria-label="Next chapter">›</button>
+            <span className="gsr-counter">CHAPTER {cur + 1} / {beats.length}</span>
+          </div>
+          <div className="gsr-hint">← → to move · space to play · esc to close</div>
         </div>
       </div>
+
+      <button className="gsr-exit" onClick={onClose} aria-label="Close story mode">✕</button>
     </div>
   )
 }

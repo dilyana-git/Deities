@@ -31,23 +31,30 @@ body {
 #sky { cursor: grab; display: block; }
 #sky:active { cursor: grabbing; }
 
-/* Frame vignette. It stays clear until 62% — the dome's horizon lands around
-   offset .57–.61 here, and the limb glow just outside it is the brightest band
-   in the composition, so the vignette must not bite into it. Past that only the
-   corners remain (they fall outside the sky ellipse entirely) and they are
-   pushed hard toward black, which is what reads the glow as a rim. */
+/* Frame vignette. It stays clear until 68% — the dome's horizon lands around
+   offset .57–.61 here, and the limb glow that straddles it IS the horizon and
+   the brightest band in the composition, so the vignette must not bite into
+   it. 62% used to clip the band's outward half, which is the half that has to
+   fade to nothing on its own. Past 68% only the corners remain (they fall
+   outside the sky ellipse entirely) and they are pushed hard toward black,
+   which is what reads the glow as a rim. */
 .atlas-main::after {
   content: '';
   position: absolute; inset: 0; z-index: 2; pointer-events: none;
   background: radial-gradient(ellipse 85% 80% at 50% 48%,
-    transparent 62%, rgba(3,5,10,.42) 82%, rgba(2,3,8,.82) 100%);
+    transparent 68%, rgba(3,5,10,.42) 85%, rgba(2,3,8,.84) 100%);
 }
 
 /* ── Sky value structure ───────────────────────────────────────────────────
    The sky is lit from its RIM. `.dome-limb` is a screen-blended annulus that
-   swells just outside the horizon; `.dome-core` (inside the dome furniture)
-   pours near-black into the middle; the depth haze is a ring, not a blob; and
-   the background stars peak in brightness out at the same radius as the limb.
+   peaks ON the horizon and IS the horizon — the ring drawn there is held at
+   0.03 so the boundary is a band of light with no edge in it. Its amplitude is
+   calibrated to the Zodiac sphere's feathered limb (same +11,+15,+23 lift over
+   the ground), because the band marks an inflection between two dark zones
+   rather than lighting anything; `.dome-core`
+   (inside the dome furniture) pours near-black into the middle, swallowing the
+   band's inward half; the depth haze is a ring, not a blob; and the background
+   stars peak in brightness out at the same radius as the limb.
    All of it serves one rule — the darkest region of the frame is the region
    the nodes stand in, so every figure is a light mark on a dark ground. Do not
    reintroduce a centre-bright wash here: it lifts the backdrop above the
@@ -306,6 +313,17 @@ body {
   mask-image: radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%);
 }
 
+/* the primary's core is a pip, not a plate — a bright point ~0.2r wide with
+   the gradient halo carrying its light outward, so the portrait floats in that
+   light rather than sitting on a lit disc with a hard circular edge. The tight
+   bloom is the `.cl-core.hero` treatment from the constellation stages, so a
+   primary reads as the same kind of mark on the map as in its tale. Sized in
+   fixed pixels safely: the pip only spans 6→9px across the tier (unlike
+   `.glow`, which is why that one uses a gradient instead of a blur). Mostly it
+   burns under an opaque portrait; what it is really for is the primaries with
+   no artwork, which have to read as stars on their own. */
+.node .core.pip { filter: drop-shadow(0 0 3px #fff7e0) drop-shadow(0 0 7px rgba(205,184,138,.55)); }
+
 /* node interaction states */
 .node .core { transition: opacity .2s; }
 .node .sel-halo { transition: opacity .3s; }
@@ -332,7 +350,7 @@ body {
    Excludes `.selected` so the gold central node keeps its own treatment. */
 .nodes.focusing .node.lit:not(.selected) .core,
 .nodes.focusing .node.lit:not(.selected) image {
-  transform: scale(1.4);
+  transform: scale(1.3);
   transform-origin: center;
   transform-box: fill-box;
   transition: transform .25s ease, opacity .25s ease;
@@ -345,7 +363,7 @@ body {
 }
 .nodes.focusing .node.lit:not(.selected) .core { opacity: 1; }
 
-/* A tail dot is 3.4px, so the shared 1.4x lit-scale leaves it invisible in a
+/* A tail dot is 3.4px, so the shared 1.3x lit-scale leaves it invisible in a
    constellation it genuinely belongs to. Scale the tail harder — enough for a
    selected primary's leaf neighbours to read as stars, not specks. */
 .nodes.focusing .node.tier-3.lit:not(.selected) .core { transform: scale(2.8); }
@@ -358,6 +376,21 @@ body {
    only has to say "this one is in the constellation", and at that size a
    small step already says it. */
 .nodes.focusing .node.tier-1.lit:not(.selected) .glow { transform: scale(1.12); }
+
+/* …and the same correction on the portrait itself, which is the part that can
+   actually collide. A primary's art is 87-128px across at rest and the field
+   is spaced for that box; the shared lit-scale added a fifth of it back on
+   every node of a lit constellation at once, so hovering Cronus drove Zeus's
+   and Hera's faces 25px into each other and Gaia's over Uranus. It also
+   swallowed the node's own name, which is parked at glyphR + 6 in resting
+   geometry — 1.4x on Zeus's 64px box lands 19px past it, so the label the
+   hover exists to reveal was printed across the face.
+   Measured across every hover, selection and path state over 8 settles:
+   1.4/1.4 → 43 overlapping pairs, 1.08/1.3 → 0. The emphasis a lit primary
+   needs is carried by its glow and by the field dimming around it, not by
+   size — at 128px, 8% is already a visible step. */
+.nodes.focusing .node.tier-1.lit:not(.selected) .core,
+.nodes.focusing .node.tier-1.lit:not(.selected) image { transform: scale(1.08); }
 
 /* subtle scale on hover for immediate feedback */
 .node:hover .core,
@@ -383,6 +416,13 @@ body {
   stroke-width: 2.2px !important;
   stroke-dasharray: none !important;
 }
+
+/* Residue of the ambient lineage traces — the web of becoming, accumulating one
+   descent at a time. `hushed` while the viewer drives anything (hover, selection,
+   path, tour): a faded link sits at .03, so 0.12 of gold left standing over a
+   dimmed field would outshine the very route being highlighted. */
+.residues { transition: opacity .5s ease; }
+.residues.hushed { opacity: .25; }
 
 /* relationship labels riding the selected node's edges (fill set inline = LCOL[type]) */
 @keyframes labelIn { from { opacity: 0 } to { opacity: 1 } }
@@ -486,7 +526,7 @@ body {
 .col-figure-in {
   position: relative; height: 100%; flex: 0 0 auto; max-width: 100%;
   aspect-ratio: var(--fig-ar, 2 / 3);
-  animation: holo-materialize .7s cubic-bezier(.2,.7,.3,1) both;
+  animation: holo-materialize .46s cubic-bezier(.2,.7,.3,1) both;
   -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 10%, #000 72%, transparent 99%);
           mask-image: linear-gradient(180deg, transparent 0, #000 10%, #000 72%, transparent 99%);
 }
@@ -517,7 +557,42 @@ body {
   -webkit-mask-composite: source-in;
           mask-composite: intersect;
 }
-.col-figure-in.ready .col-figure-img { opacity: 1; }
+/* The hero fades in on ITS OWN load. This used to hang off `.ready` on the
+   box, which was equivalent while `--fig-ar` came from the image's onLoad —
+   but the box now takes its shape from the manifest on the first frame, so
+   `.ready` lands long before any pixel does and would have skipped the fade
+   entirely. */
+.col-figure-img.loaded { opacity: 1; }
+
+/* The ground: the 192px node crop, held under the hero until it arrives.
+   Normally a cache hit — it is the same crop as the star just clicked — so it
+   paints in the frame the panel opens in, against ~225KB and a 820x1230 decode
+   for the plate above it.
+
+   It is a HEAD crop standing in for a whole figure, so it is not pretending to
+   be the artwork: blurred past legibility and scaled to cover, it contributes
+   the plate's colour and value in roughly the right place and nothing else,
+   which is the entire job of a placeholder. `scale` past the blur radius keeps
+   the filter's transparent fringe outside the box. Its edges are taken by the
+   two parent masks (head/feet on .col-figure-in, left/right on the veil) plus
+   a radial of its own, so it dissolves the way the hero does rather than
+   ending on a rectangle. */
+.col-figure-ground {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover;
+  filter: blur(26px) saturate(.92);
+  transform: scale(1.14);
+  opacity: .5;
+  /* .out is set the moment the hero begins its own fade, so the two dissolve
+     through each other: blurred plate out, sharp figure in. Held until then --
+     dropping it on `load` (as this did) emptied the stage for exactly the half
+     second the placeholder exists to cover. */
+  transition: opacity .5s ease;
+  -webkit-mask-image: radial-gradient(ellipse 66% 58% at 46% 40%, #000 44%, rgba(0,0,0,.4) 76%, transparent 100%);
+          mask-image: radial-gradient(ellipse 66% 58% at 46% 40%, #000 44%, rgba(0,0,0,.4) 76%, transparent 100%);
+  pointer-events: none;
+}
+.col-figure-ground.out { opacity: 0; }
 /* fallback when no portrait exists — the 3D sigil hologram, centred in her place */
 .col-sigil { position: absolute; left: 4%; right: 4%; top: 50%; transform: translateY(-50%); }
 
@@ -652,7 +727,12 @@ body {
 }
 
 .col-close {
-  position: absolute; top: 14px; right: 24px; z-index: 6; pointer-events: auto;
+  /* top:58 clears the global nav's row (top:22, ~26px tall) — the nav sits at
+     z-index:30, above this panel's 28, so wherever their boxes overlapped its
+     rightmost button (also right:24, the same corner) was winning every click
+     meant for this one. Moving down, not the nav, since the nav is global
+     chrome and this is the one button scoped to the panel being open. */
+  position: absolute; top: 58px; right: 24px; z-index: 6; pointer-events: auto;
   background: none; border: 0; padding: 6px; cursor: pointer;
   font-size: 15px; line-height: 1; color: rgba(205,184,138,.5);
   transition: color .15s;
@@ -708,9 +788,17 @@ body {
 .holo-ring { animation: holo-dash 4s linear infinite; }
 @keyframes holo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 @keyframes holo-dash  { to { stroke-dashoffset: -36; } }
+/* Opacity and transform only, and half the old duration. The blur/brightness
+   this used to animate ran on .col-figure-in -- the box holding both the hero
+   and the ground's static blur(26px) -- so every frame of every figure switch
+   re-rasterized that whole subtree through two nested blurs. The softness it
+   was drawing is now the ground itself, cross-fading out under the hero, which
+   costs nothing because a static blur rasterizes once. .7s was also twice the
+   panel's own entrance (.34s slide, .38s sections); .46s puts the largest
+   element in the panel back in the same register as everything around it. */
 @keyframes holo-materialize {
-  from { opacity: 0; transform: translateY(12px) scale(.985); filter: blur(7px) brightness(1.4); }
-  to   { opacity: 1; transform: none; filter: none; }
+  from { opacity: 0; transform: translateY(12px) scale(.985); }
+  to   { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .col-figure, .col-figure-in, .holo-ring { animation: none; }
@@ -980,7 +1068,13 @@ body {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   Guided Sky — full-screen cinematic story overlay
+   Shared cinematic-overlay chrome — `.gs-*`
+
+   Once Guided Sky's own dress; GuidedSky now wears `.gsr-*` (the reading
+   column, further down) and what is left here is the vocabulary the OTHER
+   full-screen overlays still share: ZodiacSky takes the root, the caption
+   stack (`.gs-cat` / `.gs-name` / `.gs-epithet` / `.gs-narration`) and the
+   exit, StoryOrbit takes the exit, the top title block and the hint.
    ════════════════════════════════════════════════════════════════════════ */
 .gs-root {
   --gold: #cdb88a; --gold-dim: #8c7d59;
@@ -1071,39 +1165,6 @@ body {
 .gs-caption.enter .gs-cat, .gs-caption.enter .gs-name, .gs-caption.enter .gs-epithet, .gs-caption.enter .gs-narration {
   opacity: 0; transform: translateY(16px);
 }
-
-/* ── tale picker ── */
-.gs-tales { position: absolute; top: 26px; right: 40px; z-index: 8; width: 290px; }
-.gs-tales-btn {
-  width: 100%; text-align: left; padding: 11px 15px; border-radius: 9px;
-  border: 1px solid rgba(205,184,138,.28); background: rgba(8,11,20,.75); backdrop-filter: blur(6px);
-  font-family: Cinzel, serif; font-size: 12px; letter-spacing: .08em; color: var(--gold);
-  display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  cursor: pointer; transition: border-color .2s;
-}
-.gs-tales-btn:hover { border-color: var(--gold); }
-.gs-tales-btn .car { transition: transform .25s; color: var(--gold-dim); }
-.gs-tales.open .gs-tales-btn .car { transform: rotate(180deg); }
-.gs-tales-list { display: none; flex-direction: column; gap: 5px; margin-top: 8px; max-height: 70vh; overflow-y: auto; }
-.gs-tales.open .gs-tales-list { display: flex; }
-.gs-tale {
-  text-align: left; padding: 13px 16px; border-radius: 9px;
-  border: 1px solid rgba(154,163,180,.12); background: rgba(8,11,20,.82); backdrop-filter: blur(6px);
-  display: flex; flex-direction: column; gap: 4px; transition: border-color .2s, background .2s;
-  width: 100%; cursor: pointer; position: relative;
-}
-.gs-tale:hover { border-color: rgba(205,184,138,.4); background: rgba(16,20,32,.9); }
-.gs-tale-k { font-family: Cinzel, serif; font-size: 8.5px; letter-spacing: .26em; color: var(--gold-dim); text-transform: uppercase; }
-.gs-tale-t { font-family: Cinzel, serif; font-size: 14px; color: var(--ink); line-height: 1.3; }
-.gs-tale-n { font-size: 11px; font-style: italic; color: var(--faint); display: flex; align-items: center; gap: 6px; }
-.gs-tale-n::before { content: ''; display: inline-block; width: 12px; height: 1px; background: var(--gold-dim); opacity: .5; }
-.gs-tale.on { border-color: rgba(205,184,138,.35); background: rgba(205,184,138,.06); }
-.gs-tale.on::before {
-  content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 2.5px;
-  border-radius: 2px; background: var(--gold); box-shadow: 0 0 6px var(--gold);
-}
-.gs-tale.on .gs-tale-k { color: var(--gold); }
-.gs-tale.on .gs-tale-t { color: #ece6d6; }
 
 /* ── hint ── */
 .gs-hint {
@@ -1322,7 +1383,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .gs-caption .gs-cat, .gs-caption .gs-name, .gs-caption .gs-epithet, .gs-caption .gs-narration,
-  .zs-caption .zs-cap-kicker, .gs-tales-btn .car, .grade.wash { transition: none; }
+  .zs-caption .zs-cap-kicker, .grade.wash { transition: none; }
 }
 
 @media (max-width: 760px) {
@@ -1331,8 +1392,6 @@ body {
   .gs-exit { top: 14px; left: 14px; width: 36px; height: 36px; font-size: 14px; }
   .gs-story { margin-left: 46px; }
   .gs-counter { margin-right: 0; }
-  .gs-tales { top: 90px; left: 16px; right: 16px; width: auto; }
-  .gs-tales-list { max-height: 40vh; overflow-y: auto; }
   .gs-caption { top: auto; bottom: 96px; transform: none; padding: 0 20px; max-width: 100%; }
   .gs-name { font-size: 40px; }
   .gs-epithet { font-size: 16px; margin: 6px 0 12px; }
@@ -1356,6 +1415,337 @@ body {
   .zs-sym { font-size: 20px; }
   .zs-sname { display: none; }
   .zs-rail-nav { display: none; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Guided Sky — the reading column and its constellation  (`.gsr-*`)
+
+   Layout `Guided Sky - Reading Column`. The screen is cut in two and the cut
+   never moves: an opaque column of type on the left, the tale drawn as a
+   constellation across everything to its right.
+
+   The column is a THREE-ROW GRID — `auto minmax(0,1fr) auto` — and that is
+   the whole point of the layout. Which tale this is sits in the top row, the
+   chapter in play in the middle, the transport at the foot, and none of the
+   three moves when the story advances. Only the prose changes, so a reader
+   settles their eye once and never hunts for it again. The middle row is the
+   `minmax(0,1fr)`: it takes whatever is left and its content is pushed to the
+   BOTTOM of it (a flex spacer above), so a short beat and a long one both
+   hang from the same baseline instead of floating at different heights.
+
+   The column's ground is a horizontal gradient, opaque to 55% and gone by
+   100%, so the constellation's left edge drifts under type rather than
+   stopping at a seam.
+   ════════════════════════════════════════════════════════════════════════ */
+.gsr-root {
+  --gold: #cdb88a; --gold-dim: #8c7d59;
+  --ink: #e4e8f0; --ink-dim: #8f98a9; --faint: #5c6678;
+  --col-w: clamp(420px, 34%, 560px);
+  position: fixed; inset: 0; z-index: 1000; overflow: hidden;
+  background: radial-gradient(120% 90% at 64% 46%, #131a2b 0%, #0a0e18 46%, #05070c 100%);
+  font-family: 'Crimson Pro', Georgia, serif; color: var(--ink);
+  user-select: none;
+}
+/* :where keeps the reset at zero specificity so the styled buttons below
+   (.gsr-play, .gsr-tale, …) actually win their own border/colour */
+:where(.gsr-root button) { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+
+/* every keyframe set is from-only, so the base rule is the final state and
+   reduced-motion can simply switch the animation off */
+@keyframes gsr-twinkle  { from { opacity: var(--lo); } to { opacity: var(--hi); } }
+@keyframes gsr-fade     { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } }
+@keyframes gsr-head     { from { opacity: 0; transform: translateY(6px); } }
+@keyframes gsr-ink      { from { opacity: 0; } }
+@keyframes gsr-ignite   { from { opacity: 0; filter: blur(6px) brightness(2.6); } }
+@keyframes gsr-in       { from { opacity: 0; } }
+@keyframes gsr-float    { 0%, 100% { transform: translateY(-4px); } 50% { transform: translateY(5px); } }
+@keyframes gsr-bloom    { 0%, 100% { opacity: .25; } 50% { opacity: .55; } }
+@keyframes gsr-glow     { 0%, 100% { opacity: .3; } 50% { opacity: .85; } }
+@keyframes gsr-shimmer  { 0%, 100% { opacity: .2; } 50% { opacity: .7; } }
+@keyframes gsr-rail     { from { width: var(--from); } to { width: var(--to); } }
+
+.gsr-bgstar {
+  position: absolute; border-radius: 50%; background: #d6dbe6; pointer-events: none;
+  animation: gsr-twinkle var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+
+/* ── the constellation plane ──────────────────────────────────────────────
+   Everything right of the column. It leans a fraction of the way toward the
+   chapter in play — 13% of the offset from the hero, over 2.2s — so an
+   advance reads as the sky turning under the tale rather than as a swap. Any
+   more and it is a camera pan, which makes the constellation feel like a map
+   being scrolled instead of a figure standing still. */
+.gsr-plane {
+  position: absolute; left: var(--col-w); right: 0; top: 0; bottom: 0; z-index: 1;
+  transition: transform 2.2s cubic-bezier(.22,.61,.36,1);
+}
+.gsr-bloom {
+  position: absolute; left: 6%; top: 8%; width: 88%; height: 84%; pointer-events: none;
+  background: radial-gradient(50% 50% at 46% 60%,
+    color-mix(in oklch, var(--accent) 26%, transparent) 0%,
+    color-mix(in oklch, var(--accent) 9%, transparent) 45%, transparent 72%);
+  filter: blur(24px); animation: gsr-bloom 16s ease-in-out infinite;
+}
+.gsr-dust {
+  position: absolute; width: 2px; height: 2px; border-radius: 50%;
+  background: #e7ebf2; filter: blur(.4px); pointer-events: none;
+  animation: gsr-shimmer var(--dur) ease-in-out var(--delay) infinite;
+}
+
+/* the tale's whole figure in dashed grey with the told part inked over it in
+   gold. `preserveAspectRatio: none` stretches the viewBox to the plane, so
+   both strokes are non-scaling — otherwise the dashes come out as long dashes
+   on one axis and dots on the other. */
+.gsr-web { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.gsr-web-all {
+  fill: none; stroke: #39414f; stroke-width: 1; stroke-dasharray: 2 7;
+  stroke-linecap: round; vector-effect: non-scaling-stroke;
+}
+.gsr-web-trace {
+  fill: none; stroke: var(--gold); stroke-width: 1.4; stroke-dasharray: 3 8;
+  stroke-linecap: round; vector-effect: non-scaling-stroke; opacity: .85;
+  animation: gsr-ink 1.6s ease both;
+}
+
+/* ── the hero: the figure the tale follows ──
+   Static across chapters and anchored at the constellation's centre, so the
+   tour has one face to hold on to while the narration travels around it. */
+.gsr-hero {
+  position: absolute; transform: translate(-50%, -50%); z-index: 3; pointer-events: none;
+  animation: gsr-in 1.1s ease both;
+}
+.gsr-hero-glow {
+  position: absolute; left: 50%; top: 50%;
+  width: calc(300px * var(--pscale, 1)); height: calc(300px * var(--pscale, 1));
+  margin: calc(-150px * var(--pscale, 1)) 0 0 calc(-150px * var(--pscale, 1));
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(205,184,138,.5) 0%, rgba(205,184,138,.16) 42%, transparent 72%);
+  filter: blur(16px); animation: gsr-glow 5.5s ease-in-out infinite;
+}
+.gsr-hero-orb {
+  position: relative;
+  width: calc(164px * var(--pscale, 1)); height: calc(164px * var(--pscale, 1));
+  border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 36% 32%, #fdf8ea, #ecd9a8 45%, #b28f5a 78%, #6b5638);
+  /* frameless, as `.node image` on the map: the edge dissolves into the sky
+     instead of being cut by a ring */
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%);
+}
+.gsr-hero-orb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ── the chapters ──
+   One star each, ignited in story order when the tale opens. The label is the
+   numeral alone: the figure's name is set once, large, in the reading column,
+   and repeating it eight times across the sky only competes with it. */
+.gsr-star {
+  position: absolute; transform: translate(-50%, -50%); z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0;
+  animation: gsr-ignite .65s ease var(--ig, 0s) backwards;
+}
+.gsr-float {
+  position: relative; display: block;
+  animation: gsr-float var(--fdur) ease-in-out var(--fdelay) infinite;
+}
+/* a blurred bloom disc rather than a stroked ring — the same gold-bloom
+   language the map's `.sel-halo` speaks, and the reason nothing here needs
+   a frame */
+.gsr-halo {
+  position: absolute; left: 50%; top: 50%;
+  width: calc(var(--halo) * var(--pscale, 1)); height: calc(var(--halo) * var(--pscale, 1));
+  margin-left: calc(var(--halo) * var(--pscale, 1) / -2);
+  margin-top: calc(var(--halo) * var(--pscale, 1) / -2);
+  border-radius: 50%; pointer-events: none; filter: blur(12px);
+  background: radial-gradient(closest-side, rgba(160,178,214,.3) 0%, rgba(160,178,214,.08) 40%, transparent 70%);
+  transition: background .6s;
+  animation: gsr-shimmer var(--hdur) ease-in-out var(--hdelay) infinite;
+}
+.gsr-orb {
+  display: block; position: relative; overflow: hidden; border-radius: 50%;
+  width: calc(var(--sz) * var(--pscale, 1)); height: calc(var(--sz) * var(--pscale, 1));
+  background: radial-gradient(circle at 36% 32%, #b9c4dc, #6f7d9c 52%, #333d52);
+  transition: width .6s, height .6s, opacity .6s, filter .6s;
+  -webkit-mask-image: radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%);
+}
+.gsr-orb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.gsr-num {
+  font-family: 'EB Garamond', serif; letter-spacing: .18em; white-space: nowrap;
+  font-size: 13px; color: var(--ink-dim); opacity: .34;
+  transition: color .6s, opacity .6s, font-size .6s;
+}
+
+.gsr-star.told .gsr-orb { opacity: .8; filter: saturate(.8); }
+.gsr-star.told .gsr-num { opacity: .62; }
+.gsr-star.ahead .gsr-orb { opacity: .42; filter: saturate(.45); }
+.gsr-star.on .gsr-halo {
+  background: radial-gradient(closest-side, rgba(205,184,138,.55) 0%, rgba(205,184,138,.18) 40%, transparent 70%);
+  animation-name: gsr-glow;
+}
+.gsr-star.on .gsr-num { font-size: 15px; color: var(--gold); opacity: 1; }
+.gsr-star:not(.on):hover .gsr-num { color: #c2cad8; opacity: 1; }
+.gsr-star:not(.on):hover .gsr-orb { opacity: 1; filter: none; }
+.gsr-star:focus-visible { outline: none; }
+.gsr-star:focus-visible .gsr-orb { box-shadow: 0 0 0 2px rgba(205,184,138,.6); }
+
+/* ── the reading column ── */
+.gsr-column {
+  position: absolute; left: 0; top: 0; bottom: 0; z-index: 4;
+  width: var(--col-w);
+  background: linear-gradient(90deg, rgba(5,7,12,.93) 55%, rgba(5,7,12,0) 100%);
+  padding: clamp(22px, 5.2vh, 56px) 56px clamp(20px, 4.4vh, 48px) clamp(30px, 4vw, 60px);
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(12px, 2.6vh, 24px);
+  animation: gsr-in .9s ease both;
+}
+
+.gsr-col-head { position: relative; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+.gsr-kicker { font-family: Cinzel, serif; font-size: 11px; letter-spacing: .4em; color: var(--gold-dim); text-transform: uppercase; }
+.gsr-title { font-family: Cinzel, serif; font-size: clamp(19px, 3.1vh, 29px); line-height: 1.15; letter-spacing: .04em; color: #ece6d6; }
+.gsr-following {
+  margin-top: clamp(2px, 1vh, 10px);
+  font-family: 'EB Garamond', serif; font-style: italic;
+  font-size: clamp(12px, 1.7vh, 15px); color: #7e879c;
+}
+.gsr-tales-btn {
+  margin-top: clamp(4px, 1.2vh, 10px); align-self: flex-start; padding: 0;
+  font-family: Cinzel, serif; font-size: 11px; letter-spacing: .24em;
+  color: var(--gold-dim); transition: color .2s;
+}
+.gsr-tales-btn:hover, .gsr-tales-btn.open { color: var(--gold); }
+.gsr-tales-btn .car { display: inline-block; font-size: 14px; letter-spacing: 0; transition: transform .25s; }
+.gsr-tales-btn.open .car { transform: rotate(180deg); }
+.gsr-tales {
+  margin-top: 12px; display: flex; flex-direction: column; gap: 2px;
+  max-height: 30vh; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: rgba(126,135,156,.25) transparent;
+}
+/* same discreet treatment as the reading row — the app's global 8px `#090c13`
+   track reads as a drawn rule inside the measure */
+.gsr-tales::-webkit-scrollbar { width: 5px; }
+.gsr-tales::-webkit-scrollbar-track { background: transparent; }
+.gsr-tales::-webkit-scrollbar-thumb { background: rgba(126,135,156,.25); border-radius: 3px; }
+.gsr-tale {
+  text-align: left; padding: 10px 0;
+  display: flex; flex-direction: column; gap: 3px; transition: opacity .2s;
+}
+.gsr-tale:hover { opacity: .8; }
+.gsr-tale-k { font-family: Cinzel, serif; font-size: 9px; letter-spacing: .26em; color: var(--gold-dim); text-transform: uppercase; }
+.gsr-tale-t { font-family: Cinzel, serif; font-size: 14px; letter-spacing: .06em; color: var(--ink-dim); transition: color .2s; }
+.gsr-tale.on .gsr-tale-t { color: #ece6d6; }
+
+/* the chapter in play. `.gsr-read-pad` is the flex spacer that hangs the
+   prose from the bottom of the row; it shrinks to nothing before the text is
+   ever clipped, and the row scrolls only if a beat genuinely outruns a short
+   viewport. */
+.gsr-col-read {
+  display: flex; flex-direction: column; justify-content: flex-start;
+  gap: clamp(8px, 1.8vh, 18px); min-height: 0; overflow-y: auto;
+  scrollbar-width: thin; scrollbar-color: rgba(126,135,156,.25) transparent;
+}
+/* the app's global scrollbar paints an 8px `#090c13` track, which down the
+   right edge of the measure reads as a rule someone drew there — and the pad
+   below rounds its way into a pixel of overflow on most heights, so it showed
+   even with nothing to scroll */
+.gsr-col-read::-webkit-scrollbar { width: 5px; }
+.gsr-col-read::-webkit-scrollbar-track { background: transparent; }
+.gsr-col-read::-webkit-scrollbar-thumb { background: rgba(126,135,156,.25); border-radius: 3px; }
+/* `1 1 0`, not `1 1 auto`: on a basis of auto the spacer contributes its own
+   height to the row's intrinsic size, which is a rounding error away from
+   overflowing a row it exactly fills. At basis 0 it can only ever take the
+   leftover, so the row scrolls when — and only when — a beat genuinely
+   outruns it. */
+.gsr-read-pad { flex: 1 1 0; min-height: 0; }
+/* clips the entrance's 14px rise. A transform contributes to a scroll
+   container's scrollable overflow, so with the beat as the row's last child
+   the row grew a scrollbar for the whole second of every chapter change —
+   14px of phantom overflow, exactly the translate. At rest there is no
+   transform and nothing is clipped; if a beat genuinely outruns the row this
+   block simply gets too tall and the row scrolls, as before. */
+.gsr-beat-block {
+  flex-shrink: 0; overflow: hidden;
+  display: flex; flex-direction: column; gap: clamp(8px, 1.8vh, 18px);
+}
+.gsr-beat-head {
+  display: flex; align-items: baseline; gap: 12px; flex-shrink: 0;
+  animation: gsr-head .9s ease both;
+}
+.gsr-beat-head .n { font-family: Cinzel, serif; font-size: 13px; letter-spacing: .1em; color: var(--gold); }
+.gsr-beat-head .l { font-family: Cinzel, serif; font-size: 15px; letter-spacing: .22em; color: var(--gold); text-transform: uppercase; }
+/* the family colour, as everywhere else the graph names a category — it is
+   the only trace of the map's palette left in this layout */
+.gsr-beat-head .cat { font-family: Cinzel, serif; font-size: 10px; letter-spacing: .22em; margin-left: auto; opacity: .85; }
+.gsr-beat {
+  margin: 0; flex-shrink: 0;
+  font-size: clamp(16px, min(1.55vw, 3.1vh), 27px); line-height: 1.5;
+  color: var(--ink); text-wrap: pretty;
+  animation: gsr-fade 1s cubic-bezier(.22,.61,.36,1) .12s both;
+}
+
+/* ── the transport ── */
+.gsr-col-foot { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.gsr-rail { height: 1px; background: rgba(126,135,156,.22); position: relative; }
+/* the rail is place-marker and dwell timer in one: at rest it stands at the
+   end of the chapter in play, and under autoplay it crosses that chapter's
+   own segment over exactly the beat's dwell — so it always ends where the
+   resting position would have put it */
+.gsr-rail-fill { position: absolute; left: 0; top: 0; height: 1px; background: var(--gold); transition: width .5s; }
+.gsr-rail-fill.ticking { transition: none; animation: gsr-rail linear both; }
+.gsr-transport { display: flex; align-items: center; gap: 18px; }
+.gsr-play {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%;
+  border: 1px solid rgba(205,184,138,.4); color: var(--gold);
+  display: grid; place-items: center; font-size: 11px;
+  transition: border-color .2s, background .2s;
+}
+.gsr-play:hover, .gsr-play.on { border-color: var(--gold); }
+.gsr-play.on { background: rgba(205,184,138,.08); }
+.gsr-step { font-size: 20px; color: var(--ink-dim); padding: 0 4px; transition: color .2s; }
+.gsr-step:hover { color: var(--gold); }
+.gsr-counter { margin-left: auto; font-family: Cinzel, serif; font-size: 12px; letter-spacing: .14em; color: var(--faint); }
+.gsr-hint { font-family: 'EB Garamond', serif; font-style: italic; font-size: 14px; color: #4d5566; }
+
+.gsr-exit {
+  position: absolute; right: 40px; top: 40px; z-index: 9;
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 1px solid rgba(126,135,156,.35); color: #9aa3b4;
+  display: grid; place-items: center; font-size: 13px;
+  transition: border-color .2s, color .2s;
+  animation: gsr-in .8s ease .5s backwards;
+}
+.gsr-exit:hover { border-color: var(--gold); color: var(--gold); }
+
+/* Narrow: the cut turns from vertical to horizontal — column across the foot,
+   constellation above it — and `--pscale` shrinks every orb at once, since
+   their sizes are inline px chosen for the wide stage. */
+@media (max-width: 900px) {
+  .gsr-root { --col-w: 100%; --pscale: .5; }
+  /* the plane ends exactly where the column starts. It must not simply be
+     shorter than the column is tall: the constellation is laid out in % of
+     the plane and its lowest chapters sit at 75%, so any overlap parks the
+     opening chapter and the hero behind the plate. */
+  .gsr-plane { left: 0; bottom: 52%; }
+  .gsr-column {
+    top: auto; height: 52%;
+    background: linear-gradient(180deg, rgba(5,7,12,0) 0%, rgba(5,7,12,.92) 14%, rgba(5,7,12,.97) 30%);
+    padding: 34px 24px 18px;
+  }
+  /* the column's width is now the viewport's, but the measure is not — all
+     three rows keep one width so they still share a right edge */
+  .gsr-col-head, .gsr-col-read, .gsr-col-foot { max-width: 620px; }
+  /* no bottom-hang here: the row is short and the measure wide, so a beat is
+     two or three lines and the spacer would open a void above it */
+  .gsr-read-pad { display: none; }
+  .gsr-exit { right: 16px; top: 16px; width: 34px; height: 34px; }
+  .gsr-hint { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gsr-bgstar, .gsr-dust, .gsr-bloom, .gsr-float, .gsr-halo, .gsr-hero-glow { animation: none; }
+  .gsr-star, .gsr-hero, .gsr-column, .gsr-exit, .gsr-web-trace,
+  .gsr-beat, .gsr-beat-head { animation: none; }
+  .gsr-plane, .gsr-orb, .gsr-num, .gsr-rail-fill { transition: none; }
+  .gsr-rail-fill.ticking { animation: none; }
 }
 
 /* ── Story Orbit — one deity's tale as floating planets ───────────────────── */
@@ -1610,6 +2000,18 @@ body {
 .so-dot:hover { background: #7a8496; }
 .so-dot.on { background: #cdb88a; transform: scale(1.3); box-shadow: 0 0 6px rgba(205,184,138,.6); }
 .so-src { font-style: italic; font-size: 11px; color: #3a4354; white-space: nowrap; }
+
+/* The reading room's veil is a FULL-SCREEN `backdrop-filter`, and a backdrop
+   that changes cannot be cached — every twinkling star and floating planet
+   behind it forces the whole viewport to be re-blurred on the next frame,
+   which is felt as soon as you scroll a long tale. So opening the tale stills
+   the orbit under it: the backdrop is blurred once and reused. Nothing is
+   lost — that orbit is already 6px blurred and dimmed behind the panel. */
+.so-root.reading .so-star,
+.so-root.reading .so-float,
+.so-root.reading .so-sun-orb,
+.so-root.reading .so-planet,
+.so-root.reading .so-wash { animation-play-state: paused; }
 
 /* full tale — a quiet reading room over the orbit */
 .so-tale-veil {
