@@ -206,7 +206,12 @@ function HoloSigil({ node, catColor }) {
    The hero's own chain still walks full → head → node, so a damaged file
    degrades instead of blanking. */
 const FIG_FADE_MS = 500          // keep in step with .col-figure-img's transition
+const FAST_FADE_MS = 160         // …and with .col-figure-img.instant's
 const BOND_MAX = 3               // Bonds linked in the foot — and heroes warmed ahead
+/* A plate this quick came off disk (warmed Bonds land in 2-4ms, a network
+   fetch in 200ms+), so there was no fetch for the dissolve to cover. Measured
+   at the moment the bitmap is ready, decode included. */
+const CACHED_UNDER_MS = 200
 
 function Portrait({ nodeId, onLoaded, onGone }) {
   const chain = portraitSources(nodeId, 'full')
@@ -214,6 +219,8 @@ function Portrait({ nodeId, onLoaded, onGone }) {
   const [gone, setGone] = useState(false)
   const [up, setUp] = useState(false)          // hero decoded — begin the dissolve
   const [swapped, setSwapped] = useState(false) // dissolve over — drop the ground
+  const [instant, setInstant] = useState(false) // it was already cached — don't stage a fetch
+  const mountedAt = useRef(performance.now())
   const ground = portraitSources(nodeId, mapPortraitVariant(nodeId))[0]
   /* Set in the body, not just torn down in the cleanup: StrictMode mounts,
      unmounts and remounts in dev, so a guard that is only ever flipped to
@@ -234,19 +241,20 @@ function Portrait({ nodeId, onLoaded, onGone }) {
      invisible but still a blurred layer to composite. */
   useEffect(() => {
     if (!up) return
-    const t = setTimeout(() => alive.current && setSwapped(true), FIG_FADE_MS + 60)
+    const t = setTimeout(() => alive.current && setSwapped(true), (instant ? FAST_FADE_MS : FIG_FADE_MS) + 60)
     return () => clearTimeout(t)
-  }, [up])
+  }, [up, instant])
 
   if (gone || idx >= chain.length) return null
   return (
     <>
       {!swapped && ground && (
-        <img className={`col-figure-ground ${up ? 'out' : ''}`} src={ground} alt="" aria-hidden="true"/>
+        <img className={`col-figure-ground ${up ? 'out' : ''} ${instant ? 'instant' : ''}`}
+          src={ground} alt="" aria-hidden="true"/>
       )}
       <img
         key={chain[idx]}
-        className={`col-figure-img ${up ? 'loaded' : ''}`}
+        className={`col-figure-img ${up ? 'loaded' : ''} ${instant ? 'instant' : ''}`}
         src={chain[idx]}
         alt=""
         decoding="async"
@@ -258,7 +266,14 @@ function Portrait({ nodeId, onLoaded, onGone }) {
              on nothing. Waiting for decode() costs a few ms underneath a
              placeholder that is still up, and buys a dissolve that starts on
              real pixels. */
-          const start = () => { if (alive.current) setUp(true) }
+          /* Both flags in one commit, so the shortened duration is in place on
+             the same style recalc that flips the opacity — a frame later and
+             the .5s dissolve would already be running. */
+          const start = () => {
+            if (!alive.current) return
+            setInstant(performance.now() - mountedAt.current < CACHED_UNDER_MS)
+            setUp(true)
+          }
           img.decode ? img.decode().then(start, start) : start()
         }}
         onError={() => idx + 1 < chain.length ? setIdx(idx + 1) : setGone(true)}

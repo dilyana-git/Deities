@@ -71,8 +71,22 @@ body {
   66%  { transform: translate(-30px, 15px) rotate(-2deg); }
   100% { transform: translate(0, 0)     rotate(0deg); }
 }
+/* ── why the slow drifts are stepped ──────────────────────────────────────
+   Everything in #sky is one SVG, and Chrome gives an SVG's children no
+   compositor layers of their own: a transform on a group is not moved by the
+   GPU, it is REDRAWN, and these five transform whole layers — so each one
+   repaints the entire field (151 filtered elements, 11 blended) every frame.
+   Measured on an integrated Radeon: 21fps at rest with them running, 35
+   without, GPU ~95% busy either way.
+
+   They are also the slowest motion on the page — a pixel a second or less —
+   so a step every 250-500ms lands sub-pixel and looks identical, while the
+   repaint it costs drops from 60/s to 2-4/s. Keep the step counts matched to
+   the durations below (steps are PER KEYFRAME SEGMENT, not per cycle) if you
+   retime one: 2-4 updates a second is the target, and much coarser starts to
+   tick on high-contrast edges. */
 .depth-haze {
-  animation: haze-drift 90s ease-in-out infinite;
+  animation: haze-drift 90s steps(120) infinite;
   pointer-events: none;
   mix-blend-mode: screen;
   will-change: transform;
@@ -163,7 +177,7 @@ body {
   100% { transform: rotate(0deg); }
 }
 .celestial-rotate {
-  animation: celestial-rotate 130s ease-in-out infinite;
+  animation: celestial-rotate 130s steps(130) infinite;   /* 2 segments of 65s → 2/s */
   transform-origin: 600px 370px;
 }
 @keyframes bg-parallax-drift {
@@ -173,7 +187,7 @@ body {
   100% { transform: rotate(0deg) translate(0, 0); }
 }
 .bg-drift {
-  animation: bg-parallax-drift 180s ease-in-out infinite;
+  animation: bg-parallax-drift 180s steps(120) infinite;  /* 3 segments of ~60s → 2/s */
   transform-origin: 600px 370px;
   will-change: transform;
 }
@@ -197,10 +211,10 @@ body {
   50%      { transform: translateX(4px); }
 }
 .float-y {
-  animation: float-bob 14s ease-in-out infinite;
+  animation: float-bob 14s steps(28) infinite;            /* 2 segments of 7s → 4/s */
 }
 .float-x {
-  animation: float-drift 70s ease-in-out infinite;
+  animation: float-drift 70s steps(70) infinite;          /* 2 segments of 35s → 2/s */
   animation-delay: -25s;
   will-change: transform;
 }
@@ -563,6 +577,14 @@ body {
    `.ready` lands long before any pixel does and would have skipped the fade
    entirely. */
 .col-figure-img.loaded { opacity: 1; }
+/* A plate that was already cached (a warmed Bond, or a figure opened before)
+   is ready in single-digit ms, and the half-second dissolve then reads as a
+   wait that isn't happening: the figure lands well after the panel it belongs
+   to. Shortened, it arrives inside the box's own .46s entrance — the same
+   gesture as the name and the rows. The long dissolve stays for the case it
+   was written for, a plate coming off the network. */
+.col-figure-img.instant,
+.col-figure-ground.instant { transition-duration: .16s; }
 
 /* The ground: the 192px node crop, held under the hero until it arrives.
    Normally a cache hit — it is the same crop as the star just clicked — so it
