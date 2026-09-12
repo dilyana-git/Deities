@@ -44,6 +44,9 @@ body {
 /* ── Atlas sky SVG ─────────────────────────────────────────────────────────── */
 #sky { cursor: grab; display: block; }
 #sky:active { cursor: grabbing; }
+/* the backdrop layer: stars, haze and limb, behind the atlas and inert to the
+   pointer, so every gesture belongs to #sky above it */
+#sky-bg { display: block; }
 
 /* Frame vignette. It stays clear until 68% — the dome's horizon lands around
    offset .57–.61 here, and the limb glow that straddles it IS the horizon and
@@ -108,7 +111,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .depth-haze { animation: none; }
 }
-#sky.paused .depth-haze { animation-play-state: paused; }
+.paused .depth-haze { animation-play-state: paused; }
 
 /* category territory halos — soft colour fields grouping each cluster.
    `screen` blending makes overlapping family colours add luminously. */
@@ -285,18 +288,22 @@ body {
   text-transform: uppercase;
 }
 
-/* Pause sky-layer CSS animations when the tab is hidden */
-#sky.paused .flare,
-#sky.paused .star-shimmer,
-#sky.paused .celestial-rotate,
-#sky.paused .bg-drift,
-#sky.paused .float-y,
-#sky.paused .float-x,
-#sky.paused .node .glow,
-#sky.paused .node .glow.hub-breath,
-#sky.paused .node .sel-halo,
-#sky.paused .link-transformed,
-#sky.paused .link-cursed {
+/* Pause sky-layer CSS animations when nothing can see them (a hidden tab, or a
+   full-screen overlay). Keyed on `.paused` alone rather than `#sky.paused`:
+   SkyGraph sets that class on BOTH of its svgs, and half of these animations
+   now live in the backdrop one (#sky-bg). Nothing else in the app uses the
+   class, so the bare selector is exact. */
+.paused .flare,
+.paused .star-shimmer,
+.paused .celestial-rotate,
+.paused .bg-drift,
+.paused .float-y,
+.paused .float-x,
+.paused .node .glow,
+.paused .node .glow.hub-breath,
+.paused .node .sel-halo,
+.paused .link-transformed,
+.paused .link-cursed {
   animation-play-state: paused;
 }
 

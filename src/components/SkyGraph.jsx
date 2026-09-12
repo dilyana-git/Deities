@@ -171,6 +171,7 @@ function markCosmogonySeen() {
    ════════════════════════════════════════════════════════════════════════ */
 const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
   const svgEl  = useRef(null)
+  const bgEl   = useRef(null)   // the backdrop's own SVG — see the layer split
   const apiRef = useRef(null)
 
   /* The D3 setup below is a single ~2000-line effect that owns the whole
@@ -196,7 +197,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
   useEffect(() => {
     const el = svgEl.current
-    if (!el) return
+    const bgRoot = bgEl.current
+    if (!el || !bgRoot) return
 
     /* ── data ───────────────────────────────────────────────────── */
     const nodes = rawNodes.map(n => ({ ...n }))
@@ -375,6 +377,22 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     const zoomLayer    = svg.append('g').attr('class','zoom')
 
+    /* ── the layer split ──────────────────────────────────────────────────
+       The backdrop — drifting haze, 420 twinkling stars, the limb glow — is
+       built into its OWN svg (#sky-bg) behind this one, and the atlas is built
+       here. Everything inside one <svg> shares a single raster: Chrome gives an
+       SVG's children no compositor layers, so before the split, one of the 139
+       node glows breathing re-rasterized the haze, the limb's blend and the
+       starfield underneath it, and every star's twinkle re-rasterized the
+       portraits, filters and edges above it. Neither layer can see the other
+       now, so each pays only for its own content.
+
+       The backdrop is inside the camera (it pans and zooms with the field), so
+       its zoom group mirrors this one's transform — one attribute write per
+       zoom event, against a whole raster per frame at rest. */
+    const bgSvg     = d3.select(bgRoot)
+    const bgZoom    = bgSvg.append('g').attr('class','zoom')
+
     /* ── depth haze: a faint nebula that drifts behind everything ──────
        It is an ANNULUS, not a blob. A centre-bright nebula puts the sky's
        highest value exactly where the content is, so the field reads as
@@ -382,7 +400,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        sky falling away to black. The peak sits at ~62% of this (deliberately
        oversized, off-centre) ellipse, so the bright band rides near the frame
        edge and drifts asymmetrically. */
-    const hazeLayer = zoomLayer.append('g').attr('class','haze-layer')
+    const hazeLayer = bgZoom.append('g').attr('class','haze-layer')
     const hazeGrad = defs.append('radialGradient').attr('id', 'haze-grad')
       .attr('cx', '50%').attr('cy', '50%').attr('r', '50%')
     hazeGrad.append('stop').attr('offset', '0%').attr('stop-color', '#0a0f1c').attr('stop-opacity', 0)
@@ -399,7 +417,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* background stars sit inside their own slow-drift wrapper so they
        move at a different speed from the constellation field — parallax depth */
-    const bgDrift      = zoomLayer.append('g').attr('class','bg-drift')
+    const bgDrift      = bgZoom.append('g').attr('class','bg-drift')
     const bgLayer      = bgDrift.append('g').attr('class','bg')
     /* the dome's limb glow lives HERE, not with the rest of the dome furniture
        inside float-x, for one reason: float-x is a stacking context (it is
@@ -408,7 +426,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        over the stars, which is what makes it read as atmosphere rather than a
        blue film laid across them. It is populated in the dome block below,
        once DOME geometry exists; the layer is created now for z-order. */
-    const limbLayer    = zoomLayer.append('g').attr('class','limb-layer').attr('pointer-events','none')
+    const limbLayer    = bgZoom.append('g').attr('class','limb-layer').attr('pointer-events','none')
     /* celestial-rotate wraps the entire constellation field in a very slow
        rotation (~3° over 2 min) so the sky feels alive even untouched.
        The bg stars drift on a DIFFERENT period (bg-drift), creating a
@@ -1466,6 +1484,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const zoom = d3.zoom().scaleExtent([0.35, 4.5])
       .on('zoom', e => {
         zoomLayer.attr('transform', e.transform)
+        bgZoom.attr('transform', e.transform)     // the backdrop rides the same camera
         svg.classed('zoomed-mid', e.transform.k > 1.0)
         svg.classed('zoomed-in', e.transform.k > 1.7)
         loadVisibleSecondaryPortraits(e.transform)
@@ -2446,6 +2465,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     function applyDormancy() {
       const asleep = _dormant || document.hidden
       svg.classed('paused', asleep)
+      bgSvg.classed('paused', asleep)   // the twinkles live in the other layer now
       if (asleep) { sim.stop(); stopAmbient() }
       /* Re-arm the heartbeat only if the viewer is not driving something:
          `scheduleAmbient` un-hushes the residue web, which has to stay hushed
@@ -2695,18 +2715,32 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       document.removeEventListener('visibilitychange', handleVisibility)
       sim.stop()
       svg.selectAll('*').remove()
+      bgSvg.selectAll('*').remove()
       apiRef.current = null
     }
   }, [])
 
+  /* Two stacked SVGs, not one — see the layer split in the effect. The sky
+     behind (stars, haze, limb) and the atlas in front (dome furniture, edges,
+     stars-with-faces) are separate compositor layers, so a twinkle in one does
+     not re-rasterize the other. The backdrop takes no pointer events: every
+     click, drag and wheel belongs to #sky, which is transparent over it. */
   return (
-    <svg
-      ref={svgEl}
-      id="sky"
-      role="group"
-      aria-label="Star map of Greek mythological figures — arrow keys move between stars, Enter opens one"
-      style={{ position:'absolute', inset:0, width:'100%', height:'100%' }}
-    />
+    <>
+      <svg
+        ref={bgEl}
+        id="sky-bg"
+        aria-hidden="true"
+        style={{ position:'absolute', inset:0, width:'100%', height:'100%', pointerEvents:'none' }}
+      />
+      <svg
+        ref={svgEl}
+        id="sky"
+        role="group"
+        aria-label="Star map of Greek mythological figures — arrow keys move between stars, Enter opens one"
+        style={{ position:'absolute', inset:0, width:'100%', height:'100%' }}
+      />
+    </>
   )
 })
 

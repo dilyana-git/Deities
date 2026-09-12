@@ -202,17 +202,23 @@ Consequences worth knowing before you touch it:
 
 ## Background Layer Stack
 
-All inside `<svg id="sky">`, bottom to top:
+**Two stacked SVGs, not one.** `#sky-bg` holds the backdrop and `#sky` the atlas, absolutely positioned over each other; the backdrop takes no pointer events, so every click, drag and wheel still belongs to `#sky`. Everything inside one `<svg>` shares a single raster — Chrome gives an SVG's children no compositor layers — so before the split, one of the 139 node glows breathing re-rasterized the haze, the limb's blend and the starfield underneath it, and every star's twinkle re-rasterized the portraits, filters and edges above it. Three things keep the two halves in step, and all three are load-bearing:
 
-1. **Container gradient** — dark radial background (`#06080e` root)
-2. **`haze-layer`** — the drifting nebula (`.depth-haze`), an **annulus** whose peak sits at ~62% of a deliberately oversized, off-centre ellipse
-3. **`bg` star layer** — 420 procedurally-seeded background stars; the brightest also get a blurred glow `flare` that twinkles (`@keyframes star-flare`, randomized `--flare-peak/-dur/-delay` CSS vars). Size/brightness peak in a **ring** via `rimBias`, not at the centre
-4. **`limb-layer`** — `.dome-limb`, the screen-blended atmosphere glow that peaks on the horizon and *is* the horizon. Deliberately **not** inside `float-x`: that group is a stacking context, so a screen blend within it cannot reach the starfield
+- **The backdrop rides the camera.** It is inside the zoom, so `bgZoom` mirrors `zoomLayer`'s transform in the zoom handler — one attribute write per zoom event, against a whole raster per frame at rest. Verified equal to the digit after a settle.
+- **`applyDormancy` sets `paused` on both**, and the CSS pause rules are keyed on bare **`.paused`** rather than `#sky.paused`: half those animations now live in the other svg. Nothing else in the app uses the class.
+- **Neither svg isolates blending.** `.cat-halo`'s screen blend still reaches the starfield through the layer below (measured: forcing the halos to `mix-blend-mode: normal` still shifts the image by a comparable mean delta before and after the split, 3.8 → 5.4 of 255). If a stacking context is ever forced on `#sky` — `opacity`, `filter`, `will-change`, a `z-index` — the halos, and any other blend in the atlas layer, silently stop seeing the sky behind them.
+
+Bottom to top:
+
+1. **Container gradient** — dark radial background (`#06080e` root), on the page under both svgs
+2. **`haze-layer`** *(in `#sky-bg`)* — the drifting nebula (`.depth-haze`), an **annulus** whose peak sits at ~62% of a deliberately oversized, off-centre ellipse
+3. **`bg` star layer** *(in `#sky-bg`)* — 420 procedurally-seeded background stars (seeded LCG, so the field is identical on every load at a given size); the brightest also get a blurred glow `flare` that twinkles (`@keyframes star-flare`, randomized `--flare-peak/-dur/-delay` CSS vars). Size/brightness peak in a **ring** via `rimBias`, not at the centre
+4. **`limb-layer`** *(in `#sky-bg`)* — `.dome-limb`, the screen-blended atmosphere glow that peaks on the horizon and *is* the horizon. Deliberately **not** inside `float-x`: that group is a stacking context, so a screen blend within it cannot reach the starfield
 5. **`float-y` → `float-x` nested groups** — two transform-only animations (a ~bob and a slower ~drift) compose into gentle organic floating, leaving physics positions untouched. **They are not GPU-composited** (this doc used to claim they were): Chrome gives an SVG's children no compositor layers, so a transform on a group inside `#sky` is not *moved*, it is **redrawn** — the whole field, 151 filtered elements and 11 blended ones, every frame. Measured on an integrated Radeon, the five whole-layer drifts (these two plus `.bg-drift`, `.celestial-rotate`, `.depth-haze`) cost **39-41 → 51-55 fps at rest, 14-19 → 2-3 dropped frames per 6s**, which is why they are now **stepped** rather than eased — see the note above `.depth-haze` in `index.css` before retiming one
 6. **`dome-grid` layer** — the celestial-sphere furniture (`.dome-core` shade, declination rings, meridian spokes, the 0.05 horizon ring + its ticks, ecliptic) that frames the field as a night-sky dome
 7. **`clusters` / `links` / `residues` / `traces` / `nodes` layers** — cluster labels, relationship lines, the accumulated lineage web, the live comet, node glyphs
 
-Adding `.paused` to the `<svg>` halts twinkle/flow animations.
+Adding `.paused` to either `<svg>` halts the twinkle/flow animations it hosts; `applyDormancy` sets it on both.
 
 **The sky sleeps when nothing can see it.** A hidden tab and a full-screen overlay are the same condition, so one switch (`applyDormancy`) owns the `paused` class, and `setDormant(v)` on the imperative API is how `App` reports that GuidedSky / StoryOrbit / ZodiacSky are up. Each of those is `position: fixed; inset: 0` over an **opaque** ground at z-index 1000, so everything the map draws under one is unseen: ~63 shimmering stars and 17 blurred flare blooms, 12 dash-flow links, the top 6 hubs' breath, the drifting haze, the ambient comet — and above all the two float layers, which transform the whole graph group (139 nodes, 258 edges) and so re-rasterize it every frame. It is charged **twice**, because the overlays hold `backdrop-filter` panels over that region (`.so-caption` blur(10px), `.so-tale-veil` blur(6px)) and a backdrop that changes every frame can never be cached — the blur is recomputed for each one.
 
