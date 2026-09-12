@@ -18,6 +18,7 @@ Vercel, building from GitHub: every push to `claude/theogony-mythology-graph-79u
 
 - **`vercel.json` sets browser caching.** `/assets/*` is content-hashed by Vite, so it is `immutable` for a year. `/portraits/*` is **not** hashed, so it gets `max-age=86400`: a regenerated portrait can take up to a day to reach a returning visitor — hard-refresh (Ctrl+F5) to check one. Don't drop the portrait header: the panel's hero warming depends on it (see Portrait loading).
 - **`server.allowedHosts: ['.vercel.run']`** in `vite.config.js` lets the dev server answer inside a Vercel Sandbox preview. It affects `npm run dev`/`preview` only — production is static files.
+- **`manualChunks` splits react and d3 out of the app chunk**, so a deploy that only changes app code leaves the vendor files (cached for a year) untouched. It matches on **module id, not package name**: naming `'d3'` alone catches only the umbrella entry, while the graph's actual code lives in the `d3-*` sub-packages, which would stay in the app chunk and be re-downloaded every deploy. Current split: app ~641KB, react ~138KB, d3 ~60KB, plus the three lazy overlays (23/7/6KB).
 
 ## Stack
 
@@ -141,6 +142,8 @@ This is **not** a React-renders-the-graph design. `SkyGraph` runs the whole D3 s
 App ──graphRef.select(id) / flyTo / highlightPath / setTourLock / litEdge / resetView──▶ SkyGraph (D3)
 SkyGraph ──onSelect(id) callback──▶ App.setSelectedId(id) ──▶ <DetailPanel nodeId> renders
 ```
+
+**The map is keyboard-operable through a roving tabindex.** 139 stars in the tab order would be unusable, so exactly one is tabbable (`tabindex 0`, the rest -1): the biggest hub at rest, then whichever star was last reached. Arrow keys move that stop to the nearest star within a ~60° cone of the pressed direction (scored `distance / alignment`, so it prefers close *and* well-aligned), Enter/Space selects, Escape clears; every star carries `role="button"` and an `aria-label` of name + epithet. **`api.select` calls `setRoving(id)`** so a mouse or search selection moves the stop too — otherwise tabbing back into the map returns the viewer to wherever they last were by keyboard, not to what they are looking at.
 
 **Imperative API exposed by `SkyGraph`:**
 `select(id, fly)`, `clearSelection()`, `flyTo(id, scale)`, `resetView()`, `highlightPath(ids)`, `clearPathHighlight()`, `setTourLock(v)`, `litEdge(a, b)`, `clearLitEdge()`.
@@ -361,6 +364,7 @@ It is a **stage, not a scrolling column of sections** (layout `3a Colossus` from
 - **Legend** — `LegendPanel` popover, built from `categoryOrder`/`linkTypeOrder` + `CAT`/`LCOL`.
 - **Zodiac** — launches `ZodiacSky` as a full-screen overlay.
 - **Tooltip** — a single `<div id="tip">` that `SkyGraph` positions on `mousemove` and fills on hover (SkyGraph no-ops gracefully if the element is absent).
+- **The three full-screen overlays are `React.lazy`** — GuidedSky, ZodiacSky and StoryOrbit each drag in their own engine and are only reachable behind a button, so they leave the initial bundle (verified: a cold load fetches `index`/`react`/`d3` only, and `GuidedSky-*.js` arrives on the first STORY click). A `<Suspense>` veil covers that fetch, and **`OverlayBoundary`** sits above it: a lazy chunk that fails to arrive — a blip, or a stale chunk name after a deploy — throws during render and would otherwise white-screen an atlas that is still perfectly good, so the boundary offers Reload / Back to the sky.
 
 ### State
 

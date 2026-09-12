@@ -1,9 +1,14 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense, Component } from 'react'
 import SkyGraph, { CAT, LCOL, cosmogonySeen } from './components/SkyGraph.jsx'
 import DetailPanel from './components/DetailPanel.jsx'
-import GuidedSky from './components/GuidedSky.jsx'
-import ZodiacSky from './components/ZodiacSky.jsx'
-import StoryOrbit from './components/StoryOrbit.jsx'
+/* The three full-screen overlays are only reachable behind a button, and each
+   drags in its own imperative engine (GuidedSky's constellation, ZodiacSky →
+   ZodiacSphere, StoryOrbit's beat-planets). Splitting them out of the initial
+   bundle keeps the opening — which only needs the graph — lean; they load on
+   first open, behind the veil below. */
+const GuidedSky  = lazy(() => import('./components/GuidedSky.jsx'))
+const ZodiacSky  = lazy(() => import('./components/ZodiacSky.jsx'))
+const StoryOrbit = lazy(() => import('./components/StoryOrbit.jsx'))
 import { nodes as allNodes, links as allLinks } from './data/mythology.js'
 import { categoryConfig, categoryOrder } from './data/categoryConfig.js'
 import { linkTypeConfig, linkTypeOrder } from './data/linkTypeConfig.js'
@@ -11,6 +16,44 @@ import { linkTypeConfig, linkTypeOrder } from './data/linkTypeConfig.js'
 /* Legacy guided-tour data lived here. The narratives now live in
    src/data/tours.js (richer captions + kickers) and are presented by the
    Guided Sky "STORY" overlay — see components/GuidedSky.jsx. */
+
+/* ── error boundary for the lazy overlays ─────────────────────────────────
+   A React.lazy import that fails to fetch — a network blip, or a stale chunk
+   name after a deploy — throws during render, and without a boundary above the
+   Suspense that takes the whole atlas down to a white screen. The sky itself is
+   still perfectly good, so this offers a reload or a way back to it. */
+class OverlayBoundary extends Component {
+  state = { error: false }
+  static getDerivedStateFromError() { return { error: true } }
+  componentDidCatch(err) { console.error('Overlay failed to load:', err) }
+  dismiss = () => { this.setState({ error: false }); this.props.onDismiss?.() }
+  render() {
+    if (!this.state.error) return this.props.children
+    return (
+      <div style={{ position:'fixed', inset:0, zIndex:1200, display:'grid', placeItems:'center',
+        background:'rgba(4,6,12,.82)', backdropFilter:'blur(4px)' }} role="alertdialog" aria-modal="true">
+        <div style={{ textAlign:'center', maxWidth:340, padding:'0 24px' }}>
+          <p style={{ fontFamily:"'Crimson Pro', serif", fontSize:17, color:'#c9d0dd', margin:'0 0 18px', lineHeight:1.5 }}>
+            That view couldn’t be loaded — the connection may have dropped.
+          </p>
+          <div style={{ display:'flex', gap:14, justifyContent:'center' }}>
+            <button onClick={() => window.location.reload()} style={{
+              fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.2em', textTransform:'uppercase',
+              color:'#cdb88a', background:'color-mix(in oklab, #cdb88a 8%, transparent)',
+              border:'1px solid rgba(205,184,138,.4)', borderRadius:8, padding:'9px 16px', cursor:'pointer' }}>
+              Reload
+            </button>
+            <button onClick={this.dismiss} style={{
+              fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.2em', textTransform:'uppercase',
+              color:'#5c6678', background:'none', border:'none', padding:'9px 8px', cursor:'pointer' }}>
+              Back to the sky
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+}
 
 /* ── adjacency helpers ───────────────────────────────────────────────────
    D3 replaces a link's source/target string id with the node object once the
@@ -695,6 +738,12 @@ export default function App() {
         </div>
       )}
 
+      {/* The lazily-loaded full-screen overlays. A bare veil covers the chunk
+          fetch on first open so nothing flashes through to the map, and the
+          boundary catches a fetch that never lands. */}
+      <OverlayBoundary onDismiss={() => { setStoryOpen(false); setZodiacOpen(false); setOrbitOpen(false) }}>
+      <Suspense fallback={<div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(4,6,12,.85)' }}/>}>
+
       {/* guided sky — cinematic story overlay */}
       {storyOpen && (
         <GuidedSky
@@ -726,6 +775,9 @@ export default function App() {
           }}
         />
       )}
+
+      </Suspense>
+      </OverlayBoundary>
     </div>
   )
 }

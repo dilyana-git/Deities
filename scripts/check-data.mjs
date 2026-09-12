@@ -13,11 +13,17 @@ import { nodes, links } from '../src/data/mythology.js'
 import { deityStories } from '../src/data/deityStories.js'
 import { TOURS } from '../src/data/tours.js'
 import { CONSTELLATIONS } from '../src/data/constellations.js'
+import { categoryOrder } from '../src/data/categoryConfig.js'
+import { linkTypeOrder } from '../src/data/linkTypeConfig.js'
 
 const errors = []
 const warnings = []
 
 const nodeIds = new Set(nodes.map(n => n.id))
+// a category or type outside these lists has no colour, no label and no legend
+// row — it renders, but as an unnamed grey thing nobody can filter for
+const catOK = new Set(categoryOrder)
+const typeOK = new Set(linkTypeOrder)
 
 // ── duplicate node ids ──────────────────────────────────────────────────────
 {
@@ -28,10 +34,17 @@ const nodeIds = new Set(nodes.map(n => n.id))
   }
 }
 
-// ── links must reference real nodes ─────────────────────────────────────────
+// ── every node's category must be one the UI knows ──────────────────────────
+for (const n of nodes) {
+  if (!catOK.has(n.category)) errors.push(`node "${n.id}" has unknown category "${n.category}"`)
+}
+
+// ── links must reference real nodes, and carry a known type ─────────────────
 for (const l of links) {
   if (!nodeIds.has(l.source)) errors.push(`link references unknown source "${l.source}" (→ ${l.target})`)
   if (!nodeIds.has(l.target)) errors.push(`link references unknown target "${l.target}" (${l.source} →)`)
+  if (!typeOK.has(l.type)) errors.push(`link ${l.source} → ${l.target} has unknown type "${l.type}"`)
+  if (l.source === l.target) warnings.push(`link is a self-loop on "${l.source}"`)
 }
 
 // ── tours: every beat's fig must be a real node (documented hard requirement,

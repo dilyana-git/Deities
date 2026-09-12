@@ -910,6 +910,50 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; d.x = e.x; d.y = e.y; ticked() })
         .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null }))
 
+    /* ── keyboard operability (roving tabindex) ──────────────────────────
+       139 stars in the tab order would be unusable, so exactly ONE is tabbable
+       at a time — the field's biggest hub to start with, then whichever star
+       was last reached. Arrow keys move that single stop to the nearest star in
+       the pressed direction, Enter/Space opens it, Escape clears. Selecting by
+       mouse or search keeps the stop in sync (see `api.select`), so tabbing
+       back into the map lands where the viewer actually is. */
+    const _topHubId = nodes.reduce((a, b) => (b.degree > (a?.degree ?? -1) ? b : a), null)?.id
+    gNode
+      .attr('tabindex',   d => d.id === _topHubId ? 0 : -1)
+      .attr('role',       'button')
+      .attr('aria-label', d => d.epithet ? `${d.name} — ${d.epithet}` : d.name)
+      .on('keydown', onNodeKey)
+
+    function setRoving(id, doFocus) {
+      if (!id) return
+      gNode.attr('tabindex', n => n.id === id ? 0 : -1)
+      if (doFocus) gNode.filter(n => n.id === id).node()?.focus()
+    }
+    const _DIRS = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }
+    function nearestInDirection(d, vx, vy) {
+      let best = null, bestScore = Infinity
+      for (const n of nodes) {
+        if (n === d) continue
+        const dx = n.x - d.x, dy = n.y - d.y
+        const dist = Math.hypot(dx, dy) || 1
+        const dot = (dx * vx + dy * vy) / dist        // alignment with the pressed direction
+        if (dot < 0.5) continue                       // keep to a ~60° cone
+        const score = dist / dot                      // prefer close and well-aligned
+        if (score < bestScore) { bestScore = score; best = n }
+      }
+      return best
+    }
+    function onNodeKey(e, d) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); api.select(d.id, true) }
+      else if (e.key === 'Escape') { api.clearSelection() }
+      else if (_DIRS[e.key]) {
+        e.preventDefault()
+        const [vx, vy] = _DIRS[e.key]
+        const nb = nearestInDirection(d, vx, vy)
+        if (nb) setRoving(nb.id, true)
+      }
+    }
+
     /* hub breathing — the top ~5 nodes are gravitational centers; they get a
        dedicated slow pulse (radius + opacity over ~4s) that reads as a beacon
        even before any interaction. Separate from the general twinkle. */
@@ -2478,6 +2522,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
         stopAmbient()
         state.selected = id
         if (id) showPortrait(byId[id], true)
+        if (id) setRoving(id)          // keep the keyboard tab stop on the active star
         applySelectVisual(id)
         if (fly && id) frameSelection(id, opts)
         onSelectRef.current(id)
@@ -2658,6 +2703,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     <svg
       ref={svgEl}
       id="sky"
+      role="group"
+      aria-label="Star map of Greek mythological figures — arrow keys move between stars, Enter opens one"
       style={{ position:'absolute', inset:0, width:'100%', height:'100%' }}
     />
   )

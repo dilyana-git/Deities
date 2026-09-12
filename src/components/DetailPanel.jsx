@@ -124,13 +124,18 @@ function HoloSigil({ node, catColor }) {
       heroCat.setAttribute('r', (cr * pulse + 6).toFixed(1))
 
       order.sort((a, b) => b.z - a.z).forEach(o => layer.appendChild(o.el))  // paint far → near
-      raf = requestAnimationFrame(frame)
+      if (!reduced) raf = requestAnimationFrame(frame)
     }
-    raf = requestAnimationFrame(frame)
+    /* Honour prefers-reduced-motion: a CSS media query can't reach this
+       rAF-driven sigil, so render one static projection instead of a
+       constellation spinning forever behind the panel. */
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduced) frame(t0)
+    else raf = requestAnimationFrame(frame)
 
     const onVis = () => {
       cancelAnimationFrame(raf)
-      if (!document.hidden) raf = requestAnimationFrame(frame)
+      if (!reduced && !document.hidden) raf = requestAnimationFrame(frame)
     }
     document.addEventListener('visibilitychange', onVis)
     return () => {

@@ -21,6 +21,20 @@ body {
 
 ::selection { background: #cdb88a44; }
 
+/* ── Keyboard focus ───────────────────────────────────────────────────────────
+   Most of the chrome is styled inline with no focus state of its own, so a
+   keyboard user had nothing to follow. :focus-visible rings only for keyboard
+   navigation, never on a mouse click. Individual components (.col-link, the
+   zodiac glyphs, .gsr-star) opt out below where they show focus their own way. */
+:focus-visible {
+  outline: 2px solid rgba(205,184,138,.75);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+/* a star carries its own gold bloom; a box around it would only fight that */
+#sky .node:focus-visible { outline: none; }
+#sky .node:focus-visible .core { filter: drop-shadow(0 0 6px rgba(205,184,138,.9)); }
+
 /* ── Custom scrollbar ──────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: #090c13; }
@@ -560,16 +574,29 @@ body {
      face, and the lower-right — where busy foreground detail (Charybdis's foam,
      spray, robe hems) tends to sit and steal contrast — falls off hardest.
      Reading order becomes face → title → body instead of being dragged into a
-     bright corner. Two mask layers, intersected: the radial does the face-lift,
-     the diagonal knocks the bottom-right corner down further. */
+     bright corner.
+
+     The base layer is the biased radial alone — correct by itself everywhere.
+     The diagonal that knocks the bottom-right down further is ADDED only where
+     `mask-composite: intersect` exists: without it, a second mask layer
+     composites as a UNION and would *lighten* that corner, the exact inverse
+     of the intent. Hence the @supports below rather than one rule. */
   -webkit-mask-image:
-    radial-gradient(ellipse 66% 58% at 46% 40%, #000 48%, rgba(0,0,0,.45) 77%, transparent 100%),
-    linear-gradient(135deg, #000 52%, rgba(0,0,0,.35) 100%);
+    radial-gradient(ellipse 66% 58% at 46% 40%, #000 48%, rgba(0,0,0,.45) 77%, transparent 100%);
           mask-image:
-    radial-gradient(ellipse 66% 58% at 46% 40%, #000 48%, rgba(0,0,0,.45) 77%, transparent 100%),
-    linear-gradient(135deg, #000 52%, rgba(0,0,0,.35) 100%);
-  -webkit-mask-composite: source-in;
-          mask-composite: intersect;
+    radial-gradient(ellipse 66% 58% at 46% 40%, #000 48%, rgba(0,0,0,.45) 77%, transparent 100%);
+}
+@supports ((mask-composite: intersect) or (-webkit-mask-composite: source-in)) {
+  .col-figure-img {
+    -webkit-mask-image:
+      radial-gradient(ellipse 66% 58% at 46% 40%, #000 48%, rgba(0,0,0,.45) 77%, transparent 100%),
+      linear-gradient(135deg, #000 52%, rgba(0,0,0,.35) 100%);
+            mask-image:
+      radial-gradient(ellipse 66% 58% at 46% 40%, #000 48%, rgba(0,0,0,.45) 77%, transparent 100%),
+      linear-gradient(135deg, #000 52%, rgba(0,0,0,.35) 100%);
+    -webkit-mask-composite: source-in;
+            mask-composite: intersect;
+  }
 }
 /* The hero fades in on ITS OWN load. This used to hang off `.ready` on the
    box, which was equivalent while `--fig-ar` came from the image's onLoad —
