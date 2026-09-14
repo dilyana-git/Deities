@@ -1059,6 +1059,29 @@ export const portraitManifest = Object.freeze({
       "type": "image/webp"
     }
   },
+  "erinyes": {
+    "full": {
+      "src": "/portraits/erinyes-full.webp",
+      "width": 820,
+      "height": 1230,
+      "bytes": 312786,
+      "type": "image/webp"
+    },
+    "head": {
+      "src": "/portraits/erinyes-head.webp",
+      "width": 360,
+      "height": 360,
+      "bytes": 33630,
+      "type": "image/webp"
+    },
+    "node": {
+      "src": "/portraits/erinyes-node.webp",
+      "width": 192,
+      "height": 192,
+      "bytes": 8318,
+      "type": "image/webp"
+    }
+  },
   "eris": {
     "full": {
       "src": "/portraits/eris-full.webp",
@@ -2462,6 +2485,29 @@ export const portraitManifest = Object.freeze({
       "type": "image/webp"
     }
   },
+  "phaethon": {
+    "full": {
+      "src": "/portraits/phaethon-full.webp",
+      "width": 820,
+      "height": 1230,
+      "bytes": 237928,
+      "type": "image/webp"
+    },
+    "head": {
+      "src": "/portraits/phaethon-head.webp",
+      "width": 269,
+      "height": 269,
+      "bytes": 31078,
+      "type": "image/webp"
+    },
+    "node": {
+      "src": "/portraits/phaethon-node.webp",
+      "width": 192,
+      "height": 192,
+      "bytes": 13972,
+      "type": "image/webp"
+    }
+  },
   "phorcys": {
     "full": {
       "src": "/portraits/phorcys-full.webp",
@@ -2692,6 +2738,29 @@ export const portraitManifest = Object.freeze({
       "type": "image/webp"
     }
   },
+  "selene": {
+    "full": {
+      "src": "/portraits/selene-full.webp",
+      "width": 820,
+      "height": 1230,
+      "bytes": 204844,
+      "type": "image/webp"
+    },
+    "head": {
+      "src": "/portraits/selene-head.webp",
+      "width": 287,
+      "height": 287,
+      "bytes": 8776,
+      "type": "image/webp"
+    },
+    "node": {
+      "src": "/portraits/selene-node.webp",
+      "width": 192,
+      "height": 192,
+      "bytes": 3644,
+      "type": "image/webp"
+    }
+  },
   "semele": {
     "full": {
       "src": "/portraits/semele-full.webp",
@@ -2758,6 +2827,29 @@ export const portraitManifest = Object.freeze({
       "width": 192,
       "height": 192,
       "bytes": 12798,
+      "type": "image/webp"
+    }
+  },
+  "styx": {
+    "full": {
+      "src": "/portraits/styx-full.webp",
+      "width": 820,
+      "height": 820,
+      "bytes": 198534,
+      "type": "image/webp"
+    },
+    "head": {
+      "src": "/portraits/styx-head.webp",
+      "width": 360,
+      "height": 360,
+      "bytes": 38950,
+      "type": "image/webp"
+    },
+    "node": {
+      "src": "/portraits/styx-node.webp",
+      "width": 192,
+      "height": 192,
+      "bytes": 8462,
       "type": "image/webp"
     }
   },

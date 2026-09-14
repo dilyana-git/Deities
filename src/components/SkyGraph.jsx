@@ -2445,7 +2445,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       _ambientTimer = setTimeout(runAmbient, delay)
     }
     /* ── dormancy — the sky sleeps when nothing can see it ────────────
-       A full-screen overlay (Guided Sky, Story Orbit, Zodiac) is
+       A full-screen overlay (Guided Sky, Zodiac) is
        `position: fixed; inset: 0` over an OPAQUE ground at z-index 1000, so
        every frame the map draws under one is work nobody sees: ~63 shimmering
        stars and 17 blurred flare blooms, 12 dash-flow links, the top 6 hubs'
@@ -2453,8 +2453,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        above all, the two float layers, which transform the whole graph group
        (139 nodes and 258 edges) and so re-rasterize it every frame.
        And it is not merely wasted — the overlays hold `backdrop-filter` panels
-       over that region (`.so-caption` blur(10px), `.so-tale-veil` blur(6px),
-       `.gs-exit` blur(6px)), and a backdrop that changes every frame can never
+       over that region (ZodiacSky's `.gs-exit` blur(6px)), and a backdrop
+       that changes every frame can never
        be cached: the blur is recomputed for each one. So animation under an
        overlay is charged twice, once to paint and once to re-blur, which is
        why the story overlays felt heavy on machines the map alone is fine on.

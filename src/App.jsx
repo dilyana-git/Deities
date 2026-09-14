@@ -1,14 +1,13 @@
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense, Component } from 'react'
 import SkyGraph, { CAT, LCOL, cosmogonySeen } from './components/SkyGraph.jsx'
 import DetailPanel from './components/DetailPanel.jsx'
-/* The three full-screen overlays are only reachable behind a button, and each
-   drags in its own imperative engine (GuidedSky's constellation, ZodiacSky →
-   ZodiacSphere, StoryOrbit's beat-planets). Splitting them out of the initial
-   bundle keeps the opening — which only needs the graph — lean; they load on
-   first open, behind the veil below. */
-const GuidedSky  = lazy(() => import('./components/GuidedSky.jsx'))
-const ZodiacSky  = lazy(() => import('./components/ZodiacSky.jsx'))
-const StoryOrbit = lazy(() => import('./components/StoryOrbit.jsx'))
+/* The full-screen overlays are only reachable behind a button, and each drags
+   in its own imperative engine (GuidedSky's constellation, ZodiacSky →
+   ZodiacSphere). Splitting them out of the initial bundle keeps the opening —
+   which only needs the graph — lean; they load on first open, behind the veil
+   below. */
+const GuidedSky = lazy(() => import('./components/GuidedSky.jsx'))
+const ZodiacSky = lazy(() => import('./components/ZodiacSky.jsx'))
 import { nodes as allNodes, links as allLinks } from './data/mythology.js'
 import { categoryConfig, categoryOrder } from './data/categoryConfig.js'
 import { linkTypeConfig, linkTypeOrder } from './data/linkTypeConfig.js'
@@ -197,8 +196,7 @@ function AutocompleteInput({ value, onChange, onPick, placeholder, sortedNodes, 
 }
 
 /* ── summoned search ─────────────────────────────────────────────────────
-   No standing search pill sits on the chart. Press "/" (or click the wordmark's
-   search cue) and a single bare line drops from the upper sky — dissolved
+   Press "/" or click Search and a single bare line drops from the upper sky — dissolved
    chrome, summoned only when wanted, gone on Escape or pick. */
 function SummonSearch({ open, onClose, sortedNodes, onPick }) {
   const [q, setQ] = useState('')
@@ -224,7 +222,7 @@ function SummonSearch({ open, onClose, sortedNodes, onPick }) {
           inputStyle={S.bareInput} autoFocus
         />
         <p style={{ fontStyle:'italic', fontSize:12.5, color:'#3a4354', margin:'8px 2px 0' }}>
-          Enter to leap · Esc to dismiss
+          Choose a figure or press Enter · Tap outside or Esc to dismiss
         </p>
       </div>
     </div>
@@ -445,8 +443,8 @@ export default function App() {
   const [storyOpen,       setStoryOpen]       = useState(false)
   const [storyTourId,     setStoryTourId]     = useState(null)
   const [storyBeat,       setStoryBeat]       = useState(0)
+  const [storyFigId,      setStoryFigId]      = useState(null)
   const [zodiacOpen,      setZodiacOpen]      = useState(false)
-  const [orbitOpen,       setOrbitOpen]       = useState(false)
   const [shortcutsOpen,   setShortcutsOpen]   = useState(false)
   const [searchOpen,      setSearchOpen]      = useState(false)
 
@@ -476,36 +474,43 @@ export default function App() {
     return () => clearTimeout(t)
   }, [fadeHint])
 
-  /* "/" summons the search line from anywhere (unless already typing) */
+  function openSearch() {
+    if (pathOpen) closePath()
+    setLegendOpen(false)
+    setShortcutsOpen(false)
+    setSearchOpen(true)
+    setHintFaded(true)
+  }
+
+  /* "/" summons the same search as the visible navigation button. */
   useEffect(() => {
     function onKey(e) {
       if (e.key === '/' && !searchOpen) {
         const t = e.target
         const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)
-        if (typing || pathOpen || storyOpen || zodiacOpen || orbitOpen) return
+        if (typing || pathOpen || storyOpen || zodiacOpen) return
         e.preventDefault()
-        setSearchOpen(true)
-        setHintFaded(true)
+        openSearch()
       }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [searchOpen, pathOpen, storyOpen, zodiacOpen, orbitOpen])
+  }, [searchOpen, pathOpen, storyOpen, zodiacOpen])
 
   /* Esc closes the detail panel — advertised in the Shortcuts overlay ("Esc —
      Close panel / overlay") but never actually wired up for it. Guarded so it
-     defers to whichever full-screen overlay is on top, since GuidedSky/
-     ZodiacSky/StoryOrbit already own Escape for themselves; without the guard,
+     defers to whichever full-screen overlay is on top, since GuidedSky and
+     ZodiacSky already own Escape for themselves; without the guard,
      dismissing one of those would also blow away the selection underneath. */
   useEffect(() => {
     function onKey(e) {
       if (e.key !== 'Escape') return
-      if (searchOpen || pathOpen || storyOpen || zodiacOpen || orbitOpen || shortcutsOpen) return
+      if (searchOpen || pathOpen || storyOpen || zodiacOpen || shortcutsOpen) return
       if (selectedId) closeDetail()
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [selectedId, searchOpen, pathOpen, storyOpen, zodiacOpen, orbitOpen, shortcutsOpen])
+  }, [selectedId, searchOpen, pathOpen, storyOpen, zodiacOpen, shortcutsOpen])
 
   /* The three full-screen overlays are opaque and cover the map completely,
      so the sky is told to stop drawing under them. It keeps animating
@@ -516,8 +521,8 @@ export default function App() {
      camera underneath (dormancy pauses animation, not the camera), so closing
      a tour still reveals the sky standing on the last figure. */
   useEffect(() => {
-    graphRef.current?.setDormant(storyOpen || zodiacOpen || orbitOpen)
-  }, [storyOpen, zodiacOpen, orbitOpen])
+    graphRef.current?.setDormant(storyOpen || zodiacOpen)
+  }, [storyOpen, zodiacOpen])
 
   /* path panel: when it opens, clear selection; when closed, restore */
   function openPath() {
@@ -543,6 +548,7 @@ export default function App() {
   function openStory() {
     if (pathOpen) closePath()
     prevBeatFigRef.current = null
+    setStoryFigId(null)
     setStoryTourId(null)
     setStoryBeat(0)
     setStoryOpen(true)
@@ -551,15 +557,42 @@ export default function App() {
   function openTale(tourId, beat) {
     if (pathOpen) closePath()
     prevBeatFigRef.current = null
+    setStoryFigId(null)
     setStoryTourId(tourId)
     setStoryBeat(beat || 0)
     setStoryOpen(true)
   }
-  function closeStory() {
+  /* opened from ENTER THE STORY — the selected figure's own tale, told in the
+     same reading column as the tours */
+  function openFigureStory() {
+    if (!selectedId) return
+    if (pathOpen) closePath()
+    prevBeatFigRef.current = null
+    setStoryFigId(selectedId)
+    setStoryTourId(null)
+    setStoryBeat(0)
+    setStoryOpen(true)
+  }
+  /* `returnTo` is the figure whose own tale just closed. The overlay flew the
+     map through every chapter's figure underneath itself, so without this the
+     reader would come back to the last chapter's star — and its panel —
+     instead of the figure they opened the story from. */
+  function closeStory(returnTo) {
     setStoryOpen(false)
     graphRef.current?.setTourLock(false)
     graphRef.current?.clearLitEdge()
     prevBeatFigRef.current = null
+    if (returnTo) graphRef.current?.select(returnTo, true)
+  }
+  /* a figure named in a chapter: leave the tale and travel to it */
+  function navigateFromStory(id) {
+    closeStory()
+    /* Wake the sky BEFORE the camera call: `setStoryOpen` only lands in the
+       effect after this handler returns, and a dormant graph jumps its camera
+       instead of flying it. Here the viewer asked to travel to a figure and is
+       about to be looking at the map, so they get the flight. */
+    graphRef.current?.setDormant(false)
+    graphRef.current?.select(id, true)
   }
   function handleStoryBeat(fig) {
     graphRef.current?.select(fig, true, { tour: true })
@@ -617,8 +650,11 @@ export default function App() {
         </div>
 
         {/* ── dissolved nav, floating top-right ────────────────────── */}
-        <nav style={{ position:'absolute', top:22, right:24, zIndex:30,
-          display:'flex', gap:22, alignItems:'center' }}>
+        <nav className="atlas-nav" aria-label="Explore the atlas">
+          <button style={hbtn(searchOpen)} {...navHover(searchOpen)} onClick={openSearch}
+            aria-keyshortcuts="/" aria-expanded={searchOpen}>
+            Search
+          </button>
           <button style={hbtn(pathOpen)} {...navHover(pathOpen)} onClick={() => pathOpen ? closePath() : openPath()}>
             Path
           </button>
@@ -663,7 +699,7 @@ export default function App() {
             graphRef.current?.select(id, true)
             setSelectedId(id)
           }}
-          onOpenOrbit={() => setOrbitOpen(true)}
+          onOpenStory={openFigureStory}
           onOpenTale={openTale}
         />
 
@@ -741,40 +777,23 @@ export default function App() {
       {/* The lazily-loaded full-screen overlays. A bare veil covers the chunk
           fetch on first open so nothing flashes through to the map, and the
           boundary catches a fetch that never lands. */}
-      <OverlayBoundary onDismiss={() => { setStoryOpen(false); setZodiacOpen(false); setOrbitOpen(false) }}>
+      <OverlayBoundary onDismiss={() => { setStoryOpen(false); setZodiacOpen(false) }}>
       <Suspense fallback={<div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(4,6,12,.85)' }}/>}>
 
-      {/* guided sky — cinematic story overlay */}
+      {/* guided sky — every story, tours and a figure's own tale alike */}
       {storyOpen && (
         <GuidedSky
           initialTourId={storyTourId}
           initialBeat={storyBeat}
+          figureId={storyFigId}
           onClose={closeStory}
           onBeatChange={handleStoryBeat}
+          onNavigate={navigateFromStory}
         />
       )}
 
       {/* zodiac sky — standalone cinematic zodiac view */}
       {zodiacOpen && <ZodiacSky onClose={() => setZodiacOpen(false)} />}
-
-      {/* story orbit — the selected deity's tale as floating planets */}
-      {orbitOpen && selectedId && (
-        <StoryOrbit
-          nodeId={selectedId}
-          onClose={() => setOrbitOpen(false)}
-          onNavigate={id => {
-            setOrbitOpen(false)
-            /* Wake the sky BEFORE the camera call: `setOrbitOpen` only lands in
-               the effect after this handler returns, and a dormant graph jumps
-               its camera instead of flying it. Here the viewer asked to travel
-               to a figure and is about to be looking at the map, so they get
-               the flight. */
-            graphRef.current?.setDormant(false)
-            graphRef.current?.select(id, true)
-            setSelectedId(id)
-          }}
-        />
-      )}
 
       </Suspense>
       </OverlayBoundary>

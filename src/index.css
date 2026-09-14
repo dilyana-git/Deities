@@ -31,8 +31,12 @@ body {
   outline-offset: 2px;
   border-radius: 3px;
 }
-/* a star carries its own gold bloom; a box around it would only fight that */
-#sky .node:focus-visible { outline: none; }
+/* a star carries its own gold bloom; a box around it would only fight that.
+   Keyed on :focus, not :focus-visible: a click or drag focuses the star too,
+   and Chromium's UA gives a focused SVG element `outline: auto` whether or not
+   focus is "visible" — the native ring then sits around the node's whole
+   bounding box (portrait + label) for as long as the star keeps focus. */
+#sky .node:focus { outline: none; }
 #sky .node:focus-visible .core { filter: drop-shadow(0 0 6px rgba(205,184,138,.9)); }
 
 /* ── Custom scrollbar ──────────────────────────────────────────────────────── */
@@ -42,6 +46,20 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #262e3c; }
 
 /* ── Atlas sky SVG ─────────────────────────────────────────────────────────── */
+.atlas-nav {
+  position: absolute; top: 22px; right: 24px; z-index: 30;
+  display: flex; gap: 22px; align-items: center;
+}
+/* Keep Search and the other controls clear of the wordmark on phones. */
+@media (max-width: 760px) {
+  .atlas-nav {
+    top: 112px; left: 22px; right: 22px;
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0 12px;
+  }
+  .atlas-nav button { min-height: 44px; justify-content: center; }
+}
+
 #sky { cursor: grab; display: block; }
 #sky:active { cursor: grabbing; }
 /* the backdrop layer: stars, haze and limb, behind the atlas and inert to the
@@ -711,6 +729,75 @@ body {
   font-size: 12.5px; color: #4a5364;
 }
 
+/* READ THE FULL STORY — a door, so upright like the nav rows, and gold like the
+   rest of the panel's chrome; quieter than ENTER THE STORY, which stays the
+   primary action */
+.col-read {
+  display: inline-flex; align-items: baseline; gap: 12px;
+  margin: 16px 0 0; padding: 4px 0;
+  background: none; border: 0; cursor: pointer;
+  font-family: 'Cinzel', serif; font-size: 10.5px; letter-spacing: .24em;
+  text-transform: uppercase; color: #cdb88a;
+  transition: color .15s;
+}
+/* the underline sits on the label only — carried by the button it would also
+   run under the reading time and make it look like a second link */
+.col-read-k {
+  text-decoration-line: underline; text-decoration-thickness: 1px;
+  text-decoration-color: rgba(205,184,138,.22); text-underline-offset: 5px;
+  transition: text-decoration-color .15s;
+}
+.col-read:hover,
+.col-read:focus-visible { color: #eadbb4; outline: none; }
+.col-read:hover .col-read-k,
+.col-read:focus-visible .col-read-k { text-decoration-color: rgba(205,184,138,.7); }
+.col-read-min {
+  font-family: 'EB Garamond', Georgia, serif; font-style: italic;
+  font-size: 12.5px; letter-spacing: 0; text-transform: none; color: #6b6450;
+}
+
+/* ── the story reader ──────────────────────────────────────────────────────
+   The same measure, turned into a scrolling page. The column's scrollbar is
+   hidden for the summary (nothing there should scroll), so the reader brings
+   back a discreet one — a 2,000-character tale in a hidden-scrollbar column
+   gives no sign that it goes on — and fades the page out under both edges
+   instead of cutting lines off at the panel's top and bottom. */
+.col-type.reading {
+  scrollbar-width: thin; scrollbar-color: rgba(205,184,138,.22) transparent;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 30px, #000 calc(100% - 44px), transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0, #000 30px, #000 calc(100% - 44px), transparent 100%);
+}
+.col-type.reading::-webkit-scrollbar { width: 5px; }
+.col-type.reading::-webkit-scrollbar-track { background: transparent; }
+.col-type.reading::-webkit-scrollbar-thumb { background: rgba(205,184,138,.22); border-radius: 3px; }
+/* the text keeps clear of the thumb; the eyebrow rule and CTA still share one
+   right edge inside it */
+.col-story { padding: 26px 16px 36px 0; }
+.col-story-back {
+  background: none; border: 0; padding: 4px 0; cursor: pointer;
+  font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: .3em;
+  color: #8c7d59; white-space: nowrap; transition: color .15s;
+}
+.col-story-back:hover,
+.col-story-back:focus-visible { color: #cdb88a; outline: none; }
+/* the name is a running head here, not the display — the prose is the page */
+.col-name.col-story-name { font-size: min(58px, var(--name-cq, 16cqw)); }
+.col-story-body { margin-top: clamp(22px, 3.4vh, 34px); }
+.col-story-body p {
+  margin: 0 0 1.05em;
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: clamp(15px, 4.4cqw, 17px); line-height: 1.74;
+  color: #c9d0dd; text-wrap: pretty;
+  text-shadow: 0 1px 12px rgba(6,8,14,.95);
+}
+.col-story-body p:last-child { margin-bottom: 0; }
+.col-story-end {
+  margin: 26px 0 0; text-align: center;
+  font-size: 17px; color: rgba(205,184,138,.4);
+}
+.col-story-return { margin-top: 22px; }
+.col-story .col-enter { margin-top: 22px; }
+
 /* label → value rows, in two registers. Five identical italic lines of the
    same size read as a receipt, so the foot is split by what the line *does*:
    Domains/Symbols/Myths are attributes — italic, smaller, dimmer, set tight
@@ -1130,7 +1217,8 @@ body {
    column, further down) and what is left here is the vocabulary the OTHER
    full-screen overlays still share: ZodiacSky takes the root, the caption
    stack (`.gs-cat` / `.gs-name` / `.gs-epithet` / `.gs-narration`) and the
-   exit, StoryOrbit takes the exit, the top title block and the hint.
+   exit. (StoryOrbit, which took the exit, the top title block and the hint,
+   is no longer mounted — every story now opens in the reading column.)
    ════════════════════════════════════════════════════════════════════════ */
 .gs-root {
   --gold: #cdb88a; --gold-dim: #8c7d59;
@@ -1493,8 +1581,14 @@ body {
    100%, so the constellation's left edge drifts under type rather than
    stopping at a seam.
    ════════════════════════════════════════════════════════════════════════ */
+/* the overlay's lighting colour — the chapter figure's family colour, like
+   `--accent`, but registered so the light cross-fades between chapters
+   instead of snapping. `--accent` itself stays unregistered: ZodiacSky and the
+   retired story views set it too. */
+@property --gsr-tint { syntax: '<color>'; inherits: true; initial-value: #8c7d59; }
 .gsr-root {
   --gold: #cdb88a; --gold-dim: #8c7d59;
+  transition: --gsr-tint 1.6s ease;
   --ink: #e4e8f0; --ink-dim: #8f98a9; --faint: #5c6678;
   --col-w: clamp(420px, 34%, 560px);
   position: fixed; inset: 0; z-index: 1000; overflow: hidden;
@@ -1538,15 +1632,46 @@ body {
 .gsr-bloom {
   position: absolute; left: 6%; top: 8%; width: 88%; height: 84%; pointer-events: none;
   background: radial-gradient(50% 50% at 46% 60%,
-    color-mix(in oklch, var(--accent) 26%, transparent) 0%,
-    color-mix(in oklch, var(--accent) 9%, transparent) 45%, transparent 72%);
+    color-mix(in oklch, var(--gsr-tint) 26%, transparent) 0%,
+    color-mix(in oklch, var(--gsr-tint) 9%, transparent) 45%, transparent 72%);
   filter: blur(24px); animation: gsr-bloom 16s ease-in-out infinite;
+}
+/* the chapter light: a pool of the family colour with a warm heart, standing
+   behind the chapter in play. The box is the plane's own size, so translating
+   it by (star − 50%) centres the pool on the star exactly — and a transform,
+   not left/top or a moving gradient, keeps the 2.2s journey on the compositor. */
+.gsr-light {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(16% 19% at 50% 50%, rgba(236,217,168,.1) 0%, transparent 100%),
+    radial-gradient(32% 36% at 50% 50%,
+      color-mix(in oklch, var(--gsr-tint) 22%, transparent) 0%,
+      color-mix(in oklch, var(--gsr-tint) 7%, transparent) 50%, transparent 100%);
+  transition: transform 2.2s cubic-bezier(.22,.61,.36,1);
+  will-change: transform;
 }
 .gsr-dust {
   position: absolute; width: 2px; height: 2px; border-radius: 50%;
   background: #e7ebf2; filter: blur(.4px); pointer-events: none;
   animation: gsr-shimmer var(--dur) ease-in-out var(--delay) infinite;
 }
+
+/* ── the sky chart ── (`SkyChart` in GuidedSky.jsx)
+   The atlas's planisphere behind the plane, at the map's own whisper values.
+   It overhangs the plane on every side so its half-rate lean never opens an
+   unpainted strip at a screen edge, and it only fades in past the reading
+   column: a ring or the ecliptic running under the prose is a line through
+   the text. Its lines stay hairlines at any scale because the chart is
+   `slice`-scaled to cover. */
+.gsr-dome {
+  position: absolute; z-index: 0; pointer-events: none;
+  left: calc(var(--col-w) - 120px); right: -120px; top: -60px; bottom: -60px;
+  transition: transform 2.2s cubic-bezier(.22,.61,.36,1);
+  -webkit-mask-image: linear-gradient(90deg, transparent 60px, #000 300px);
+          mask-image: linear-gradient(90deg, transparent 60px, #000 300px);
+}
+.gsr-dome svg { display: block; width: 100%; height: 100%; }
+.gsr-dome circle, .gsr-dome line, .gsr-dome ellipse { vector-effect: non-scaling-stroke; }
 
 /* the tale's whole figure in dashed grey with the told part inked over it in
    gold. `preserveAspectRatio: none` stretches the viewBox to the plane, so
@@ -1588,7 +1713,14 @@ body {
   -webkit-mask-image: radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%);
   mask-image: radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%);
 }
-.gsr-hero-orb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* two stacked faces: the chapter in play fades up over the one the chapter
+   before left standing, so the orb is never empty mid-advance */
+.gsr-hero-orb img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.gsr-hero-orb img.lead { opacity: 0; transition: opacity .62s ease; }
+.gsr-hero-orb img.lead.on { opacity: 1; }
 
 /* ── the chapters ──
    One star each, ignited in story order when the tale opens. The label is the
@@ -1663,8 +1795,19 @@ body {
   font-family: 'EB Garamond', serif; font-style: italic;
   font-size: clamp(12px, 1.7vh, 15px); color: #7e879c;
 }
+/* a figure's own tale cites its source under the epithet */
+.gsr-source {
+  margin-top: -2px;
+  font-family: 'EB Garamond', serif; font-style: italic;
+  font-size: clamp(11.5px, 1.5vh, 13px); color: var(--faint);
+}
+/* OTHER STORIES, and FULL TALE beside it when the tale has one */
+.gsr-head-actions {
+  margin-top: clamp(4px, 1.2vh, 10px);
+  display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 26px; row-gap: 6px;
+}
 .gsr-tales-btn {
-  margin-top: clamp(4px, 1.2vh, 10px); align-self: flex-start; padding: 0;
+  padding: 0;
   font-family: Cinzel, serif; font-size: 11px; letter-spacing: .24em;
   color: var(--gold-dim); transition: color .2s;
 }
@@ -1738,6 +1881,47 @@ body {
   animation: gsr-fade 1s cubic-bezier(.22,.61,.36,1) .12s both;
 }
 
+/* who else a figure's chapter names — the navigation register of the
+   DetailPanel's Bonds/Tales rows: upright, a step brighter, underlined in gold
+   on hover. Held to a line's height even on a chapter that names no one, so
+   the prose above hangs from the same baseline either way. */
+.gsr-figs {
+  display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 9px; row-gap: 2px;
+  min-height: 1.5em; flex-shrink: 0;
+  font-size: 15.5px; line-height: 1.5;
+  animation: gsr-head .9s ease .3s both;
+}
+.gsr-figs .k {
+  margin-right: 5px;
+  font-family: Cinzel, serif; font-size: 10px; letter-spacing: .26em;
+  color: var(--gold-dim); text-transform: uppercase;
+}
+.gsr-figs .sep { color: var(--faint); }
+.gsr-fig {
+  padding: 0; font-family: 'Crimson Pro', Georgia, serif; font-size: inherit; color: #b9c1cf;
+  text-decoration: underline transparent 1px; text-underline-offset: 4px;
+  transition: color .2s, text-decoration-color .2s;
+}
+.gsr-fig:hover { color: var(--gold); text-decoration-color: rgba(205,184,138,.6); }
+
+/* the whole retelling, in the row the chapters hang in. Top-aligned and
+   scrolling — it is read, not glanced at — and selectable, unlike the rest
+   of the overlay. The first paragraph wears the app's `.story-text` drop cap. */
+.gsr-full {
+  flex-shrink: 0; padding-right: 8px; user-select: text;
+  animation: gsr-head .6s ease both;
+}
+.gsr-full .gsr-beat-head { margin-bottom: clamp(10px, 2vh, 18px); animation: none; }
+.gsr-full p {
+  margin: 0 0 1em;
+  font-size: clamp(15px, min(1.1vw, 2.2vh), 19px); line-height: 1.62;
+  color: #c9d0dc; text-wrap: pretty;
+}
+.gsr-full p.gsr-full-src {
+  margin: 1.4em 0 0;
+  font-family: 'EB Garamond', serif; font-style: italic; font-size: 14px; color: var(--faint);
+}
+
 /* ── the transport ── */
 .gsr-col-foot { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
 .gsr-rail { height: 1px; background: rgba(126,135,156,.22); position: relative; }
@@ -1781,6 +1965,14 @@ body {
      the plane and its lowest chapters sit at 75%, so any overlap parks the
      opening chapter and the hero behind the plate. */
   .gsr-plane { left: 0; bottom: 52%; }
+  /* the chart follows the plane above the column, and fades out by the
+     plane's foot rather than stopping at a hard edge the column's own top
+     fade would show */
+  .gsr-dome {
+    left: -60px; right: -60px; top: -60px; bottom: calc(52% - 60px);
+    -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 180px), transparent calc(100% - 60px));
+            mask-image: linear-gradient(180deg, #000 calc(100% - 180px), transparent calc(100% - 60px));
+  }
   .gsr-column {
     top: auto; height: 52%;
     background: linear-gradient(180deg, rgba(5,7,12,0) 0%, rgba(5,7,12,.92) 14%, rgba(5,7,12,.97) 30%);
@@ -1799,8 +1991,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .gsr-bgstar, .gsr-dust, .gsr-bloom, .gsr-float, .gsr-halo, .gsr-hero-glow { animation: none; }
   .gsr-star, .gsr-hero, .gsr-column, .gsr-exit, .gsr-web-trace,
-  .gsr-beat, .gsr-beat-head { animation: none; }
-  .gsr-plane, .gsr-orb, .gsr-num, .gsr-rail-fill { transition: none; }
+  .gsr-beat, .gsr-beat-head, .gsr-figs, .gsr-full { animation: none; }
+  .gsr-root, .gsr-plane, .gsr-dome, .gsr-light, .gsr-orb, .gsr-num, .gsr-rail-fill, .gsr-hero-orb img { transition: none; }
   .gsr-rail-fill.ticking { animation: none; }
 }
 
