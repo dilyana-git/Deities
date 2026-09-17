@@ -2,7 +2,6 @@ import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import * as d3 from 'd3'
 import { nodes as rawNodes, links as rawLinks } from '../data/mythology.js'
 import { linkTypeConfig, relationLabel } from '../data/linkTypeConfig.js'
-import { categoryConfig } from '../data/categoryConfig.js'
 import { portraitManifest } from '../data/portraitManifest.generated.js'
 
 /* ── category palettes (OKLCH) ─────────────────────────────────────────
@@ -1913,15 +1912,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     /* the sequence is kicked off at the very foot of this effect, once every
        declaration it reaches into exists — see "opening state" below */
 
-    /* ── tooltip positioning ────────────────────────────────────── */
-    const tip = document.getElementById('tip')
-    if (tip) {
-      svg.on('mousemove', e => {
-        tip.style.left = (e.clientX + 14) + 'px'
-        tip.style.top  = (e.clientY - 8)  + 'px'
-      })
-    }
-
     /* ── hover / selection state ────────────────────────────────── */
     const state = { selected: null, pathLock: false, tourLock: false }
     let _hoverActive = false
@@ -2220,16 +2210,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
             .attr('stroke', el.attr('data-type-color'))
         }
       })
-
-      if (tip) {
-        const catLabel = categoryConfig[d.category]?.label || d.category
-        const nConn = adj[d.id]?.size || 0
-        tip.innerHTML = `<span class="tip-cat" style="background:${CAT[d.category]}"></span>`
-          + `<span class="tip-name">${d.name}</span>`
-          + (d.epithet ? `<span class="tip-epi">${d.epithet}</span>` : '')
-          + `<span class="tip-conn">${nConn} connection${nConn !== 1 ? 's' : ''}</span>`
-        tip.style.opacity = '1'
-      }
     }
 
     function hoverOff() {
@@ -2238,7 +2218,6 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       _hoverActive = false
       _hoverId = null
       if (!state.selected) scheduleAmbient(5000)   // idle again — let the sky resume its pulse
-      if (tip) tip.style.opacity = '0'
 
       /* restore glow from hover flare (leave the grown/selected node alone —
          sizeNode owns its glow radius) */

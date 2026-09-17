@@ -802,9 +802,6 @@ export default function App() {
         />
       </main>
 
-      {/* tooltip anchor (position driven by mousemove in SkyGraph) */}
-      <div id="tip"/>
-
       {/* keyboard shortcuts overlay */}
       {shortcutsOpen && (
         <div style={{
