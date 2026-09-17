@@ -864,7 +864,24 @@ body {
 .col-rows-nav .col-row-v { font-size: 15.5px; line-height: 1.62; color: #9ba6b9; }
 
 .col-sep  { color: #2a3242; }
-.col-more { color: #4a5364; font-style: italic; }
+
+/* The remainder is a disclosure, not a label: it opens the rest of the row in
+   place. It stays italic and dim in both registers — it is not one of the
+   values, so it must not borrow the navigable row's upright type — but it is
+   pressable, so it carries a cursor, a hover lift and the same gold underline
+   the links use. Button resets are explicit: it inherits the row's serif. */
+.col-more {
+  font: inherit; font-style: italic; color: #4a5364;
+  background: none; border: 0; padding: 0;
+  cursor: pointer;
+  text-decoration-line: underline; text-decoration-thickness: 1px;
+  text-decoration-color: transparent; text-underline-offset: 3px;
+  transition: color .15s, text-decoration-color .15s;
+}
+.col-more:hover,
+.col-more:focus-visible {
+  color: #9a8a66; text-decoration-color: rgba(205,184,138,.4); outline: none;
+}
 .col-link {
   font: inherit; color: inherit; background: none; border: 0; padding: 0;
   cursor: pointer;
@@ -966,7 +983,8 @@ body {
   .col-read { min-height: 44px; flex-wrap: wrap; }
   .col-row { gap: 10px; }
   .col-rows-attr .col-row-v { font-size: 15px; }
-  .col-link { min-height: 44px; padding: 8px 2px; }
+  .col-link,
+  .col-more { min-height: 44px; padding: 8px 2px; }
   .col-enter { flex-wrap: wrap; justify-content: center; gap: 10px; }
   .col-enter-rule { display: none; }
   .col-story { padding: 12px 0 0; }

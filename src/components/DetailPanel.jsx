@@ -297,8 +297,14 @@ function Portrait({ nodeId, onLoaded, onGone }) {
    are the only lines you can press. Five identical italic rows read as a
    receipt — the split is the hierarchy. No chips, borders or bullets. */
 function Row({ label, items, max = 4, emphasize, onPick, titleFor }) {
+  /* "+2 more" used to be a dead <span>: it names a count the reader can see but
+     cannot reach, and on the navigable rows it hides the very links the row
+     exists for — a Bond past the third had no way into the panel at all. It is
+     a real toggle now, so the remainder opens in place and folds back. State
+     needs no reset across figures: PanelContent is keyed by node id. */
+  const [open, setOpen] = useState(false)
   if (!items?.length) return null
-  const shown = items.slice(0, max)
+  const shown = open ? items : items.slice(0, max)
   const rest  = items.length - shown.length
   return (
     <div className="col-row">
@@ -312,10 +318,17 @@ function Row({ label, items, max = 4, emphasize, onPick, titleFor }) {
               : <span className={emphasize?.has(it.label) ? 'col-em' : undefined}>{it.label}</span>}
           </span>
         ))}
-        {rest > 0 && (
+        {(rest > 0 || open) && (
           <>
             <span className="col-sep">&nbsp;·&nbsp;</span>
-            <span className="col-more">+{rest} more</span>
+            <button
+              className="col-more"
+              aria-expanded={open}
+              title={open ? `Show fewer ${label.toLowerCase()}` : `Show all ${items.length} ${label.toLowerCase()}`}
+              onClick={() => setOpen(!open)}
+            >
+              {open ? 'less' : `+${rest} more`}
+            </button>
           </>
         )}
       </span>
