@@ -94,3 +94,41 @@ export const ZODIAC = [
 // Append U+FE0E (text-presentation selector) so the zodiac glyphs render as
 // monochrome text we can colour — not the OS's purple emoji tiles.
 ].map(s => ({ ...s, symbol: s.symbol + String.fromCharCode(0xFE0E), accent: ELEMENT_ACCENT[s.element] }))
+
+/* ── where a date falls on the wheel ──────────────────────────────────────
+   The twelve signs above are stored in date order and their ranges are
+   contiguous (each ends the day before the next begins), so the whole year is
+   covered with no gap to fall into. ZodiacSphere seats sign `i` at longitude
+   (i/12)·2π and gives it the 30° around that, so a date lands at
+   (i − 0.5 + how far through its own range) twelfths of a turn: the START of a
+   range sits on the sign's leading edge, not its centre.
+
+   Parsed from the `dates` strings rather than stored separately — one set of
+   dates, so the marker can never disagree with the caption above it.          */
+const MONTH = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+                Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 }
+
+function startOf(sign, year) {
+  const [mon, day] = sign.dates.split('–')[0].trim().split(/\s+/)
+  return new Date(year, MONTH[mon], Number(day)).getTime()
+}
+
+export function zodiacPlace(when = new Date()) {
+  const t = when.getTime()
+  const y = when.getFullYear()
+  for (let i = 0; i < 12; i++) {
+    // Capricorn straddles New Year, so a January date belongs to a window that
+    // opened last December — try this year's window and last year's.
+    for (const shift of [0, -1]) {
+      const from = startOf(ZODIAC[i], y + shift)
+      let to = startOf(ZODIAC[(i + 1) % 12], y + shift)
+      if (to <= from) to = startOf(ZODIAC[(i + 1) % 12], y + shift + 1)
+      if (t >= from && t < to) {
+        const fraction = (t - from) / (to - from)
+        return { index: i, sign: ZODIAC[i], fraction,
+                 lon: ((i - 0.5 + fraction) / 12) * Math.PI * 2 }
+      }
+    }
+  }
+  return null
+}
