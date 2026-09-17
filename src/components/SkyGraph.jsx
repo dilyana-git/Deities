@@ -281,6 +281,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const GLOW_R      = 1.5    // resting halo
     const GLOW_R_PEAK = 1.8    // hub-breath / hover swell
     const GLOW_R_NOVA = 2.2    // transient burst on selection & ignition
+    /* the gold selection bloom. It was 1.45 as a hard disc under a 3.2px blur,
+       which spread it a further ~10px; now that the falloff lives in the
+       `#sel-bloom` gradient instead of a filter, the circle has to be wide
+       enough to hold that spread itself. */
+    const SEL_BLOOM_R = 1.95
 
     /* portrait half-width as a multiple of the node radius — portraits spread
        beyond the star and fade into the sky (see the `portrait-mask` in defs)
@@ -427,12 +432,15 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        blue film laid across them. It is populated in the dome block below,
        once DOME geometry exists; the layer is created now for z-order. */
     const limbLayer    = bgZoom.append('g').attr('class','limb-layer').attr('pointer-events','none')
-    /* celestial-rotate wraps the entire constellation field in a very slow
-       rotation (~3° over 2 min) so the sky feels alive even untouched.
+    /* celestial-drift wraps the entire constellation field in a very slow
+       drift (a few px over 2 min) so the sky feels alive even untouched.
        The bg stars drift on a DIFFERENT period (bg-drift), creating a
-       two-layer parallax: background lags behind foreground. */
-    const celestialRotate = zoomLayer.append('g').attr('class','celestial-rotate')
-    const floatYLayer  = celestialRotate.append('g').attr('class','float-y')
+       two-layer parallax: background lags behind foreground.
+       It used to rotate instead, which put every portrait, label and edge
+       under it on a rotated raster path — see the note on @keyframes
+       celestial-drift in index.css before giving it an angle again. */
+    const celestialDrift = zoomLayer.append('g').attr('class','celestial-drift')
+    const floatYLayer  = celestialDrift.append('g').attr('class','float-y')
     const floatXLayer  = floatYLayer.append('g').attr('class','float-x')
     const domeLayer    = floatXLayer.append('g').attr('class','dome-grid').attr('pointer-events','none')
     const catHaloLayer = floatXLayer.append('g').attr('class','cat-halos').attr('pointer-events','none')
@@ -891,6 +899,37 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       g.append('stop').attr('offset', '100%').attr('stop-color', CAT[c]).attr('stop-opacity', 0)
     })
 
+    /* ── the selection bloom's falloff ──────────────────────────────
+       The gold bloom behind a selected star used to be a flat disc softened by
+       `url(#glow)` — the same feGaussianBlur the starfield flares were taken
+       off for being "the heaviest always-on raster cost" (see above). It is
+       worse here than it was there: the halo is invisible at rest (opacity 0)
+       and only ever shows on the one or two nodes that are selected or on a
+       route, yet the filter was attached to all 139 of them at birth, so the
+       blur's region was carried by every star on the field forever.
+
+       A gradient rasterizes as a plain gradient and reads the same at bloom
+       scale, so the falloff moves into the fill and the filter goes away
+       entirely — with it, the last 139 filter users on the map.
+
+       The stops reproduce what the filter actually drew, which was NOT a soft
+       ball: feMerge put the sharp disc back on top of its own blur, so the old
+       bloom was a FLAT disc out to 1.45r with only a ~10px blurred spill past
+       it. The portrait is exactly that wide and its mask is transparent over
+       the outer 45% of its box, so what the viewer sees is that flat gold
+       reading through the portrait's fading edge — the rim-light. A gradient
+       that starts falling off early therefore looks nothing like it: the first
+       attempt here faded from 52% and the selection visibly lost its bloom.
+       So: held flat to 70% (which is 1.45r inside SEL_BLOOM_R's 1.95r, i.e.
+       exactly the old disc), then down to nothing across the remaining 30%,
+       which is the spill the blur used to add. */
+    const selBloom = defs.append('radialGradient').attr('id', 'sel-bloom')
+    selBloom.append('stop').attr('offset', '0%').attr('stop-color', '#cdb88a').attr('stop-opacity', 1)
+    selBloom.append('stop').attr('offset', '70%').attr('stop-color', '#cdb88a').attr('stop-opacity', 1)
+    selBloom.append('stop').attr('offset', '79%').attr('stop-color', '#cdb88a').attr('stop-opacity', 0.6)
+    selBloom.append('stop').attr('offset', '89%').attr('stop-color', '#cdb88a').attr('stop-opacity', 0.22)
+    selBloom.append('stop').attr('offset', '100%').attr('stop-color', '#cdb88a').attr('stop-opacity', 0)
+
     function updateCatHalos() {
       for (const c of cats) {
         const ms = catNodes.get(c)
@@ -999,9 +1038,8 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        portrait so gold leaks through the fading edges as a rim-light aura —
        the frameless replacement for the old stroked selection ring. */
     gNode.append('circle').attr('class','sel-halo')
-      .attr('r',       d => radius(d) * 1.45)
-      .attr('fill',    '#cdb88a')
-      .attr('filter',  'url(#glow)')
+      .attr('r',       d => radius(d) * SEL_BLOOM_R)
+      .attr('fill',    'url(#sel-bloom)')
       .attr('opacity', 0)
 
     /* the core. For the secondaries and the tail — which show NO portrait at
@@ -1996,7 +2034,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const r = grown ? selRadius(d) : radius(d)
       const t = d3.transition().duration(280).ease(d3.easeCubicOut)
       g.select('.glow').transition(t).attr('r', r * GLOW_R)
-      g.select('.sel-halo').transition(t).attr('r', r * 1.45)
+      g.select('.sel-halo').transition(t).attr('r', r * SEL_BLOOM_R)
       g.select('.core').transition(t).attr('r', coreRadius(d, r))
       g.select('image').transition(t)
         .attr('x', -r * IMG_SCALE).attr('y', -r * IMG_SCALE)
