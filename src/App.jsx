@@ -44,7 +44,7 @@ class OverlayBoundary extends Component {
             </button>
             <button onClick={this.dismiss} style={{
               fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.2em', textTransform:'uppercase',
-              color:'#5c6678', background:'none', border:'none', padding:'9px 8px', cursor:'pointer' }}>
+              color:'#8a94a6', background:'none', border:'none', padding:'9px 8px', cursor:'pointer' }}>
               Back to the sky
             </button>
           </div>
@@ -117,7 +117,7 @@ const S = {
      panels — just letterspaced small caps floating directly on the void, dim
      until the cursor finds them. */
   hbtn: {
-    fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.22em', color:'#525c6e',
+    fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.22em', color:'#8a94a6',
     background:'transparent', border:'none', padding:'6px 3px', cursor:'pointer',
     transition:'color .18s', display:'inline-flex', alignItems:'center', gap:7,
     textTransform:'uppercase',
@@ -198,8 +198,8 @@ function AutocompleteInput({ value, onChange, onPick, placeholder, sortedNodes, 
               <span style={{ width:8, height:8, borderRadius:'50%', flexShrink:0,
                 background: CAT[n.category] || '#888', boxShadow:`0 0 6px ${CAT[n.category]||'#888'}` }}/>
               <span style={{ fontSize:15, color:'#aab2c0', flex:1 }}>{n.name}</span>
-              <span style={{ fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.12em',
-                color:'#3a4354', textTransform:'uppercase' }}>
+              <span style={{ fontFamily:'Cinzel, serif', fontSize:10.5, letterSpacing:'.12em',
+                color:'#7a8396', textTransform:'uppercase' }}>
                 {categoryConfig[n.category]?.label || n.category}
               </span>
             </button>
@@ -230,14 +230,14 @@ function SummonSearch({ open, onClose, sortedNodes, onPick }) {
       onMouseDown={onClose}>
       <div className="pop-in" onMouseDown={e => e.stopPropagation()}
         style={{ position:'absolute', top:'20vh', left:'50%', transform:'translateX(-50%)', width:'min(440px,84vw)' }}>
-        <p style={{ fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.28em', color:'#5c6678',
+        <p style={{ fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.28em', color:'#8a94a6',
           textTransform:'uppercase', margin:'0 0 6px' }}>Name a figure</p>
         <AutocompleteInput
           value={q} onChange={setQ} onPick={n => { onPick(n.id); onClose() }}
           placeholder="Zeus, Medusa, Chaos…" sortedNodes={sortedNodes}
           inputStyle={S.bareInput} autoFocus
         />
-        <p style={{ fontStyle:'italic', fontSize:12.5, color:'#3a4354', margin:'8px 2px 0' }}>
+        <p style={{ fontStyle:'italic', fontSize:12.5, color:'#7a8396', margin:'8px 2px 0' }}>
           Choose a figure or press Enter · Tap outside or Esc to dismiss
         </p>
       </div>
@@ -261,7 +261,7 @@ function EraAxis() {
   return (
     <div style={{ position:'absolute', left:20, bottom:18, zIndex:12, pointerEvents:'none',
       opacity:0.72 }}>
-      <p style={{ fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.26em', color:'#4a5364',
+      <p style={{ fontFamily:'Cinzel, serif', fontSize:10.5, letterSpacing:'.26em', color:'#8a94a6',
         textTransform:'uppercase', margin:'0 0 9px 2px' }}>Depth of Ages</p>
       <div style={{ display:'flex' }}>
         {/* the axis line */}
@@ -274,7 +274,7 @@ function EraAxis() {
                 background:e.c, boxShadow:`0 0 7px ${e.c}` }}/>
               <span style={{ fontFamily:'Cinzel, serif', fontSize:11, color:'#7c8698', width:16 }}>{e.r}</span>
               <span style={{ fontFamily:"'Crimson Pro', serif", fontStyle:'italic', fontSize:13,
-                color:'#6b7488' }}>{e.label}</span>
+                color:'#9aa3b4' }}>{e.label}</span>
             </div>
           ))}
         </div>
@@ -310,7 +310,7 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
           Trace a Path
         </span>
         <button onClick={onClose}
-          style={{ marginLeft:'auto', background:'none', border:'none', color:'#5c6678', cursor:'pointer', fontSize:15 }}>
+          style={{ marginLeft:'auto', background:'none', border:'none', color:'#8a94a6', cursor:'pointer', fontSize:15 }}>
           ✕
         </button>
       </div>
@@ -324,7 +324,7 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
       {from && to && (
         <div className="path-result" style={{ marginTop:8 }}>
           {!path ? (
-            <p style={{ fontStyle:'italic', color:'#5c6678', fontSize:14, margin:'8px 0 0' }}>
+            <p style={{ fontStyle:'italic', color:'#8a94a6', fontSize:14, margin:'8px 0 0' }}>
               No chain of relation links these two.
             </p>
           ) : (
@@ -363,7 +363,7 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
                       </button>
                       {rel && (
                         <p style={{
-                          fontStyle:'italic', fontSize:12.5, color:'#8c7f5e',
+                          fontStyle:'italic', fontSize:12.5, color:'#a2916a',
                           margin:0, marginLeft:18, paddingLeft:11,
                           borderLeft:'1px dotted #5a5440', lineHeight:1.4,
                         }}>{rel}</p>
@@ -372,7 +372,7 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
                   )
                 })}
               </div>
-              <p style={{ fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.1em', color:'#5c6678', margin:'9px 0 0' }}>
+              <p style={{ fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.1em', color:'#8a94a6', margin:'9px 0 0' }}>
                 {path.length - 1} steps · {path.length} figures
               </p>
             </>
@@ -386,7 +386,7 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
 function PathSlot({ label, value, onChange, onPick, sortedNodes }) {
   return (
     <div>
-      <span style={{ fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.16em', color:'#5c6678',
+      <span style={{ fontFamily:'Cinzel, serif', fontSize:10.5, letterSpacing:'.16em', color:'#8a94a6',
         textTransform:'uppercase', display:'block', marginBottom:4 }}>
         {label}
       </span>
@@ -408,7 +408,7 @@ function LegendPanel({ onClose }) {
     }} className="pop-in">
       <button onClick={onClose}
         style={{ position:'absolute', top:11, right:13, background:'none', border:'none',
-          color:'#5c6678', cursor:'pointer', fontSize:14 }}>✕</button>
+          color:'#8a94a6', cursor:'pointer', fontSize:14 }}>✕</button>
 
       <LegHead>Entities — brightness is renown</LegHead>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'5px 12px' }}>
@@ -432,7 +432,7 @@ function LegendPanel({ onClose }) {
       </div>
 
       <p style={{
-        fontStyle:'italic', fontSize:12, color:'#3a4354', margin:'12px 0 0', lineHeight:1.4,
+        fontStyle:'italic', fontSize:12, color:'#7a8396', margin:'12px 0 0', lineHeight:1.4,
         borderTop:'1px solid #19202d', paddingTop:9,
       }}>
         A figure's star shines brighter the more myths bind it to others.
@@ -443,7 +443,7 @@ function LegendPanel({ onClose }) {
 
 function LegHead({ children, style }) {
   return (
-    <p style={{ fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.2em', color:'#5c6678',
+    <p style={{ fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.2em', color:'#8a94a6',
       textTransform:'uppercase', margin:'0 0 8px', ...style }}>
       {children}
     </p>
@@ -676,7 +676,7 @@ export default function App() {
   function navHover(active) {
     return {
       onMouseEnter: e => { e.currentTarget.style.color = '#cdb88a' },
-      onMouseLeave: e => { e.currentTarget.style.color = active ? '#cdb88a' : '#525c6e' },
+      onMouseLeave: e => { e.currentTarget.style.color = active ? '#cdb88a' : '#8a94a6' },
     }
   }
 
@@ -697,7 +697,7 @@ export default function App() {
         <div style={{ position:'absolute', top:20, left:22, zIndex:30, pointerEvents:'none' }}>
           <div style={{ fontFamily:'Cinzel, serif', fontWeight:500, fontSize:19, letterSpacing:'.34em',
             color:'#cdb88a', paddingLeft:'.34em' }}>THEOGONY</div>
-          <div style={{ fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.24em', color:'#4a5364',
+          <div style={{ fontFamily:'Cinzel, serif', fontSize:10.5, letterSpacing:'.24em', color:'#8a94a6',
             textTransform:'uppercase', margin:'5px 0 0 .34em' }}>A Web of Becoming</div>
           {/* the invitation — the one line that says what to do */}
           <button
@@ -771,11 +771,11 @@ export default function App() {
         {/* hint */}
         <p style={{
           position:'absolute', left:'50%', bottom:16, transform:'translateX(-50%)',
-          zIndex:10, fontStyle:'italic', fontSize:13.5, color:'#3a4354',
+          zIndex:10, fontStyle:'italic', fontSize:13.5, color:'#7a8396',
           pointerEvents:'none', transition:'opacity .3s', opacity: hintFaded ? 0 : 1,
           whiteSpace:'nowrap', margin:0,
         }}>
-          Click a star to explore · Drag to roam · Scroll to zoom · <span style={{ color:'#5c6678' }}>/</span> to search
+          Click a star to explore · Drag to roam · Scroll to zoom · <span style={{ color:'#8a94a6' }}>/</span> to search
         </p>
 
         {/* reset view — dissolved to bare small caps like the rest of the chrome */}
@@ -783,12 +783,12 @@ export default function App() {
           onClick={closeDetail}
           style={{
             position:'absolute', right:24, bottom:18, zIndex:22,
-            fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.2em', color:'#3e4654',
+            fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.2em', color:'#7a8396',
             background:'none', border:'none', padding:'6px 3px', cursor:'pointer',
             transition:'color .18s', textTransform:'uppercase',
           }}
           onMouseEnter={e => { e.currentTarget.style.color='#cdb88a' }}
-          onMouseLeave={e => { e.currentTarget.style.color='#3e4654' }}
+          onMouseLeave={e => { e.currentTarget.style.color='#7a8396' }}
         >
           ⤢ Reset View
         </button>
@@ -818,7 +818,7 @@ export default function App() {
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
               <span style={{ fontFamily:'Cinzel, serif', fontSize:14, letterSpacing:'.18em', color:'#cdb88a' }}>SHORTCUTS</span>
               <button onClick={() => setShortcutsOpen(false)} style={{
-                background:'none', border:'none', color:'#5c6678', fontSize:16, cursor:'pointer', padding:4,
+                background:'none', border:'none', color:'#8a94a6', fontSize:16, cursor:'pointer', padding:4,
               }}>✕</button>
             </div>
             {[
@@ -832,7 +832,7 @@ export default function App() {
             ].map(([key, desc]) => (
               <div key={key} style={{ display:'flex', justifyContent:'space-between', gap:16, padding:'7px 0', borderBottom:'1px solid #141820' }}>
                 <span style={{ fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.06em', color:'#ece6d6', whiteSpace:'nowrap' }}>{key}</span>
-                <span style={{ fontSize:13, fontStyle:'italic', color:'#5c6678', textAlign:'right' }}>{desc}</span>
+                <span style={{ fontSize:13, fontStyle:'italic', color:'#8a94a6', textAlign:'right' }}>{desc}</span>
               </div>
             ))}
           </div>

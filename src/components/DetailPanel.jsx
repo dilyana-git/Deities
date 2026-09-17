@@ -372,8 +372,8 @@ function EnterStory({ chapters, onOpen }) {
       </span>
       <span className="col-enter-rule"/>
       <span style={{
-        fontFamily:'Cinzel, serif', fontSize:9.5, letterSpacing:'.2em',
-        color:'#8c7d59', whiteSpace:'nowrap',
+        fontFamily:'Cinzel, serif', fontSize:10.5, letterSpacing:'.2em',
+        color:'#a2916a', whiteSpace:'nowrap',
       }}>
         {chapters} CHAPTERS
       </span>
@@ -523,7 +523,7 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
               </button>
               <span className="col-eyebrow-rule"/>
               <span style={{
-                fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.34em',
+                fontFamily:'Cinzel, serif', fontSize:10.5, letterSpacing:'.34em',
                 color:'#a2916a', whiteSpace:'nowrap',
               }}>
                 <span style={{ color:GOLD }}>✦</span>&nbsp;&nbsp;THE STORY
@@ -555,9 +555,9 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
               child so it always runs to the measure's right edge — the same
               column boundary the CTA below shares. */}
           <div className="col-eyebrow">
-            <span style={{ color:GOLD, fontSize:9, lineHeight:1 }}>✦</span>
+            <span style={{ color:GOLD, fontSize:10.5, lineHeight:1 }}>✦</span>
             <span style={{
-              fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.34em',
+              fontFamily:'Cinzel, serif', fontSize:10.5, letterSpacing:'.34em',
               color:'#a2916a', whiteSpace:'nowrap',
             }}>
               {(catCfg.label || node.category).toUpperCase()}
@@ -565,7 +565,7 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
             {node.roman_equivalent && (
               <span style={{
                 fontFamily:"'EB Garamond', Georgia, serif", fontStyle:'italic',
-                fontSize:12.5, color:'#6b7486', whiteSpace:'nowrap',
+                fontSize:12.5, color:'#9aa3b4', whiteSpace:'nowrap',
               }}>
                 ≡ {node.roman_equivalent}
               </span>

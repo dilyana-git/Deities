@@ -310,7 +310,7 @@ It is a **stage, not a scrolling column of sections** (layout `3a Colossus` from
 - **`HoloSigil` fallback** (no portrait, i.e. `ratio` still null): the rotating 3D constellation of the node's top neighbors — perspective-projected, depth-sorted, rAF-driven, pausing when the tab is hidden — centred in her place via `.col-sigil`.
 - **Name sizing is length-driven.** Cinzel renders lowercase as small caps and runs **~0.71em/glyph** with the .03em tracking, so at the design's 96px "Persephone" is four columns wide. `.col-type` is a `container-type: inline-size` container and `nameCq()` sets `--name-cq` in `cqw` from the name's **longest word** (not its total length — "Colchian Dragon" wraps at the space and only has to fit eight glyphs), with 0.84 as the per-glyph divisor for headroom on wide-letter names. `.col-name` caps it at 96px. That keeps the display size right at every panel width — don't reintroduce a viewport-only `clamp()` here, and don't lower the divisor: `.col-type` is `overflow-x: hidden`, so an over-wide name is silently chopped.
 - **Prose** (`Prose`) shows the opening only: `deityStories[id].beats[0].text` when the figure has a beat-based tale (the whole thing lives in the Story Orbit overlay behind ENTER THE STORY), else `story.story` → `node.description`, with `source` as a citation line. `.col-prose` caps at ~7 lines; a `ResizeObserver` toggles `.clamped` (a bottom fade mask) only when it *actually* overflows the live measure — a character count would be right at 384px and wrong at 200px.
-- **The foot is five `Row`s in two registers.** Every row shares one skeleton — a Cinzel label, dot-joined values, truncated with the remainder spelled out in **arabic** (`+14 more`, so the count reads as information rather than roman decoration), no chips/borders/bullets — but they are split into two groups, because five identical italic lines of the same size read as a receipt rather than as information. `.col-rows-attr` holds **Domains, Symbols, Myths** (attributes: italic, 13.5px, dim, 5px gaps — one tight block); `.col-rows-nav` holds **Bonds** and **Tales** (navigation: upright, 15.5px, a step brighter, gold hover underline on `.col-link`). **Upright type is the click affordance — don't set a non-navigable row in it.** That is why **Myths stays with the attributes** despite reading as titles: a myth name is a keyword with no target behind it. **Bonds** are the top-degree neighbours and call `onNavigate(id)`; **Tales** come from the module-level `_talesByFig` index (walks `TOURS` once, mapping node id → tales with the **first** beat index where the figure takes the stage) and call `onOpenTale(tourId, beat)` → the Guided Sky overlay opens *at that chapter*. Myths use `emphasize={_famousMyths}` (shared by 3+ figures) → `.col-em`.
+- **The foot is five `Row`s in two registers.** Every row shares one skeleton — a Cinzel label, dot-joined values, truncated with the remainder spelled out in **arabic** (`+14 more`, so the count reads as information rather than roman decoration), no chips/borders/bullets — but they are split into two groups, because five identical italic lines of the same size read as a receipt rather than as information. `.col-rows-attr` holds **Domains, Symbols, Myths** (attributes: italic, 14.5px, dim, 5px gaps — one tight block); `.col-rows-nav` holds **Bonds** and **Tales** (navigation: upright, 15.5px, a step brighter, gold hover underline on `.col-link`). **Upright type is the click affordance — don't set a non-navigable row in it.** That is why **Myths stays with the attributes** despite reading as titles: a myth name is a keyword with no target behind it. **Bonds** are the top-degree neighbours and call `onNavigate(id)`; **Tales** come from the module-level `_talesByFig` index (walks `TOURS` once, mapping node id → tales with the **first** beat index where the figure takes the stage) and call `onOpenTale(tourId, beat)` → the Guided Sky overlay opens *at that chapter*. Myths use `emphasize={_famousMyths}` (shared by 3+ figures) → `.col-em`.
 - **The eyebrow accent is gold, not the family colour.** The panel's chrome is uniformly gold (`#cdb88a`) — the eyebrow ✦, the epithet, the CTA — so the eyebrow star is gold too; the category's coral/violet/etc. lives on the figure aura (`.col-aura`), the sigil, and the map, never orphaned on a single glyph in the text column. The `roman_equivalent` (`≡ Jupiter`) sits **before** the `.col-eyebrow-rule`, so the rule always runs to the measure's right edge — the same column boundary the CTA's right border lands on (one shared, visible right edge for the measure).
 - **ENTER THE STORY is a real button, not a caption.** `.col-enter` is a bordered, padded, full-measure hit area (hover: brighter border + fill + shadow), its chapter count spelled in arabic (`5 CHAPTERS`) and pushed to the right by a dotted leader. Its right border defines the measure's column boundary (see the eyebrow rule above).
 - **Cut in this layout:** the holographic hero chrome (scanlines, light sweep, opacity flicker, cursor tilt — calibrated for a small square hero, noise across 820px of face), the `StorySpine` vertical constellation and its `MiniConstellation` (already unreachable, since `App` always passes `onOpenOrbit`), and the per-section `Section`/`QuietList`/`TaleList` scaffolding. **Archetype** and the **Connections** list were cut earlier and stay cut — the graph is the relationship surface.
@@ -395,6 +395,43 @@ Selection is push-based: graph → `onSelect` → `selectedId`; App → `graphRe
 ## Extending the Dataset
 
 Edit `src/data/mythology.js` (nodes/links) and optionally add a matching `src/data/deityStories.js` entry. For guided tours, add the beat to `src/data/tours.js`; a tour also names a `hero` (see the tour schema). Run `npm run build` to verify there are no broken references. To add imagery, drop the artwork in `portraits-src/` and run `node scripts/gen-portraits.mjs` — it writes all three tiers into `public/portraits/` (head-cropping the two small ones from **one** shared box) and regenerates `src/data/portraitManifest.generated.js`. **Files dropped straight into `public/portraits/` are no longer picked up**: the runtime reads only the manifest, so art has to go through the generator to exist. `--manifest-only` rebuilds just the manifest; `--dry` reports without writing. **Then commit both `public/portraits/` and the manifest** — the deployed site is built from the repo, so art that exists only on your disk never ships, and an untracked manifest fails the host's build outright (`SkyGraph` imports it). If the auto-framing misses a face, add a `{ cx, cy, s }` entry for that id to `scripts/head-boxes.json` and re-run. **Name the source file for the node id exactly** — that id is the only thing a portrait is resolved by, so art filed under a variant spelling silently never loads and its figure stays a bare star. (`callisto`, `euryale`, `tethys`, `graeae`, `muses` and `gorgons` were each filed under a variant once, and were invisible until renamed.)
+
+## Type Readability Floor
+
+The sky is dark and the chrome is deliberately quiet, but "quiet" was being spent
+down to where QA could not read it. Two floors now hold across `index.css` and the
+inline styles in `App.jsx` / `DetailPanel.jsx`, and both are easy to undo one
+declaration at a time:
+
+- **No reading text below 4.5:1** against the surface behind it. The app's grounds
+  run `#06080e` (page) → `#07090f` (panel plate) → `#131a2b` (the lightest overlay
+  core), so a colour is only safe if it clears 4.5 on the *lightest* of those. The
+  muted scale is three steps, all measured against all four grounds:
+  **`#9aa3b4`** (6.8–7.9, bright secondary — row values, prose asides),
+  **`#8a94a6`** (5.7–6.6, mid — the default for quiet chrome, and `--faint`),
+  **`#7a8396`** (4.6–5.3, floor — captions, tooltips' second line, hints).
+  Gold-family labels take **`#a2916a`** (5.6–6.4) or **`#9b8b63`** (5.2–6.0) rather
+  than the old `--gold-dim` `#8c7d59`. Anything dimmer than the floor now is either
+  a border, a gradient stop, a separator, or dead `.wf-page` CSS.
+- **No Cinzel label below 10.5px.** Cinzel renders lowercase as small caps and every
+  eyebrow here carries .2–.34em tracking, so an 8–9px label is letterforms with more
+  gap than stroke. Eyebrows and row keys sit at **10.5–11px**, the graph's
+  relationship labels (`.link-labels text`) at **9.5px** — they ride an edge and
+  cannot take more, but 7px was below any reading floor at all.
+
+Two related knobs move with these and are not independent:
+
+- **Opacity multiplies the contrast.** A tier-2 node label at `.52` of `#c4cad6`
+  lands near 3.4:1 however bright the fill is, so the zoom-gated label opacities are
+  **.74 / .88** (tier 2 at `zoomed-mid` / `zoomed-in`), **.76** (tier 3), **.92**
+  (tier 1). Same reason the GuidedSky chapter numerals run **.58 → .82 → 1**
+  (ahead → told → current) instead of starting at .34: the three states still read
+  as a progression, just above the floor rather than through it.
+- **The value structure is untouched.** These changes are all *type* — the limb
+  glow, core shade, haze, `rimBias`, vignette, `cat-halos` and the dashed
+  constellation strokes keep their measured values. Lifting a backdrop to make text
+  readable is the fix this section exists to avoid; brighten the glyph, never the
+  ground behind it.
 
 ## CSS Classes of Note
 
