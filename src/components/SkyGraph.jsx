@@ -413,7 +413,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     hazeGrad.append('stop').attr('offset', '62%').attr('stop-color', '#2a1a3a').attr('stop-opacity', 0.30)
     hazeGrad.append('stop').attr('offset', '78%').attr('stop-color', '#1a2436').attr('stop-opacity', 0.20)
     hazeGrad.append('stop').attr('offset', '100%').attr('stop-color', '#06080e').attr('stop-opacity', 0)
-    hazeLayer.append('ellipse')
+    const hazeEl = hazeLayer.append('ellipse')
       .attr('class', 'depth-haze')
       .attr('cx', W * 0.55).attr('cy', H * 0.45)
       .attr('rx', W * 0.7).attr('ry', H * 0.6)
@@ -424,12 +424,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        move at a different speed from the constellation field — parallax depth */
     const bgDrift      = bgZoom.append('g').attr('class','bg-drift')
     const bgLayer      = bgDrift.append('g').attr('class','bg')
-    /* the dome's limb glow lives HERE, not with the rest of the dome furniture
-       inside float-x, for one reason: float-x is a stacking context (it is
-       `will-change: transform`), and a screen blend inside it can only reach
-       its own siblings — not the starfield. Out here it composites additively
-       over the stars, which is what makes it read as atmosphere rather than a
-       blue film laid across them. It is populated in the dome block below,
+    /* the dome's limb glow lives HERE, with the starfield, rather than with the
+       rest of the dome furniture inside float-x: it has to sit in the same
+       layer as the stars it lights, and out here it reads as atmosphere over
+       them rather than a blue film laid across them. (It no longer blends —
+       see the note on `.dome-limb` in index.css — so the stacking-context
+       argument this comment used to make no longer applies, but the placement
+       is still right and moving it back would put it above the stars again.)
+       It is populated in the dome block below,
        once DOME geometry exists; the layer is created now for z-order. */
     const limbLayer    = bgZoom.append('g').attr('class','limb-layer').attr('pointer-events','none')
     /* celestial-drift wraps the entire constellation field in a very slow
@@ -465,6 +467,14 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        dead centre. */
     let _s = 7
     const rnd = () => { _s = (_s * 1103515245 + 12345) & 0x7fffffff; return _s / 0x7fffffff }
+
+    /* Per-element state for the ambient ticker (`stepAmbient`, far below): the
+       phases and periods that used to be CSS custom properties feeding one
+       keyframe animation per element. Populated as each element is born, in
+       the same order and off the same seeded stream, so the field is still
+       identical on every load at a given size. */
+    const TAU = Math.PI * 2
+    const _amb = { glows: [], stars: [], flares: [], raf: 0, running: false }
     const big = Math.max(W, H) * 2.2
     const TINTS = ['#d6dce8', '#c8c0b8', '#b8c4d8', '#e0d8c8', '#c0c8d6', '#d8ccc0']
     const starData = d3.range(420).map(() => {
@@ -499,8 +509,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('r',    d => d.r * 5.5)
       .attr('fill', d => `url(#flare-${TINTS.indexOf(d.tint)})`)
       .style('--flare-peak',  d => (0.28 + d.o * 0.55).toFixed(2))
-      .style('--flare-dur',   () => `${(1.5 + rnd() * 2.0).toFixed(2)}s`)
-      .style('--flare-delay', () => `-${(rnd() * 6).toFixed(2)}s`)
+      .each(function (d) {
+        _amb.flares.push({ el: this, peak: 0.28 + d.o * 0.55, dur: 1.5 + rnd() * 2.0, off: rnd() * 6 })
+      })
 
     bgLayer.selectAll('circle.star')
       .data(starData)
@@ -509,9 +520,9 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', d => d.r)
       .attr('fill', d => d.tint).attr('opacity', d => d.o)
       .filter('.star-shimmer')
-      .style('--shimmer-base', d => d.o.toFixed(3))
-      .style('--shimmer-dur', () => `${(3 + rnd() * 4).toFixed(2)}s`)
-      .style('--shimmer-delay', () => `-${(rnd() * 7).toFixed(2)}s`)
+      .each(function (d) {
+        _amb.stars.push({ el: this, base: d.o, dur: 3 + rnd() * 4, off: rnd() * 7 })
+      })
 
     /* ── shooting stars: a rare meteor every 20-40s ─────────────── */
     const meteorLayer = bgDrift.append('g').attr('class', 'meteors')
@@ -1025,13 +1036,20 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('fill',     d => `url(#node-glow-${d.category})`)
       .attr('opacity',  d => 0.07 + d.prom * 0.14)
       .classed('hub-breath', d => d.prom >= hubBreathThreshold)
+      /* `--glow-base` is the one custom property that stays: hoverOn,
+         applySelectVisual and flareTerminal all express brightness by writing
+         it, and `stepAmbient` reads it back on every step. The rest of the old
+         properties are now numbers on `_amb.glows`. */
       .style('--glow-base',     d => (0.07 + d.prom * 0.14).toFixed(3))
-      .style('--glow-r',        d => (radius(d) * GLOW_R).toFixed(1))
-      .style('--glow-r-peak',   d => (radius(d) * GLOW_R_PEAK).toFixed(1))
-      .style('--twinkle-dur',   () => `${(4.5 + rnd() * 4.5).toFixed(2)}s`)
-      .style('--twinkle-delay', () => `-${(rnd() * 7).toFixed(2)}s`)
-      .style('--breath-dur',    () => `${(3.5 + rnd() * 1.5).toFixed(2)}s`)
-      .style('--breath-delay',  () => `-${(rnd() * 5).toFixed(2)}s`)
+      .each(function (d) {
+        _amb.glows.push({
+          el: this, id: d.id, base: 0.07 + d.prom * 0.14,
+          dur: 4.5 + rnd() * 4.5, off: rnd() * 7,
+          hub: d.prom >= hubBreathThreshold,
+          r0: radius(d) * GLOW_R, r1: radius(d) * GLOW_R_PEAK,
+          bdur: 3.5 + rnd() * 1.5, boff: rnd() * 5,
+        })
+      })
 
     /* gold selection bloom — a blurred gold disc BEHIND the star, invisible
        until the node has `.selected` (or `.route`). It back-lights the
@@ -1907,6 +1925,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     /* ── hover / selection state ────────────────────────────────── */
     const state = { selected: null, pathLock: false, tourLock: false }
     let _hoverActive = false
+    /* Which node, if any, d3 currently owns the glow RADIUS of. The ambient
+       ticker drives `r` on the breathing hubs, so it has to stand aside for
+       the hover swell, the selection nova and the lineage-arrival flare —
+       otherwise the two write the same channel on the same node. */
+    let _hoverId = null
 
     const srcId = l => (typeof l.source === 'object' ? l.source.id : l.source)
     const tgtId = l => (typeof l.target === 'object' ? l.target.id : l.target)
@@ -2146,6 +2169,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     function hoverOn(d) {
       if (state.pathLock || state.tourLock || !_ignitionDone) return
       _hoverActive = true
+      _hoverId = d.id
       stopAmbient()                 // the viewer is driving now — hush the ambient sky
       showPortrait(d, true)         // the face is the reward of leaning in
       prefetchFull(d)               // and the panel's hero, if they linger
@@ -2212,6 +2236,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       if (state.pathLock || state.tourLock) return
       cancelFullPrefetch()          // they were passing over, not looking
       _hoverActive = false
+      _hoverId = null
       if (!state.selected) scheduleAmbient(5000)   // idle again — let the sky resume its pulse
       if (tip) tip.style.opacity = '0'
 
@@ -2481,6 +2506,129 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       residueLayer.classed('hushed', false)
       _ambientTimer = setTimeout(runAmbient, delay)
     }
+    /* ── ambient motion: one stepped ticker ───────────────────────────
+       Everything that moves on the idle sky is driven from here: the field's
+       drift and float, 139 glows twinkling, ~6 hubs breathing, 63 background
+       stars shimmering, 17 flares blooming, the haze, and the backdrop's own
+       parallax. All of it used to be a CSS animation per element — 240 of
+       them — and the full reasoning, with the numbers, is in the ticker note
+       in index.css. The short version: a RUNNING CSS animation is priced per
+       frame rather than per frame it changes, because Chrome regenerates the
+       layer's raster while any animation on it runs, value change or not; an
+       SVG's children get no compositor layer of their own, so that layer is
+       the whole atlas. Stepping a CSS animation buys nothing (`steps()` still
+       runs every frame); writing the same value from JS buys everything,
+       because a frame nobody wrote to is a frame nobody repaints. Measured on
+       the resting sky: 18.6 fps -> 52.8, with 60 the vsync ceiling.
+
+       Three things here are load-bearing:
+
+       - **The writes go through `style`, not `setAttribute`, on the glows.**
+         The old keyframes animated the `opacity` and `r` PROPERTIES, which beat
+         the attribute d3's transitions write, so the ticker has to sit in the
+         same channel to own it as unambiguously. Write the attribute instead
+         and the 10Hz steps interleave with a 60Hz d3 transition on the same
+         node — the select nova and the ignition flare both write glow opacity
+         that way — and the glow flickers between two authors.
+       - **It stands aside for whoever owns a glow's radius.** `r` is cleared
+         off the breathing hubs while d3 drives them (hover swell, selection
+         nova, lineage-arrival flare), which also fixes the reverse: the old CSS
+         hub-breath silently overrode all three on exactly those ~6 nodes.
+       - **Brightness still arrives through `--glow-base`.** Every emphasis path
+         writes it and this reads it back each step, so hoverOn,
+         applySelectVisual and flareTerminal needed no change at all.
+
+       The rate is one constant. 6Hz measures ~4% better and looks it on the
+       flares' quick bloom; 15Hz costs 4 fps for motion nobody can see. */
+    const AMBIENT_HZ = 10
+
+    /* piecewise-linear walk through a keyframe list [[stop, ...values], ...],
+       so the asymmetric curves (shimmer, haze, backdrop parallax) keep the
+       shape their keyframes had rather than being flattened to a sine. */
+    function keyed(f, frames) {
+      let i = 1
+      while (i < frames.length - 1 && f > frames[i][0]) i++
+      const a = frames[i - 1], b = frames[i]
+      const u = b[0] === a[0] ? 0 : (f - a[0]) / (b[0] - a[0])
+      const out = []
+      for (let j = 1; j < a.length; j++) out.push(a[j] + (b[j] - a[j]) * u)
+      return out
+    }
+    const HAZE_K = [[0, 0, 0, 0], [0.33, 40, -20, 3], [0.66, -30, 15, -2], [1, 0, 0, 0]]
+    const BGD_K  = [[0, 0, 0, 0], [0.33, 3, -2, -1.2], [0.66, -2, 1, 0.6], [1, 0, 0, 0]]
+    const SHIM_K = [[0, 1], [0.4, 0.35], [0.6, 1.6], [1, 1]]
+    const frac = x => x - Math.floor(x)
+
+    function stepAmbient(t) {
+      /* the field's drift and both float layers, composed into the single
+         translate they always added up to. A TRANSLATION, deliberately: this
+         used to be a ~3deg rotation and the angle alone cost half the frame
+         budget, moving or not, because it puts 139 portraits and 139 labels on
+         the rotated raster path. Don't give it an angle again. */
+      const k1 = (1 - Math.cos(TAU * t / 130)) / 2      // celestial drift, 130s
+      const k2 = (1 - Math.cos(TAU * t / 14)) / 2       // float bob, 14s
+      const k3 = (1 - Math.cos(TAU * (t + 25) / 70)) / 2 // float drift, 70s, -25s
+      celestialDrift.attr('transform',
+        `translate(${(7 * k1 + 4 * k3).toFixed(2)},${(5 * k1 - 5 * k2).toFixed(2)})`)
+
+      const [hx, hy, ha] = keyed(frac(t / 90), HAZE_K)
+      hazeEl.attr('transform',
+        `rotate(${ha.toFixed(3)},${(W / 2).toFixed(0)},${(H / 2).toFixed(0)}) translate(${hx.toFixed(1)},${hy.toFixed(1)})`)
+
+      const [bx, by, ba] = keyed(frac(t / 180), BGD_K)
+      bgDrift.attr('transform', `rotate(${ba.toFixed(3)},600,370) translate(${bx.toFixed(2)},${by.toFixed(2)})`)
+
+      for (const f of _amb.flares) {
+        /* asymmetric flash: quick bloom to the peak at 18% of the cycle, then
+           a long slow fade — a flare, not a breath */
+        const u = frac((t + f.off) / f.dur)
+        const o = u < 0.18 ? f.peak * (u / 0.18) : f.peak * (1 - (u - 0.18) / 0.82)
+        f.el.setAttribute('opacity', o.toFixed(3))
+      }
+      for (const st of _amb.stars) {
+        st.el.setAttribute('opacity', (st.base * keyed(frac((t + st.off) / st.dur), SHIM_K)[0]).toFixed(3))
+      }
+
+      /* The glows sit out the cosmogony: its per-node flare transitions own
+         both channels for those ~13s, and the nodes are dark for most of it. */
+      if (!_ignitionDone) return
+      for (const g of _amb.glows) {
+        const base = parseFloat(g.el.style.getPropertyValue('--glow-base')) || g.base
+        if (g.hub) {
+          const k = (1 - Math.cos(TAU * (t + g.boff) / g.bdur)) / 2
+          g.el.style.opacity = (base * (0.6 + k)).toFixed(3)
+          /* hand the radius back whenever d3 is driving this one */
+          if (g.id === _grownId || g.id === _hoverId || g.id === _flareId) g.el.style.removeProperty('r')
+          else g.el.style.r = `${(g.r0 + (g.r1 - g.r0) * k).toFixed(1)}px`
+        } else {
+          const c = Math.cos(TAU * (t + g.off) / g.dur)
+          g.el.style.opacity = (base * (1.025 - 0.525 * c)).toFixed(3)
+        }
+      }
+    }
+
+    /* rAF rather than setInterval, throttled to AMBIENT_HZ: the writes then
+       land at the top of a frame instead of part-way through one, and a hidden
+       tab stops the loop on its own (as does `applyDormancy`, which is the
+       case that actually matters — a full-screen overlay). */
+    function ambientFrame(ms) {
+      if (!_amb.running) return
+      _amb.raf = requestAnimationFrame(ambientFrame)
+      if (ms - _amb.last < 1000 / AMBIENT_HZ) return
+      _amb.last = ms
+      stepAmbient(ms / 1000)
+    }
+    function startAmbientMotion() {
+      if (_amb.running || reduced) return
+      _amb.running = true
+      _amb.last = -1e9                       // step once immediately
+      _amb.raf = requestAnimationFrame(ambientFrame)
+    }
+    function stopAmbientMotion() {
+      _amb.running = false
+      cancelAnimationFrame(_amb.raf)
+    }
+
     /* ── dormancy — the sky sleeps when nothing can see it ────────────
        A full-screen overlay (Guided Sky, Zodiac) is
        `position: fixed; inset: 0` over an OPAQUE ground at z-index 1000, so
@@ -2503,6 +2651,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       const asleep = _dormant || document.hidden
       svg.classed('paused', asleep)
       bgSvg.classed('paused', asleep)   // the twinkles live in the other layer now
+      /* The ambient ticker is the sky's own motion and sleeps with it, which is
+         most of what dormancy is now for — `paused` only reaches the handful of
+         animations that are still CSS (see index.css). */
+      if (asleep) stopAmbientMotion()
+      else startAmbientMotion()
       if (asleep) { sim.stop(); stopAmbient() }
       /* Re-arm the heartbeat only if the viewer is not driving something:
          `scheduleAmbient` un-hushes the residue web, which has to stay hushed
@@ -2729,6 +2882,11 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        already-seen) start their image fetches at the same moment: now. */
     loadPrimaryPortraits()
 
+    /* The ambient ticker runs from here on, film or no film: the drifts, the
+       starfield and the haze all move during the cosmogony (the glows are the
+       one channel it holds back until `_ignitionDone` — see stepAmbient). */
+    if (!document.hidden) startAmbientMotion()
+
     if (cosmogonySeen()) {
       /* Already watched this session: open on the finished sky. finishIgnition
          lands every layer on exactly the values phase 5 arrives at, and starts
@@ -2746,6 +2904,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       cancelFullPrefetch()
       clearTimeout(_meteorTimer)
       clearTimeout(_ambientTimer)
+      stopAmbientMotion()
       teardownSkip()
       state._traceActive = false
       cancelAnimationFrame(state._traceRaf)

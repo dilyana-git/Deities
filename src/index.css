@@ -127,42 +127,29 @@ body {
    the nodes stand in, so every figure is a light mark on a dark ground. Do not
    reintroduce a centre-bright wash here: it lifts the backdrop above the
    content's own values and the whole field sinks into a hole. */
+
+/* NOT screen-blended, though it reads as though it were. A blend has to read
+   its backdrop back, and this band spans the viewport in a layer that repaints
+   whenever the backdrop moves, so it was charged on every one of those
+   repaints: dropping the blend took the resting field from 18.8 to 22.7 fps
+   (1.21x) before the ambient ticker below, and 42.8 to 53.5 (1.25x) after it.
+   It is the same trade the category halos already took — at 0.30 alpha over a
+   near-black sky, screen and source-over are the same picture. A/B'd inside one
+   frozen page load: mean delta 0.59/255, with only 16 pixels of 1.14M moving by
+   more than 16/255 (bright stars under the band, which screen would have added
+   to rather than covered). Deleting the limb outright is 1.98 by the same
+   measure, so the blend was worth a third of one deletion's worth of nothing.
+   Don't put it back. */
 .dome-limb {
-  mix-blend-mode: screen;
   pointer-events: none;
 }
 
-/* ── Depth haze: barely-perceptible nebula ring behind the web ────────────── */
-@keyframes haze-drift {
-  0%   { transform: translate(0, 0)     rotate(0deg); }
-  33%  { transform: translate(40px, -20px) rotate(3deg); }
-  66%  { transform: translate(-30px, 15px) rotate(-2deg); }
-  100% { transform: translate(0, 0)     rotate(0deg); }
-}
-/* ── why the slow drifts are stepped ──────────────────────────────────────
-   Everything in #sky is one SVG, and Chrome gives an SVG's children no
-   compositor layers of their own: a transform on a group is not moved by the
-   GPU, it is REDRAWN, and these five transform whole layers — so each one
-   repaints the entire field (151 filtered elements, 11 blended) every frame.
-   Measured on an integrated Radeon: 21fps at rest with them running, 35
-   without, GPU ~95% busy either way.
-
-   They are also the slowest motion on the page — a pixel a second or less —
-   so a step every 250-500ms lands sub-pixel and looks identical, while the
-   repaint it costs drops from 60/s to 2-4/s. Keep the step counts matched to
-   the durations below (steps are PER KEYFRAME SEGMENT, not per cycle) if you
-   retime one: 2-4 updates a second is the target, and much coarser starts to
-   tick on high-contrast edges. */
+/* ── Depth haze: barely-perceptible nebula ring behind the web ──────────────
+   Drifts and turns over ~90s, from the ambient ticker (see its note below). */
 .depth-haze {
-  animation: haze-drift 90s steps(120) infinite;
   pointer-events: none;
   mix-blend-mode: screen;
-  will-change: transform;
 }
-@media (prefers-reduced-motion: reduce) {
-  .depth-haze { animation: none; }
-}
-.paused .depth-haze { animation-play-state: paused; }
 
 /* category territory halos — soft colour fields grouping each cluster.
    These used to carry `mix-blend-mode: screen`, so overlapping family colours
@@ -207,165 +194,81 @@ body {
 
 /* ── Flaring stars ─────────────────────────────────────────────────────────
    A plain opacity-pulse on a ~1px circle never reads — the absolute pixel
-   delta is too small to register against the graph/clouds/grain. Instead each
-   flare is a separate, much larger, blurred halo (#glow filter, 5x the star's
-   radius) that blooms from invisible to --flare-peak and fades — a real
-   change in lit pixel area, not just a brightness fraction. --flare-peak/
-   --flare-dur/--flare-delay are set per element in SkyGraph so ~70 of the
-   brightest stars bloom out of phase. */
-/* Asymmetric flash — quick bloom (peak at 18%), long slow fade — reads as a
-   genuine "flare" rather than a smooth breathing pulse, and arrives fast
-   enough to actually catch the eye. */
-@keyframes star-flare {
-  0%   { opacity: 0; }
-  18%  { opacity: var(--flare-peak, 0.35); }
-  100% { opacity: 0; }
-}
+   delta is too small to register against the graph and the grain. Instead each
+   flare is a separate, much larger, soft-gradient halo (5x the star's radius)
+   that blooms from invisible to --flare-peak and fades — a real change in lit
+   pixel area, not just a brightness fraction. The bloom is an asymmetric flash
+   (peak at 18% of the cycle, then a long slow fade), which reads as a flare
+   rather than a breathing pulse; --flare-peak is set per element in SkyGraph so
+   the brightest stars bloom out of phase.
+
+   The curve itself lives in `stepAmbient`, not in keyframes here — see the
+   ticker note below. The opacity set here is what a sky with no ticker shows
+   (reduced motion, or the frames before the first step lands). */
 .flare {
-  animation: star-flare var(--flare-dur, 2.4s) ease-out infinite;
-  animation-delay: var(--flare-delay, 0s);
   pointer-events: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .flare { animation: none; opacity: calc(var(--flare-peak, 0.35) * 0.5); }
+  opacity: calc(var(--flare-peak, 0.35) * 0.5);
 }
 
 /* ── Asynchronous star shimmer ──────────────────────────────────────────────
-   ~15% of background star dots shimmer on randomized long loops (3–7s).
-   Opacity dips and recovers, plus a subtle scale breath. Randomized phase
-   (--shimmer-delay) means they never pulse in unison. */
-@keyframes star-shimmer {
-  0%, 100% { opacity: var(--shimmer-base, 0.2); transform: scale(1); }
-  40%      { opacity: calc(var(--shimmer-base, 0.2) * 0.35); transform: scale(0.7); }
-  60%      { opacity: calc(var(--shimmer-base, 0.2) * 1.6);  transform: scale(1.25); }
-}
-.star-shimmer {
-  animation: star-shimmer var(--shimmer-dur, 5s) ease-in-out infinite;
-  animation-delay: var(--shimmer-delay, 0s);
-  transform-origin: center;
-  transform-box: fill-box;
-}
-@media (prefers-reduced-motion: reduce) {
-  .star-shimmer { animation: none; }
-}
+   ~15% of background star dots shimmer on randomized long loops (3-7s), out of
+   phase with each other. Driven from `stepAmbient`, not from keyframes — see
+   the ticker note below. The scale breath the keyframes used to carry went with
+   them: on a sub-pixel dot a 1.0->1.25 scale is invisible (which is the very
+   reason the blurred `.flare` exists next door), and it cost 63 extra transform
+   nodes on the backdrop. */
 
-/* ── Slow celestial drift ──────────────────────────────────────────────────
-   The constellation field drifts a few pixels over 2 minutes, against the
-   background stars' own slower cadence (bg-drift) — two-layer parallax depth.
+/* ── the resting sky's motion: one stepped ticker, not 240 CSS animations ──
+   Everything that moves on the idle sky — the field's slow drift and float,
+   139 node glows twinkling, ~6 hubs breathing, 63 background stars shimmering,
+   17 flares blooming, the haze and the backdrop's own parallax — used to be a
+   CSS animation per element. All of it is now driven from ONE rAF ticker
+   stepping at `AMBIENT_HZ` (`stepAmbient` in SkyGraph.jsx), which is why the
+   keyframes that used to live here are gone.
 
-   This used to be a ~3° ROTATION of the whole field, and that one property was
-   the most expensive thing left on the map. The cost is not the animation, it
-   is the angle: a subtree under a non-zero, non-right-angle rotation loses
-   every axis-aligned fast path beneath it, and this subtree is 139 portraits,
-   139 text labels and 258 edges. Rotated text in particular cannot come from
-   the cached glyph atlas and is re-rendered as outlines on every repaint.
+   A *running* CSS animation is not priced per frame it changes, it is priced
+   per frame, full stop: Chrome regenerates the layer's raster while any
+   animation on it is running, whether or not the animation's computed value
+   moved that frame. An SVG's children get no compositor layers of their own,
+   so "the layer" here is the whole atlas — 139 portraits, 139 text labels, 258
+   edges. Stepping a CSS animation therefore buys nothing (`steps()` still runs
+   every frame, which is why the old note here measured 1.06x for it); writing
+   the same attribute from JS buys everything, because a frame nobody wrote to
+   is a frame nobody repaints.
 
-   Measured on the settled sky, median of 3 runs each: animated rotate 8.3 fps,
-   a STATIC rotate(2.8deg) 9.1, and a static rotate(0deg) 18.6 — so holding the
-   field at an angle costs about half the frame budget whether or not the angle
-   is moving. Driving the same stepped angles from JS instead of CSS recovers
-   nothing (1.05x), and neither does promoting the svg (1.10x).
+   Measured at 1440x900, headless software raster, interleaved inside one page
+   load (fps by rAF against a 60 ceiling, so 60 means free):
 
-   A translation keeps the drift and keeps the field axis-aligned: 9.1 -> 14.7
-   fps, 1.62x, which is the whole win. So the motion stays and the rotation
-   goes. Don't reintroduce a rotate() here, on this layer or on .float-x/y
-   beneath it — the cost lands on everything they contain. The background's
-   own bg-drift may still rotate: it carries no text and no images, and
-   removing its rotation measured no gain (1.56x vs 1.62x, inside the noise). */
-@keyframes celestial-drift {
-  0%   { transform: translate(0, 0); }
-  50%  { transform: translate(7px, 5px); }
-  100% { transform: translate(0, 0); }
-}
-.celestial-drift {
-  animation: celestial-drift 130s steps(130) infinite;   /* 2 segments of 65s → 2/s */
-}
-@keyframes bg-parallax-drift {
-  0%   { transform: rotate(0deg) translate(0, 0); }
-  33%  { transform: rotate(-1.2deg) translate(3px, -2px); }
-  66%  { transform: rotate(0.6deg) translate(-2px, 1px); }
-  100% { transform: rotate(0deg) translate(0, 0); }
-}
-.bg-drift {
-  animation: bg-parallax-drift 180s steps(120) infinite;  /* 3 segments of ~60s → 2/s */
-  transform-origin: 600px 370px;
-  will-change: transform;
-}
-@media (prefers-reduced-motion: reduce) {
-  .celestial-drift, .bg-drift { animation: none; }
-}
+     resting sky, as it was                          18.6
+     ditto, every CSS animation here disabled        60.0    <- 3.2x of headroom
+     139 glows animated by CSS                       18.8
+      75 of them (tiers 1+2)                         28.7
+      12 of them (tier 1 only)                       38.5    <- still a third of
+     139 glows written from JS at 5Hz                57.0       the frame budget
+     the whole ticker at 6 / 10 / 15 Hz    55.0 / 52.8 / 48.7
 
-/* ── Floating graph ────────────────────────────────────────────────────────
-   Nested bob + drift compose into a slow organic loop; physics-driven node
-   positions are untouched.
+   Two things fall out of those numbers and are easy to get wrong. Cutting the
+   COUNT of CSS-animated elements is not a fix — 12 glows still cost a third of
+   the budget, because the cost tracks the screen area the animating elements
+   cover, not how many there are. And moving the drift onto the `<svg>` ELEMENT
+   as a CSS transform is not a fix either: an svg root with this much content in
+   it is repainted, not composited (22.1 fps, 1.13x). 10Hz is the chosen rate —
+   6Hz measures ~4% better and looks it on the flares' quick bloom.
 
-   This block used to claim that `will-change` on .float-x promotes it to its
-   own compositor layer, so the nested transforms "just re-transform one cached
-   raster". That is not true and never was: Chrome gives an SVG's children no
-   compositor layers, so a transform on a group inside #sky is not moved, it is
-   redrawn — the whole field, every frame it changes. (CLAUDE.md's layer-stack
-   section has the same correction.) The `will-change` below is therefore inert
-   as a promotion; it is left only because removing it measured no difference.
+   The drift is still a TRANSLATION and must stay one. It used to be a ~3°
+   rotation, and the angle alone cost about half the frame budget whether or not
+   it moved (animated rotate 8.3 fps, static rotate(2.8deg) 9.1, static
+   rotate(0deg) 18.6): a subtree under a non-right-angle rotation loses every
+   axis-aligned fast path beneath it, and rotated text in particular cannot come
+   from the cached glyph atlas. Don't give the atlas an angle again. The
+   backdrop's own drift may still rotate — it carries no text and no images.
 
-   What actually keeps these cheap is that they are stepped, and that they are
-   TRANSLATIONS. Keep them that way — a rotate() here would put all 139
-   portraits and labels on the rotated raster path, which is exactly the cost
-   just taken out of celestial-drift above. */
-@keyframes float-bob {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-5px); }
-}
-@keyframes float-drift {
-  0%, 100% { transform: translateX(0); }
-  50%      { transform: translateX(4px); }
-}
-.float-y {
-  animation: float-bob 14s steps(28) infinite;            /* 2 segments of 7s → 4/s */
-}
-.float-x {
-  animation: float-drift 70s steps(70) infinite;          /* 2 segments of 35s → 2/s */
-  animation-delay: -25s;
-  will-change: transform;
-}
-@media (prefers-reduced-motion: reduce) {
-  .float-y, .float-x { animation: none; }
-}
-
-/* ── Twinkling deity-stars ──────────────────────────────────────────────────
-   Each node's glow halo breathes around its base opacity. Randomised phase
-   (--twinkle-delay) keeps them asynchronous. */
-@keyframes node-twinkle {
-  0%, 100% { opacity: calc(var(--glow-base, 0.1) * 0.5);  }
-  50%      { opacity: calc(var(--glow-base, 0.1) * 1.55); }
-}
-.node .glow {
-  animation: node-twinkle var(--twinkle-dur, 6s) ease-in-out infinite;
-  animation-delay: var(--twinkle-delay, 0s);
-}
-
-/* ── Hub breathing ─────────────────────────────────────────────────────────
-   The major gods (Zeus, Gaia, Chaos…) get a dedicated slow pulse that
-   cycles BOTH radius and opacity over ~4s — marking them as gravitational
-   centres before any interaction. Layered on top of the general twinkle
-   via a separate animation name so both run. */
-@keyframes hub-breath {
-  0%, 100% {
-    r: var(--glow-r);
-    opacity: calc(var(--glow-base, 0.1) * 0.6);
-  }
-  50% {
-    r: var(--glow-r-peak);
-    opacity: calc(var(--glow-base, 0.1) * 1.6);
-  }
-}
-.node .glow.hub-breath {
-  animation:
-    node-twinkle var(--twinkle-dur, 6s) ease-in-out infinite var(--twinkle-delay, 0s),
-    hub-breath var(--breath-dur, 4s) ease-in-out infinite var(--breath-delay, 0s);
-}
-@media (prefers-reduced-motion: reduce) {
-  .node .glow, .node .glow.hub-breath { animation: none; }
-}
+   The old per-element custom properties (--twinkle-dur/-delay, --breath-dur/
+   -delay, --glow-r/-peak, --shimmer-dur/-delay, --flare-dur/-delay) went with
+   the keyframes; the ticker holds those numbers itself. `--glow-base` STAYS:
+   the hover, selection and ambient-flare paths express brightness by writing
+   it, and the ticker reads it back on every step, so all of them keep working
+   untouched. */
 
 /* ── Genesis ignition titles ───────────────────────────────────────────────
    Brief generation labels ("PRIMORDIALS", "TITANS"…) that flash at the
@@ -380,19 +283,13 @@ body {
   text-transform: uppercase;
 }
 
-/* Pause sky-layer CSS animations when nothing can see them (a hidden tab, or a
-   full-screen overlay). Keyed on `.paused` alone rather than `#sky.paused`:
-   SkyGraph sets that class on BOTH of its svgs, and half of these animations
-   now live in the backdrop one (#sky-bg). Nothing else in the app uses the
-   class, so the bare selector is exact. */
-.paused .flare,
-.paused .star-shimmer,
-.paused .celestial-drift,
-.paused .bg-drift,
-.paused .float-y,
-.paused .float-x,
-.paused .node .glow,
-.paused .node .glow.hub-breath,
+/* Pause what is still a CSS animation when nothing can see it (a hidden tab, or
+   a full-screen overlay). Keyed on `.paused` alone rather than `#sky.paused`:
+   SkyGraph sets the class on BOTH of its svgs, and nothing else in the app uses
+   it, so the bare selector is exact. Most of what this rule used to pause is no
+   longer a CSS animation at all — the ambient ticker stops itself when the sky
+   goes dormant, which is cheaper than pausing 240 animations. What is left here
+   is the motion that only exists while the viewer is driving something. */
 .paused .node .sel-halo,
 .paused .link-transformed,
 .paused .link-cursed {
