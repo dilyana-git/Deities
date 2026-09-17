@@ -358,6 +358,7 @@ It is a **stage, not a scrolling column of sections** (layout `3a Colossus` from
 - **3D projection:** sphere radius 220 SVG units, ~22° ecliptic tilt, perpetual slow drift (0.03 rad/s). Smooth rotation easing (8x/s) toward the selected sign.
 - **Selected sign prominence:** 1.8x node scale, doubled halo glow, thicker edges (1.5px + 3px glow), 17px bold label — non-selected dimmed to 0.25 opacity for high contrast
 - **Interaction:** click a constellation or a glyph in the bottom strip; drag to rotate the sphere; arrow keys advance signs
+- **A horizontal gesture means one thing per surface.** On the sphere it is direct manipulation only — the drag turns the globe under the pointer, and because `va` climbs to go forward through the zodiac, *right* is forward. Off the sphere (the caption plate, which sits over it at z-index 7) it is the carousel pager, where *left* is forward by convention. `handleTouchStart` drops the pager when the touch lands inside `.zs-sphere`; without that both fired on one finger and disagreed — the globe followed the finger one way while the snap paged it the other. A mouse never had the conflict, so this is also what makes touch behave like the desktop.
 - **Caption panel:** shows sign glyph, name, figure, element, dates, and myth text
 
 ## App Features (`App.jsx`)
