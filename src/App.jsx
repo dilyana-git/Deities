@@ -10,7 +10,7 @@ const GuidedSky = lazy(() => import('./components/GuidedSky.jsx'))
 const ZodiacSky = lazy(() => import('./components/ZodiacSky.jsx'))
 import { nodes as allNodes, links as allLinks } from './data/mythology.js'
 import { categoryConfig, categoryOrder } from './data/categoryConfig.js'
-import { linkTypeConfig, linkTypeOrder } from './data/linkTypeConfig.js'
+import { linkTypeConfig, linkTypeOrder, relationLabel } from './data/linkTypeConfig.js'
 
 /* Legacy guided-tour data lived here. The narratives now live in
    src/data/tours.js (richer captions + kickers) and are presented by the
@@ -75,6 +75,21 @@ function buildAdjacency(nodes, links) {
 }
 
 /* ── BFS path-finding ────────────────────────────────────────────────── */
+/* The query at which the detail panel stops being a side panel and covers the
+   whole screen. Must match the phone-layout @media rule in index.css. */
+const PANEL_COVERS_MQ = '(max-width: 760px), (max-height: 500px) and (pointer: coarse)'
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => typeof matchMedia !== 'undefined' && matchMedia(query).matches)
+  useEffect(() => {
+    const mq = matchMedia(query)
+    const sync = () => setMatches(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [query])
+  return matches
+}
+
 function bfs(adj, from, to) {
   if (from === to) return [from]
   const q = [from], prev = { [from]: null }
@@ -97,7 +112,7 @@ function bfs(adj, from, to) {
 
 /* ── shared styles ───────────────────────────────────────────────────── */
 const S = {
-  root: { width:'100%', height:'100vh', position:'relative', background:'#06080e', overflow:'hidden' },
+  root: { width:'100%', position:'relative', background:'#06080e', overflow:'hidden' },   // height: .atlas-root in index.css
   /* The chrome belongs to the sky, not to a web page. No pills, no strokes, no
      panels — just letterspaced small caps floating directly on the void, dim
      until the cursor finds them. */
@@ -209,8 +224,9 @@ function SummonSearch({ open, onClose, sortedNodes, onPick }) {
   }, [open, onClose])
 
   if (!open) return null
+  // above the detail panel, which covers the whole screen on phones (z-index 60)
   return (
-    <div style={{ position:'absolute', inset:0, zIndex:40, background:'rgba(4,6,12,.55)', backdropFilter:'blur(3px)' }}
+    <div className="summon-search" style={{ position:'absolute', inset:0, zIndex:70, background:'rgba(4,6,12,.55)', backdropFilter:'blur(3px)' }}
       onMouseDown={onClose}>
       <div className="pop-in" onMouseDown={e => e.stopPropagation()}
         style={{ position:'absolute', top:'20vh', left:'50%', transform:'translateX(-50%)', width:'min(440px,84vw)' }}>
@@ -285,10 +301,10 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
 
   return (
     <div style={{
-      position:'absolute', top:16, left:16, zIndex:24, width:288,
+      position:'absolute', zIndex:24,          // placement: .path-panel in index.css
       ...S.overlay, padding:14,
       boxShadow:'0 18px 50px rgba(0,0,0,.5)', backdropFilter:'blur(10px)',
-    }} className="pop-in">
+    }} className="pop-in path-panel">
       <div style={{ display:'flex', alignItems:'center', marginBottom:11 }}>
         <span style={{ fontFamily:'Cinzel, serif', fontSize:12, letterSpacing:'.18em', color:'#cdb88a', textTransform:'uppercase' }}>
           Trace a Path
@@ -306,23 +322,27 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
         onPick={n => { setToQ(n.name);   setTo(n.id)   }} sortedNodes={sortedNodes}/>
 
       {from && to && (
-        <div style={{ marginTop:8 }}>
+        <div className="path-result" style={{ marginTop:8 }}>
           {!path ? (
             <p style={{ fontStyle:'italic', color:'#5c6678', fontSize:14, margin:'8px 0 0' }}>
               No chain of relation links these two.
             </p>
           ) : (
             <>
-              <div style={{ display:'flex', flexDirection:'column', gap:2, marginTop:8 }}>
+              <div className="path-route" style={{ display:'flex', flexDirection:'column', gap:2, marginTop:8 }}>
                 {path.map((id, i) => {
                   const n = nodeById[id]
                   if (!n) return null
                   const rel = i < path.length - 1 ? (() => {
-                    const l = allLinks.find(l => {
+                    /* a pair can share several links (Uranus is Cronus's father
+                       and his enemy), and each one reads from this hop's side */
+                    const labels = allLinks.flatMap(l => {
                       const [s, t] = linkEndpoints(l)
-                      return (s === id && t === path[i+1]) || (t === id && s === path[i+1])
+                      if (s === id && t === path[i+1]) return [relationLabel(l.type, true)]
+                      if (t === id && s === path[i+1]) return [relationLabel(l.type, false)]
+                      return []
                     })
-                    return l ? (linkTypeConfig[l.type]?.label || l.type) : 'linked'
+                    return labels.length ? [...new Set(labels)].join(' · ') : 'linked'
                   })() : null
                   return (
                     <div key={id}>
@@ -512,6 +532,45 @@ export default function App() {
     return () => document.removeEventListener('keydown', onKey)
   }, [selectedId, searchOpen, pathOpen, storyOpen, zodiacOpen, shortcutsOpen])
 
+  /* On phones the open panel covers the whole screen, so what it covers is made
+     inert. Otherwise a screen reader swipes through 139 hidden stars and the
+     nav, and arrow keys on the map's roving star silently change the figure
+     being read. That is everything in <main> but the panel and the "/" search,
+     which stands above it; the full-screen overlays live outside <main>.
+     Focus goes into the panel on the way in and back to the star on the way
+     out. On desktop the map stays visible, so opening a figure leaves focus
+     where it was. Runs every render (a dozen children) so a covered child that
+     remounts is re-covered; focus only moves on the transition. */
+  const mainRef = useRef(null)
+  const panelCovers = useMediaQuery(PANEL_COVERS_MQ) && !!selectedId
+  const wasCovering = useRef(false)
+  const returnFocus = useRef(null)
+  useEffect(() => {
+    const main = mainRef.current
+    if (!main) return
+    const covered = [...main.children].filter(el =>
+      !el.classList.contains('detail-panel') && !el.classList.contains('summon-search'))
+    if (panelCovers) {
+      const active = document.activeElement
+      const focusWasCovered = covered.some(el => el.contains(active))
+      covered.forEach(el => el.toggleAttribute('inert', true))
+      if (!wasCovering.current) {
+        returnFocus.current = focusWasCovered ? active : null
+        if (focusWasCovered || !active || active === document.body) {
+          main.querySelector('.detail-panel .col-close')?.focus({ preventScroll: true })
+        }
+      }
+    } else if (wasCovering.current) {
+      covered.forEach(el => el.toggleAttribute('inert', false))
+      const back = returnFocus.current
+      returnFocus.current = null
+      if (back?.isConnected && (!document.activeElement || document.activeElement === document.body)) {
+        back.focus({ preventScroll: true })
+      }
+    }
+    wasCovering.current = panelCovers
+  })
+
   /* The three full-screen overlays are opaque and cover the map completely,
      so the sky is told to stop drawing under them. It keeps animating
      otherwise — both float layers re-rasterizing the whole graph every frame,
@@ -622,11 +681,17 @@ export default function App() {
   }
 
   return (
-    <div style={S.root}>
+    <div className="atlas-root" style={S.root}>
 
       {/* ── main (full-bleed sky; chrome floats over it) ───────────── */}
-      <main className="atlas-main" style={{ position:'absolute', inset:0, overflow:'hidden' }}>
-        <SkyGraph ref={graphRef} onSelect={handleNodeSelect}/>
+      <main ref={mainRef} className="atlas-main" style={{ position:'absolute', inset:0, overflow:'hidden' }}>
+        {/* A plain wrapper, because `inert` (see panelCovers) only takes on HTML
+            elements and SkyGraph renders its two svgs bare. Absolute with no
+            z-index, so it makes no stacking context and the atlas's screen
+            blends still reach the backdrop svg beneath them. */}
+        <div className="atlas-sky" style={{ position:'absolute', inset:0 }}>
+          <SkyGraph ref={graphRef} onSelect={handleNodeSelect}/>
+        </div>
 
         {/* ── wordmark + invitation, floating on the void ──────────── */}
         <div style={{ position:'absolute', top:20, left:22, zIndex:30, pointerEvents:'none' }}>

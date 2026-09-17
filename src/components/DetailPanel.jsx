@@ -386,8 +386,12 @@ function EnterStory({ chapters, onOpen }) {
    ════════════════════════════════════════════════════════════════════════ */
 export default function DetailPanel({ nodeId, onClose, onNavigate, onOpenStory, onOpenTale }) {
   const node = nodeId ? _nodeMap[nodeId] : null
+  const panelRef = useRef(null)
+  useEffect(() => {
+    if (panelRef.current) panelRef.current.scrollTop = 0
+  }, [nodeId])
   return (
-    <aside className={`detail-panel ${node ? 'open' : ''}`}>
+    <aside ref={panelRef} className={`detail-panel ${node ? 'open' : ''}`}>
       {/* the wash and the plate are the panel's whole surface — the wash lets
           the star field bleed under the left edge instead of ending it on a rule */}
       <div className="col-wash"/>
@@ -444,14 +448,25 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
        roving star. Compared against the last value rather than a "first run"
        flag, because StrictMode re-runs effects in dev with refs intact — a flag
        is already spent by the second run, which then steals focus on mount.
-       After a toggle, start the new view at its top and put focus on its way
-       back, so Escape and Tab carry on from there. */
+       After a toggle, show the new view and put focus on its way back, so
+       Escape and Tab carry on from there. */
     if (prevReading.current === reading) return
     prevReading.current = reading
     const el = typeRef.current
     if (!el) return
-    el.scrollTop = 0
-    el.querySelector(reading ? '.col-story-back' : '.col-read')?.focus({ preventScroll: true })
+    const target = el.querySelector(reading ? '.col-story-back' : '.col-read')
+    /* On phones the whole portrait-and-text panel scrolls as one page, so the
+       top of the panel is the top of the portrait. Entering the reader brings
+       its first line up; leaving it returns to the button that opened it,
+       rather than to a portrait with focus somewhere below the fold. */
+    const panel = el.closest('.detail-panel')
+    if (panel && getComputedStyle(panel).overflowY !== 'hidden') {
+      if (reading) el.scrollIntoView({ block: 'start' })
+      else target?.scrollIntoView({ block: 'center' })
+    } else {
+      el.scrollTop = 0
+    }
+    target?.focus({ preventScroll: true })
   }, [reading])
 
   const bonds = [...(_adj[node.id] || [])]
@@ -467,6 +482,7 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
 
   return (
     <>
+      <button className="col-close" onClick={onClose} aria-label="Close">✕</button>
       <div className="col-aura" style={{ '--holo': catColor }}/>
 
       {/* ── the figure — she takes the right two-thirds outright ──────
@@ -489,8 +505,6 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
           </div>
         </div>
       </div>
-
-      <button className="col-close" onClick={onClose} aria-label="Close">✕</button>
 
       {/* ── the measure — one column, strict left margin ────────────── */}
       <div ref={typeRef} className={`col-type ${reading ? 'reading' : ''}`}

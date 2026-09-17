@@ -1,7 +1,7 @@
 import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import * as d3 from 'd3'
 import { nodes as rawNodes, links as rawLinks } from '../data/mythology.js'
-import { linkTypeConfig } from '../data/linkTypeConfig.js'
+import { linkTypeConfig, relationLabel } from '../data/linkTypeConfig.js'
 import { categoryConfig } from '../data/categoryConfig.js'
 import { portraitManifest } from '../data/portraitManifest.generated.js'
 
@@ -1891,11 +1891,10 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     const edgeLabelSize = new Map()
     const edgeLabelPos  = new Map()
 
-    // direction-aware: "label" when the selected node is the source (matches
-    // DetailPanel's dir === '→'), "inverseLabel" when it's the target (dir === '←')
+    // direction-aware: read from the selected node's side, the same rule the
+    // path finder uses (relationLabel in linkTypeConfig)
     function resolveLabel(l, id) {
-      const cfg = linkTypeConfig[l.type]
-      return (srcId(l) === id ? cfg?.label : cfg?.inverseLabel) || l.type
+      return relationLabel(l.type, srcId(l) === id)
     }
 
     function renderEdgeLabels(id) {

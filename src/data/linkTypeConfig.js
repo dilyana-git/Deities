@@ -27,8 +27,8 @@ export const linkTypeConfig = {
     strokeDasharray: '10 5',
     animated: true,
     arrow: true,
-    label: 'Transformed into',
-    inverseLabel: 'Was transformed from',
+    label: 'Transformed',
+    inverseLabel: 'Transformed by',
     description: 'Divine metamorphosis',
     cssClass: 'link-transformed',
   },
@@ -38,8 +38,8 @@ export const linkTypeConfig = {
     strokeDasharray: '8 4',
     animated: true,
     arrow: true,
-    label: 'Cursed into',
-    inverseLabel: 'Was cursed from',
+    label: 'Cursed',
+    inverseLabel: 'Cursed by',
     description: 'Punitive transformation by divine will',
     cssClass: 'link-cursed',
   },
@@ -49,8 +49,8 @@ export const linkTypeConfig = {
     strokeDasharray: '3 3',
     animated: false,
     arrow: true,
-    label: 'Created by',
-    inverseLabel: 'Creator of',
+    label: 'Creator of',
+    inverseLabel: 'Created by',
     description: 'Fashioned or brought into being',
     cssClass: 'link-created',
   },
@@ -99,6 +99,16 @@ export const linkTypeConfig = {
     description: 'Separated or differentiated from',
     cssClass: 'link-split',
   },
+}
+
+/* A link reads from its source, which is the one acting: `athena cursed_into
+   medusa` is Athena cursing Medusa, `prometheus created_by humanity` is
+   Prometheus making humankind. So `label` is phrased from the source's side
+   and `inverseLabel` from the target's. The path finder and the map's edge
+   labels both resolve through here, so the two can't disagree. */
+export function relationLabel(type, fromSource) {
+  const cfg = linkTypeConfig[type]
+  return (fromSource ? cfg?.label : cfg?.inverseLabel) || cfg?.label || type
 }
 
 export const linkTypeOrder = [

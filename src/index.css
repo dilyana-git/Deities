@@ -14,6 +14,11 @@ html, body, #root {
   color: #aab2c0;
 }
 
+/* The atlas fills the *visible* viewport. On phones 100vh is the height with
+   the browser toolbars hidden, and this page never scrolls, so they never hide:
+   anything pinned to the bottom sat underneath them. dvh where supported. */
+.atlas-root { height: 100vh; height: 100dvh; }
+
 body {
   font-family: 'Crimson Pro', Georgia, serif;
   -webkit-font-smoothing: antialiased;
@@ -58,6 +63,34 @@ body {
     gap: 0 12px;
   }
   .atlas-nav button { min-height: 44px; justify-content: center; }
+}
+
+/* The path panel opens top-left, which is where the wordmark lives (and the
+   wordmark sits above it), so it starts below the invitation line instead of
+   printing over it.
+
+   It is capped at the screen, because the longest route in the data runs nine
+   steps and ~730px. Only the route list scrolls: the inputs stay put, and the
+   panel itself never becomes a scroll container, which would clip the
+   autocomplete dropdown hanging below the To field. */
+.path-panel {
+  top: 116px; left: 16px; width: min(288px, calc(100% - 32px));
+  max-height: calc(100% - 132px);
+  display: flex; flex-direction: column;
+}
+.path-result { display: flex; flex-direction: column; min-height: 0; }
+.path-route {
+  min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: #262e3c transparent;
+}
+/* on phones the nav drops under the wordmark too, two rows deep (112 → 200) */
+@media (max-width: 760px) {
+  .path-panel { top: 212px; max-height: calc(100% - 228px); }
+}
+/* a phone on its side has no height to spare under the wordmark: open on the
+   right, below the single-row nav */
+@media (max-height: 500px) and (min-width: 761px) {
+  .path-panel { top: 64px; left: auto; right: 24px; max-height: calc(100% - 80px); }
 }
 
 #sky { cursor: grab; display: block; }
@@ -881,6 +914,65 @@ body {
   transition: color .15s;
 }
 .col-close:hover { color: #cdb88a; }
+
+/* A phone needs one readable page, with the artwork above the text. The
+   panel owns scrolling so the summary, full story and actions all stay
+   reachable, including with larger system text. A phone on its side is wider
+   than 760px but only ~400px tall, which the side-by-side stage can't use, so
+   short touch screens get this layout too. */
+@media (max-width: 760px), (max-height: 500px) and (pointer: coarse) {
+  .detail-panel {
+    --panel-wash: 0px;
+    width: 100%; z-index: 60;
+    overflow-y: auto; overflow-x: hidden;
+    overscroll-behavior: contain;
+    background: #07090f;
+  }
+  .detail-panel.open { pointer-events: auto; }
+  .col-wash { display: none; }
+  .col-plate { pointer-events: none; }
+  .col-aura { left: 0; top: 0; width: 100%; }
+  .col-close {
+    position: sticky; top: max(12px, env(safe-area-inset-top)); right: auto;
+    display: grid; place-items: center;
+    width: 44px; height: 44px; margin: 12px 12px -56px auto;
+    border: 1px solid rgba(205,184,138,.28); border-radius: 50%;
+    background: rgba(7,9,15,.92); color: #cdb88a;
+  }
+  .col-figure {
+    position: relative; left: auto; right: auto; top: auto;
+    height: clamp(220px, 42vh, 380px);    /* for browsers without svh */
+    height: clamp(220px, 42svh, 380px); margin: 0 16px;
+    animation: none; will-change: auto;
+  }
+  .col-type,
+  .col-type.reading {
+    position: relative; left: auto; top: auto; bottom: auto;
+    width: auto; margin: 0 24px;
+    padding: 0 0 max(28px, env(safe-area-inset-bottom));
+    overflow: visible;
+    -webkit-mask-image: none; mask-image: none;
+    scroll-margin-top: 68px;   /* lands clear of the sticky close button */
+  }
+  .col-main, .col-foot { margin-top: 0; }
+  .col-foot { padding-top: 28px; }
+  .col-name { font-size: min(54px, var(--name-cq, 16cqw)); }
+  .col-name.col-story-name { font-size: min(42px, var(--name-cq, 16cqw)); }
+  .col-eyebrow { flex-wrap: wrap; gap: 8px; }
+  /* every chapter opening (at most 258 characters) fits inside 14em at a phone
+     measure; a figure without chapters shows its whole story here, so it stays
+     capped and fades, and READ THE FULL STORY is where the rest lives */
+  .col-prose { max-height: 14em; font-size: 17px; }
+  .col-read { min-height: 44px; flex-wrap: wrap; }
+  .col-row { gap: 10px; }
+  .col-rows-attr .col-row-v { font-size: 15px; }
+  .col-link { min-height: 44px; padding: 8px 2px; }
+  .col-enter { flex-wrap: wrap; justify-content: center; gap: 10px; }
+  .col-enter-rule { display: none; }
+  .col-story { padding: 12px 0 0; }
+  .col-story-body p { font-size: 17px; }
+  .col-story-back { min-height: 44px; }
+}
 
 /* ── Tour bar slide-up ─────────────────────────────────────────────────────── */
 .tourbar {
