@@ -4,7 +4,7 @@
  * Produces three variants per deity id and records their exact URLs + metadata
  * in src/data/portraitManifest.generated.js:
  *
- *   {id}-node.webp  — the head crop at NODE size, for tier-2 stars + StoryOrbit
+ *   {id}-node.webp  — the head crop at NODE size, for tier-2 stars + GuidedSky orbs
  *   {id}-head.webp  — the head crop at PRIMARY size, for the 12 tier-1 stars
  *   {id}-full.webp  — the whole figure, for the DetailPanel hero
  *

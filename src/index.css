@@ -492,9 +492,8 @@ body {
      measure  11% → 45%   one 384px measure, never wider
      figure   47% → 105%  deliberately overruns; the panel clips it
 
-   One source of truth for the width: the tourbar sizes itself against it and
-   SkyGraph measures the live .col-plate to offset its camera, so the numbers
-   live only here. */
+   One source of truth for the width: SkyGraph measures the live .col-plate
+   to offset its camera, so the number lives only here. */
 :root {
   --panel-w: clamp(520px, 67vw, 1180px);
   --panel-wash: 11%;
@@ -873,28 +872,7 @@ body {
   .col-enter-rule { display: none; }
 }
 
-/* ── Tour bar slide-up ─────────────────────────────────────────────────────── */
-.tourbar {
-  position: absolute;
-  left: 50%; bottom: 22px;
-  transform: translateX(-50%) translateY(20px);
-  z-index: 25;
-  /* clears the detail panel + margin — floored so the wider Colossus panel
-     can never squeeze the caption bar to nothing on a narrow window */
-  width: min(560px, max(300px, calc(100% - var(--panel-w) - 36px)));
-  background: rgba(9,12,19,.94);
-  border: 1px solid #262e3c;
-  border-radius: 13px;
-  padding: 15px 18px 13px;
-  box-shadow: 0 18px 50px rgba(0,0,0,.55);
-  backdrop-filter: blur(10px);
-  opacity: 0; pointer-events: none;
-  transition: opacity .3s, transform .3s;
-}
-.tourbar.open {
-  opacity: 1; pointer-events: auto;
-  transform: translateX(-50%) translateY(0);
-}
+
 
 /* ── Popover animation ─────────────────────────────────────────────────────── */
 @keyframes pop {
@@ -951,49 +929,19 @@ body {
   text-shadow: 0 0 18px rgba(205,184,138,.22);
 }
 
-/* ── SVG star elements ── */
-.wf-page .wfstar   { fill: #586074 }
-.wf-page .wfmid    { fill: #8b93a4 }
-.wf-page .wfbright { fill: #cdb88a }
 
-.wf-page.dim-stars .wfstar  { opacity: .35 }
-.wf-page.dim-stars .wfmid   { opacity: .6  }
 
-.wf-page .wfstarlbl {
-  fill: #8b93a4;
-  font-family: 'EB Garamond', serif;
-  font-size: 14px;
-  letter-spacing: .04em;
-}
-.wf-page .wfstarlbl.wflbright { fill: #cdb88a }
 
-/* ── constellation lines ── */
-.wf-page .wfcline        { fill: none; stroke: #39414f; stroke-width: 1; stroke-dasharray: 1 5; stroke-linecap: round }
-.wf-page .wfcline.active { stroke: #cdb88a; stroke-width: 1.4; stroke-dasharray: 2 5; opacity: .85 }
 
-/* ── UI placeholder shapes ── */
-.wf-page .wfuifill  { fill: #0d1119; stroke: #4b5468; stroke-width: 1.3 }
-.wf-page .wfuidash  { fill: none;    stroke: #4b5468; stroke-width: 1.3; stroke-dasharray: 5 4 }
-.wf-page .wfuigold  { fill: none;    stroke: #5c5536; stroke-width: 1.3 }
-.wf-page .wfscreenframe { fill: none; stroke: #2a3140; stroke-width: 1.4 }
 
-/* ── rings / labels ── */
-.wf-page .wfring    { fill: none; stroke: #39414f; stroke-width: 1; stroke-dasharray: 2 6 }
-.wf-page .wfringlbl { fill: #8a94a6; font-family: 'EB Garamond', serif; font-size: 13px; letter-spacing: .22em }
-.wf-page .wfhorizon { stroke: #2a3140; stroke-width: 1; stroke-dasharray: 3 6; fill: none }
 
-/* ── UI label text inside SVG ── */
-.wf-page .wfuitext    { fill: #8a94a6; font-family: 'Kalam', cursive; font-size: 13px }
-.wf-page .wfuitext.sm { font-size: 11px }
 
-/* ── chalk annotations ── */
-.wf-page .wfanno    { font-family: 'Caveat', cursive; font-weight: 600; fill: #cabfa9; font-size: 21px }
-.wf-page .wfanno.sm { font-size: 18px; font-weight: 500; fill: #7b7565 }
-.wf-page .wfarrow   { fill: none; stroke: #7b7565; stroke-width: 1.4 }
 
-/* ── toggle states ── */
-.wf-page.hide-anno .wfanno,
-.wf-page.hide-anno .wfarrow { display: none }
+
+
+
+
+
 
 /* ── Breathing links ───────────────────────────────────────────────────────
    Marching dashes read as a progress-bar/loading-spinner convention — too
@@ -1038,128 +986,25 @@ svg {
   -webkit-user-select: none;
 }
 
-/* ── Ambient cloud motion ───────────────────────────────────────────────── */
 
-/* Keyframes — GPU-only (transform only, no layout/paint) */
-@keyframes cloud-drift-far {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-@keyframes cloud-drift-near {
-  /* opposite direction creates parallax depth */
-  from { transform: translateX(-50%); }
-  to   { transform: translateX(0); }
-}
-@keyframes cloud-sway {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-1.5%); }
-}
 
-/* Far cloud stratum: large soft masses behind the palace, slow ~150s loop.
-   Two gradient copies at background-size:50% tile seamlessly: when the track
-   translateX reaches -50% the view wraps back to the start imperceptibly. */
-.cloud-sway-far {
-  animation: cloud-sway 40s ease-in-out infinite;
-}
-.cloud-far-track {
-  background-image:
-    radial-gradient(ellipse 58% 42% at  9% 52%, rgba(155,165,200,0.10) 0%, transparent 65%),
-    radial-gradient(ellipse 72% 55% at 37% 43%, rgba(145,158,195,0.08) 0%, transparent 62%),
-    radial-gradient(ellipse 44% 38% at 62% 62%, rgba(150,162,198,0.09) 0%, transparent 58%),
-    radial-gradient(ellipse 66% 50% at 88% 38%, rgba(140,152,192,0.10) 0%, transparent 68%);
-  background-size: 50% 100%;
-  background-repeat: repeat-x;
-  filter: blur(28px);
-  animation: cloud-drift-far 150s linear infinite;
-}
+
+
+
 
 /* Near wisp stratum: thinner, wispier, opposite drift for parallax, ~90s loop */
-.cloud-sway-near {
-  /* Offset sway phase so near/far layers breathe independently */
-  animation: cloud-sway 55s ease-in-out infinite;
-  animation-delay: -22s;
-}
-.cloud-near-track {
-  background-image:
-    radial-gradient(ellipse 78% 22% at 18% 44%, rgba(185,192,222,0.07) 0%, transparent 58%),
-    radial-gradient(ellipse 55% 18% at 50% 54%, rgba(175,182,218,0.06) 0%, transparent 52%),
-    radial-gradient(ellipse 88% 26% at 84% 36%, rgba(180,188,220,0.07) 0%, transparent 64%);
-  background-size: 50% 100%;
-  background-repeat: repeat-x;
-  filter: blur(38px);
-  animation: cloud-drift-near 90s linear infinite;
-  opacity: 0.75;
-}
 
 /* Pause everything inside when tab hidden (visibilitychange sets this class) */
-.bg-clouds.paused * { animation-play-state: paused; }
 
-/* Reduced motion: render cloud shapes statically — no drift, no sway */
-@media (prefers-reduced-motion: reduce) {
-  .cloud-sway-far,
-  .cloud-sway-near,
-  .cloud-far-track,
-  .cloud-near-track { animation: none; }
-}
 
-/* ── Deity modal layout ─────────────────────────────────────────────────── */
 
-/* Mobile-first: single column, whole dialog scrolls */
-.deity-modal-body {
-  display:    flex;
-  flex-direction: column;
-  flex:       1;
-  min-height: 0;
-  overflow-y: auto;
-}
 
-.deity-modal-image {
-  position:   relative;
-  flex-shrink: 0;
-  height:     300px;          /* fixed height on mobile */
-  background: #080b14;
-  overflow:   hidden;
-}
 
-.deity-modal-info {
-  flex:       1;
-  padding:    20px 22px;
-  overflow-y: visible;        /* outer dialog scrolls on mobile */
-}
 
-/* Desktop ≥768px: two-column layout, only info panel scrolls */
-@media (min-width: 768px) {
-  .deity-modal-body {
-    flex-direction: row;
-    overflow:       hidden;   /* contain scroll to info column */
-  }
 
-  .deity-modal-image {
-    width:  45%;
-    height: auto;             /* fills the two-column row */
-  }
 
-  .deity-modal-info {
-    overflow-y: auto;         /* only info scrolls on desktop */
-  }
-}
 
-/* ── Skeleton loading pulse ─────────────────────────────────────────────── */
-@keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.22; }
-  50%       { opacity: 0.50; }
-}
 
-.image-skeleton {
-  position:   absolute;
-  inset:      0;
-  background: #1a2234;
-  animation:  skeleton-pulse 1.8s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .image-skeleton { animation: none; opacity: 0.3; }
-}
 
 /* ── Body reset ─────────────────────────────────────────────────────────── */
 *, *::before, *::after {
@@ -1180,8 +1025,8 @@ body {
    column, further down) and what is left here is the vocabulary the OTHER
    full-screen overlays still share: ZodiacSky takes the root, the caption
    stack (`.gs-cat` / `.gs-name` / `.gs-epithet` / `.gs-narration`) and the
-   exit. (StoryOrbit, which took the exit, the top title block and the hint,
-   is no longer mounted — every story now opens in the reading column.)
+   exit. (StoryOrbit, which also wore these, is gone — every story now opens
+   in the reading column.)
    ════════════════════════════════════════════════════════════════════════ */
 .gs-root {
   --gold: #cdb88a; --gold-dim: #8c7d59;
@@ -1193,22 +1038,9 @@ body {
 }
 .gs-root button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 
-/* ── constellation stage ── */
-/* centred vertically (top + height) against the text column's optical centre,
-   pulled off the hard right edge so the two masses relate */
-.cl-stage { position: absolute; top: 10%; right: 4%; width: 56%; height: 80%; overflow: visible; }
-.cl-inner { opacity: 0; }
-.cl-edge {
-  fill: none; stroke: var(--accent); stroke-width: 1; stroke-linecap: round; opacity: .45;
-  filter: drop-shadow(0 0 4px color-mix(in oklch, var(--accent) 50%, transparent));
-}
-.cl-halo { fill: var(--accent); filter: blur(3.5px); }
-.cl-halo.hero { fill: var(--gold, #cdb88a); }
-.cl-core { fill: #eef2fb; filter: drop-shadow(#fff 0 0 5px); }
-.cl-core.bright { fill: #fff; filter: drop-shadow(0 0 12px var(--accent)) drop-shadow(0 0 5px #fff); }
-/* the hero star — largest, gold-tinged, echoing the story's gold accent so the
-   art and the gold-accented text column read as one composition */
-.cl-core.hero { fill: #fff7e0; filter: drop-shadow(0 0 13px var(--gold, #cdb88a)) drop-shadow(0 0 5px #fff); }
+
+
+
 
 /* ── colour grade / vignette / starfield over the stage ── */
 .grade { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
@@ -1238,20 +1070,8 @@ body {
 }
 .gs-exit:hover { border-color: var(--gold); background: rgba(205,184,138,.08); }
 
-/* ── top chrome: kicker/title + step counter ── */
-.gs-top {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 5;
-  display: flex; align-items: flex-start; justify-content: space-between;
-  padding: 30px 40px; gap: 16px;
-}
-.gs-story { display: flex; flex-direction: column; gap: 5px; margin-left: 60px; min-width: 0; }
-.gs-kicker { font-family: Cinzel, serif; font-size: 12.5px; letter-spacing: .34em; color: var(--gold-dim); text-transform: uppercase; }
+/* ── the tale's title ── */
 .gs-storytitle { font-family: Cinzel, serif; font-weight: 500; font-size: 19px; letter-spacing: .06em; color: #ece6d6; }
-
-.gs-counter { display: flex; align-items: baseline; gap: 8px; font-family: Cinzel, serif; color: var(--gold); flex-shrink: 0; margin-right: 268px; }
-.gs-stepnum { font-size: 26px; font-weight: 600; }
-.gs-counter .sl { color: var(--faint); font-size: 16px; }
-.gs-steptotal { font-size: 16px; color: var(--ink-dim); }
 
 /* ── caption ── */
 .gs-caption {
@@ -1273,57 +1093,15 @@ body {
   opacity: 0; transform: translateY(16px);
 }
 
-/* ── hint ── */
-.gs-hint {
-  position: absolute; bottom: 104px; left: 40px; z-index: 6;
-  font-size: 14.5px; font-style: italic; color: var(--ink-dim); letter-spacing: .04em;
-  opacity: .72;
-}
 
-/* ── bottom scrubber ── */
-.gs-bottom { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; padding: 0 40px 26px; }
-.gs-rail { height: 2px; background: rgba(205,184,138,.16); position: relative; margin-bottom: 18px; border-radius: 2px; overflow: hidden; }
-.gs-rail-fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--gold); transition: width .6s cubic-bezier(.4,0,.2,1); box-shadow: 0 0 8px var(--gold); }
-.gs-strip-row { display: flex; align-items: center; gap: 18px; }
 
-.gs-play, .gs-nav {
-  width: 42px; height: 42px; flex-shrink: 0; border-radius: 50%;
-  border: 1px solid rgba(205,184,138,.35); display: grid; place-items: center;
-  color: var(--gold); transition: border-color .2s, background .2s;
-}
-.gs-play:hover, .gs-nav:hover { border-color: var(--gold); background: rgba(205,184,138,.08); }
-.gs-nav { font-size: 16px; }
-.gs-play .pause { display: none; }
-.gs-play.playing .play { display: none; }
-.gs-play.playing .pause { display: block; }
 
-.gs-strip { display: flex; gap: 10px; flex: 1 1 0; overflow: hidden; }
-.gs-cell {
-  flex: 1 1 0; text-align: left; padding: 9px 13px 11px; border-radius: 7px;
-  border: 1px solid rgba(154,163,180,.14); background: rgba(10,14,24,.4);
-  display: flex; flex-direction: column; gap: 3px; position: relative; overflow: hidden;
-  transition: border-color .25s, background .25s; min-width: 0;
-}
-.gs-cell:hover { border-color: rgba(205,184,138,.4); background: rgba(10,14,24,.7); }
-.gs-cell-n { font-family: Cinzel, serif; font-size: 12.5px; letter-spacing: .14em; color: var(--faint); }
-.gs-cell-name { font-family: Cinzel, serif; font-size: 15px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gs-cell-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--accent); transform: scaleX(0); transform-origin: left center; transition: transform .3s; }
-.gs-cell.done .gs-cell-n { color: var(--gold-dim); }
-.gs-cell.done .gs-cell-name { color: var(--ink-dim); }
-.gs-cell.on {
-  border-color: rgba(205,184,138,.3); background: rgba(205,184,138,.12);
-  box-shadow: 0 0 12px rgba(205,184,138,.06);
-}
-.gs-cell.on .gs-cell-n { color: var(--gold); }
-.gs-cell.on .gs-cell-name { color: #ece6d6; }
-.gs-cell.on .gs-cell-bar { transform: scaleX(1); }
 
 /* ════════════════════════════════════════════════════════════════════════
    Zodiac Sphere — 3D globe view of the twelve zodiac constellations
    ════════════════════════════════════════════════════════════════════════ */
 
 /* ── header bar ── */
-.zs-root .gs-top { display: none; }
 .zs-header {
   position: absolute; top: 0; left: 0; right: 0; z-index: 9;
   display: flex; align-items: center; gap: 16px;
@@ -1516,21 +1294,13 @@ body {
 }
 
 @media (max-width: 760px) {
-  .cl-stage { width: 100%; height: 46%; opacity: .65; }
-  .gs-top { padding: 16px; }
   .gs-exit { top: 14px; left: 14px; width: 36px; height: 36px; font-size: 14px; }
-  .gs-story { margin-left: 46px; }
-  .gs-counter { margin-right: 0; }
   .gs-caption { top: auto; bottom: 96px; transform: none; padding: 0 20px; max-width: 100%; }
   .gs-name { font-size: 40px; }
   .gs-epithet { font-size: 17.5px; margin: 6px 0 12px; }
   .gs-narration { font-size: 17px; max-width: 100%; }
-  .gs-hint { display: none; }
-  .gs-bottom { padding: 0 16px 16px; }
-  .gs-cell-name { display: none; }
   .zs-header { padding: 14px 16px; gap: 10px; }
   .zs-header .gs-exit { width: 32px; height: 32px; font-size: 12px; }
-  .zs-header-text .gs-kicker { font-size: 11.5px; }
   .zs-header-text .gs-storytitle { font-size: 15px; }
   .zs-textscrim { display: none; }
   .zs-caption { top: auto; bottom: 72px; transform: none; padding: 0 20px; max-width: 100%; }
@@ -1592,8 +1362,7 @@ body {
   font-family: 'Crimson Pro', Georgia, serif; color: var(--ink);
   user-select: none;
 }
-/* :where keeps the reset at zero specificity so the styled buttons below
-   (.gsr-play, .gsr-tale, …) actually win their own border/colour */
+
 :where(.gsr-root button) { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 
 /* every keyframe set is from-only, so the base rule is the final state and
@@ -2030,319 +1799,4 @@ body {
   .gsr-beat, .gsr-beat-head, .gsr-figs, .gsr-full { animation: none; }
   .gsr-root, .gsr-plane, .gsr-dome, .gsr-light, .gsr-orb, .gsr-num, .gsr-rail-fill, .gsr-hero-orb img { transition: none; }
   .gsr-rail-fill.ticking { animation: none; }
-}
-
-/* ── Story Orbit — one deity's tale as floating planets ───────────────────── */
-.so-root {
-  position: fixed; inset: 0; z-index: 1000; overflow: hidden;
-  background: radial-gradient(120% 100% at 50% 30%, #0d1220 0%, #080a12 55%, #04060c 100%);
-  font-family: 'Crimson Pro', Georgia, serif; color: #d6dbe6;
-  user-select: none;
-}
-/* :where keeps the reset at zero specificity so styled buttons
-   (.so-nav-btn, .so-dot, .so-chip, …) actually win their border/background */
-:where(.so-root button) { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
-
-/* nebula wash — each story bathes in its deity's colour */
-.so-wash {
-  position: absolute; inset: 0; pointer-events: none;
-  background:
-    radial-gradient(58% 52% at 50% 38%, color-mix(in oklch, var(--accent) 16%, transparent) 0%, transparent 64%),
-    radial-gradient(40% 46% at 82% 78%, color-mix(in oklch, var(--accent) 8%, transparent) 0%, transparent 70%);
-  mix-blend-mode: screen;
-  animation: so-fade-in 1.2s ease .1s backwards;
-}
-
-/* ── opening ignition — every keyframe set is from-only, so the base rule is
-   the final state and reduced-motion can simply switch the animation off ── */
-@keyframes so-fade-in  { from { opacity: 0; } }
-@keyframes so-sun-in   { from { opacity: 0; filter: blur(10px) brightness(2); } }
-@keyframes so-ring-in  { from { opacity: 0; transform: scale(.955); } }
-@keyframes so-ignite   { from { opacity: 0; filter: blur(6px) brightness(2.6); } }
-@keyframes so-cap-rise { from { opacity: 0; transform: translate(-50%, 14px); } }
-
-.so-root .gs-exit, .so-root .gs-top, .so-root .gs-hint {
-  animation: so-fade-in .8s ease .75s backwards;
-}
-
-.so-star {
-  position: absolute; border-radius: 50%; background: #ece6d6; pointer-events: none;
-  animation: so-twinkle var(--dur) ease-in-out var(--delay) infinite alternate;
-}
-@keyframes so-twinkle { from { opacity: var(--lo); } to { opacity: var(--hi); } }
-
-/* the orbital plane — a SQUARE box centred on the sun, its half-side the one
-   base radius every orbit measurement derives from. Rings, thread and planets
-   are all placed in percent of this box, so a percent buys the same number of
-   pixels on both axes and the ellipse stays a believable projected circle at
-   any viewport aspect. (Percent of the *stage* was the bug: at 1900×880 the
-   outer ring came out 1444px wide but 528px tall, and the late chapters flew
-   off to the bezel.) Height binds the radius first — the sun sits at 40% and
-   the caption owns the foot — and the width that implies still leaves the
-   outermost chapters and their labels clear of the edge. */
-.so-plane {
-  --orbit-r: min(48vh, 40vw);
-  position: absolute; left: 50%; top: 40%; z-index: 2;
-  width: calc(var(--orbit-r) * 2); height: calc(var(--orbit-r) * 2);
-  transform: translate(-50%, -50%);
-  pointer-events: none;   /* the box is mostly empty sky; planets opt back in */
-}
-
-.so-ring {
-  position: absolute; border-radius: 50%; pointer-events: none;
-  border: 1px dashed color-mix(in oklch, var(--accent) 22%, transparent);
-  animation: so-ring-in .9s ease .35s backwards;
-}
-.so-thread { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-
-/* the traced tale — each segment draws itself when its chapter is reached.
-   Width is in viewBox units, and the viewBox is square over a square box, so
-   the stroke stays uniform (≈1.3px on a laptop) instead of being stretched
-   along one axis. No non-scaling-stroke — Chrome would render the dash pattern
-   in screen space and the pathLength-normalised draw would break into dots. */
-.so-trace {
-  stroke: rgba(205,184,138,.5); stroke-width: .15;
-  stroke-dasharray: 1; stroke-dashoffset: 0;
-  animation: so-trace-draw .55s ease-out var(--tstag, 0s) backwards;
-}
-@keyframes so-trace-draw { from { stroke-dashoffset: 1; } }
-
-/* the deity sun */
-.so-sun {
-  position: absolute; transform: translate(-50%, -50%); text-align: center;
-  pointer-events: none; z-index: 3;
-  animation: so-sun-in .9s ease .12s backwards;
-}
-.so-sun-orb {
-  position: relative;
-  width: 74px; height: 74px; border-radius: 50%; margin: 0 auto; overflow: hidden;
-  background: radial-gradient(circle at 36% 32%, #fdf8ea, #ecd9a8 45%, #b28f5a 78%, #6b5638);
-  box-shadow:
-    0 0 28px rgba(205,184,138,.55),
-    0 0 100px rgba(205,184,138,.26),
-    0 0 180px color-mix(in oklch, var(--accent) 25%, transparent);
-  animation: so-breathe 7s ease-in-out infinite alternate;
-}
-.so-sun-orb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-/* matching shiny rim for the central figure — a touch stronger for its size */
-.so-sun-orb::after {
-  content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
-  box-shadow:
-    inset 0 0 0 1.5px rgba(248,242,226,.6),
-    inset 0 0 16px 2px rgba(248,242,226,.3),
-    inset 0 7px 18px -7px rgba(255,255,255,.5);
-}
-@keyframes so-breathe {
-  from { box-shadow: 0 0 28px rgba(205,184,138,.5), 0 0 100px rgba(205,184,138,.22), 0 0 180px color-mix(in oklch, var(--accent) 18%, transparent); }
-  to   { box-shadow: 0 0 36px rgba(205,184,138,.7), 0 0 120px rgba(205,184,138,.34), 0 0 210px color-mix(in oklch, var(--accent) 30%, transparent); }
-}
-.so-sun-name {
-  font-family: Cinzel, serif; font-size: 17.5px; letter-spacing: .2em; text-transform: uppercase;
-  color: #f0ecdf; margin-top: 13px; text-shadow: 0 2px 14px rgba(0,0,0,.9);
-}
-.so-sun-epithet { font-style: italic; font-size: 14px; color: #8a94a6; margin-top: 2px; }
-
-/* beat planets — ignite in story order when the orbit opens */
-.so-planet {
-  position: absolute; transform: translate(-50%, -50%); text-align: center;
-  z-index: 4; padding: 0; pointer-events: auto;
-  animation: so-ignite .65s ease var(--ig, 0s) backwards;
-}
-.so-float { display: block; animation: so-float var(--fdur) ease-in-out var(--fdelay) infinite alternate; }
-@keyframes so-float { from { transform: translateY(-6px); } to { transform: translateY(6px); } }
-.so-orb {
-  display: block; width: var(--sz); height: var(--sz); border-radius: 50%; margin: 0 auto; position: relative;
-  background: radial-gradient(circle at 34% 30%,
-    color-mix(in oklch, var(--mid-c) 45%, #f6f0e0),
-    var(--mid-c) 52%,
-    color-mix(in oklch, var(--mid-c) 42%, #06080e) 86%);
-  box-shadow: 0 0 16px color-mix(in oklch, var(--mid-c) 45%, transparent);
-  transition: transform .35s cubic-bezier(.34,1.4,.5,1), box-shadow .35s, opacity .35s;
-}
-.so-orb .face {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; display: block; border-radius: 50%;
-}
-/* portrait-backed orb keeps a faint category rim from the gradient underneath */
-.so-orb.has-face { box-shadow: 0 0 16px color-mix(in oklch, var(--mid-c) 50%, transparent); }
-/* slightly shiny circle — a soft luminous rim + top sheen so the icon catches
-   light like the glowing node discs on the home-page graph (drawn over the
-   portrait, so hard-cropped faces still read as a lit sphere, not a flat disc) */
-.so-orb::before {
-  content: ''; position: absolute; inset: 0; border-radius: 50%;
-  pointer-events: none; z-index: 2;
-  box-shadow:
-    inset 0 0 0 1px rgba(248,242,226,.6),        /* crisp cream rim ring */
-    inset 0 0 9px 1px rgba(248,242,226,.28),     /* inner luminance */
-    inset 0 5px 11px -5px rgba(255,255,255,.5),  /* top sheen */
-    0 0 10px rgba(248,242,226,.30);              /* soft outer halo */
-}
-.so-orb.ringed::after {
-  content: ''; position: absolute; inset: 32% -26%; border-radius: 50%;
-  border: 1px solid color-mix(in oklch, var(--mid-c) 45%, transparent);
-  transform: rotate(-16deg);
-  opacity: .3;
-}
-.so-tag {
-  display: block; margin-top: 9px; font-family: Cinzel, serif; font-size: 12px;
-  letter-spacing: .14em; text-transform: uppercase; color: #8a94a6;
-  transition: color .3s, opacity .3s; max-width: 172px;
-}
-.so-tag .n { color: rgba(205,184,138,.85); margin-right: 5px; }
-.so-planet:hover .so-orb { transform: scale(1.12); }
-.so-planet:hover .so-tag { color: #c2cad8; }
-.so-planet:focus-visible { outline: none; }
-.so-planet:focus-visible .so-orb { box-shadow: 0 0 0 2px rgba(205,184,138,.6), 0 0 16px color-mix(in oklch, var(--mid-c) 45%, transparent); }
-.so-planet.on .so-orb {
-  transform: scale(1.28);
-  box-shadow:
-    0 0 0 2px rgba(205,184,138,.85),
-    0 0 10px 3px rgba(205,184,138,.3),
-    0 0 34px color-mix(in oklch, var(--mid-c) 60%, transparent);
-}
-.so-planet.on .so-tag { color: #cdb88a; }
-/* told chapters stay lit in the constellation; ones ahead are faint embers */
-.so-planet.told:not(:hover) .so-orb {
-  opacity: .88;
-  box-shadow: 0 0 0 1px rgba(205,184,138,.25), 0 0 14px color-mix(in oklch, var(--mid-c) 40%, transparent);
-}
-.so-planet.told:not(:hover) .so-tag { opacity: .9; color: #8a94a6; }
-.so-planet.ahead:not(:hover) .so-orb { opacity: .42; }
-.so-planet.ahead:not(:hover) .so-tag { opacity: .72; }
-
-/* caption — one beat at a time, fixed footprint */
-.so-caption {
-  position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
-  width: min(680px, calc(100% - 36px)); z-index: 6;
-  background: rgba(9,12,19,.82); backdrop-filter: blur(10px);
-  border: 1px solid #262e3c; border-radius: 12px; padding: 16px 22px 14px;
-  animation: so-cap-rise .7s cubic-bezier(.22,1,.36,1) .5s backwards;
-}
-
-/* autoplay filament — fills along the caption's top edge over one beat */
-.so-progress {
-  position: absolute; top: -1px; left: 14px; right: 14px; height: 1px;
-  background: linear-gradient(90deg, rgba(205,184,138,.9), rgba(205,184,138,.3));
-  transform-origin: left; border-radius: 1px;
-  animation: so-progress-fill linear both;
-}
-@keyframes so-progress-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-.so-cap-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 7px; }
-.so-cap-head .n { font-family: Cinzel, serif; font-size: 12.5px; color: rgba(205,184,138,.85); }
-.so-cap-head .l { font-family: Cinzel, serif; font-size: 13.5px; letter-spacing: .16em; text-transform: uppercase; color: #cdb88a; }
-.so-cap-head .c { font-family: Cinzel, serif; font-size: 12px; letter-spacing: .12em; color: #8a94a6; }
-.so-cap-cat { margin-left: auto; font-family: Cinzel, serif; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
-.so-tale-btn {
-  margin-left: auto; margin-right: 10px;
-  font-family: Cinzel, serif; font-size: 12px; letter-spacing: .12em;
-  color: #a2916a; padding: 2px 8px; border-radius: 12px;
-  border: 1px solid transparent; transition: color .15s, border-color .15s;
-}
-.so-tale-btn:hover { color: #cdb88a; border-color: rgba(205,184,138,.35); }
-.so-cap-body { min-height: var(--capmin, 96px); animation: so-cap-in .45s ease both; }
-@keyframes so-cap-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.so-cap-body p { margin: 0; font-size: 17.5px; line-height: 1.6; color: #c6cedb; }
-
-.so-figs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.so-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: Cinzel, serif; font-size: 12.5px; letter-spacing: .08em;
-  color: var(--chip); background: rgba(6,8,14,.5);
-  border: 1px solid color-mix(in oklch, var(--chip) 35%, transparent);
-  border-radius: 20px; padding: 3px 11px 3px 8px;
-  transition: border-color .15s, box-shadow .15s, transform .15s;
-}
-.so-chip .dot {
-  width: 5px; height: 5px; border-radius: 50%;
-  background: var(--chip); box-shadow: 0 0 5px var(--chip);
-}
-.so-chip .face {
-  width: 18px; height: 18px; border-radius: 50%; object-fit: cover;
-  border: 1px solid color-mix(in oklch, var(--chip) 60%, transparent);
-  box-shadow: 0 0 6px color-mix(in oklch, var(--chip) 35%, transparent);
-}
-.so-chip:hover, .so-chip:focus-visible {
-  border-color: var(--chip);
-  box-shadow: 0 0 10px color-mix(in oklch, var(--chip) 30%, transparent);
-  transform: translateY(-1px); outline: none;
-}
-.so-chip .fly { opacity: .7; font-size: 11.5px; }
-
-.so-cap-nav { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
-.so-nav-btn {
-  border: 1px solid #262e3c; border-radius: 6px; color: #8a94a6; font-size: 15px;
-  width: 32px; height: 30px; display: grid; place-items: center; transition: .15s;
-}
-.so-nav-btn:hover { color: #cdb88a; border-color: rgba(205,184,138,.5); }
-.so-play { font-size: 12px; letter-spacing: 1px; }
-.so-play.on { color: #cdb88a; border-color: rgba(205,184,138,.5); background: rgba(205,184,138,.06); }
-.so-dots { display: flex; gap: 7px; margin: 0 auto; }
-.so-dot {
-  width: 6px; height: 6px; border-radius: 50%; padding: 0;
-  background: #4c5668; transition: background .2s, transform .2s;
-}
-.so-dot:hover { background: #7a8496; }
-.so-dot.on { background: #cdb88a; transform: scale(1.3); box-shadow: 0 0 6px rgba(205,184,138,.6); }
-.so-src { font-style: italic; font-size: 14px; color: #7a8396; white-space: nowrap; }
-
-/* The reading room's veil is a FULL-SCREEN `backdrop-filter`, and a backdrop
-   that changes cannot be cached — every twinkling star and floating planet
-   behind it forces the whole viewport to be re-blurred on the next frame,
-   which is felt as soon as you scroll a long tale. So opening the tale stills
-   the orbit under it: the backdrop is blurred once and reused. Nothing is
-   lost — that orbit is already 6px blurred and dimmed behind the panel. */
-.so-root.reading .so-star,
-.so-root.reading .so-float,
-.so-root.reading .so-sun-orb,
-.so-root.reading .so-planet,
-.so-root.reading .so-wash { animation-play-state: paused; }
-
-/* full tale — a quiet reading room over the orbit */
-.so-tale-veil {
-  position: absolute; inset: 0; z-index: 10; display: grid; place-items: center;
-  background: rgba(4,6,12,.72); backdrop-filter: blur(6px);
-  animation: so-cap-in .3s ease both;
-}
-.so-tale {
-  width: min(640px, calc(100% - 40px)); max-height: min(72vh, 640px);
-  display: flex; flex-direction: column;
-  background: linear-gradient(180deg, #0c1019, #090c13);
-  border: 1px solid rgba(205,184,138,.25); border-radius: 14px;
-  box-shadow: 0 24px 80px rgba(0,0,0,.6);
-}
-.so-tale-head {
-  display: flex; align-items: baseline; gap: 12px;
-  padding: 18px 24px 12px; border-bottom: 1px solid #19202d;
-}
-.so-tale-head .k { font-family: Cinzel, serif; font-size: 12px; letter-spacing: .24em; color: #a2916a; text-transform: uppercase; }
-.so-tale-head .t { font-family: Cinzel, serif; font-size: 16.5px; letter-spacing: .1em; color: #ece6d6; }
-.so-tale-head .x { margin-left: auto; color: #8a94a6; font-size: 16px; padding: 2px 6px; align-self: center; transition: color .15s; }
-.so-tale-head .x:hover { color: #cdb88a; }
-.so-tale-body {
-  overflow-y: auto; padding: 20px 24px 24px;
-  scrollbar-width: thin; scrollbar-color: #19202d transparent;
-}
-.so-tale-body::-webkit-scrollbar { width: 8px; }
-.so-tale-body::-webkit-scrollbar-thumb { background: #19202d; border-radius: 4px; }
-.so-tale-body p { margin: 0 0 1em; font-size: 17px; line-height: 1.64; color: #c2cad8; }
-.so-tale-body p:last-child { margin-bottom: 0; }
-.so-tale-body .src { font-style: italic; font-size: 14.5px; color: #8a94a6; margin-top: 6px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .so-star, .so-float, .so-sun-orb { animation: none; }
-  .so-cap-body, .so-tale-veil { animation: none; }
-  /* ignition + trace keyframes are from-only, so "none" = final state */
-  .so-wash, .so-ring, .so-sun, .so-planet, .so-trace, .so-caption,
-  .so-progress, .so-root .gs-exit, .so-root .gs-top, .so-root .gs-hint { animation: none; }
-  .so-orb, .so-planet.on .so-orb { transition: none; }
-}
-@media (max-width: 760px) {
-  .so-tag { font-size: 11.5px; max-width: 104px; }
-  .so-sun-orb { width: 56px; height: 56px; }
-  .so-sun-name { font-size: 15.5px; }
-  .so-caption { bottom: 14px; padding: 13px 16px 12px; }
-  /* narrower line → more wraps than the desktop estimate reserved for */
-  .so-cap-body { min-height: calc(var(--capmin, 96px) * 1.6); }
-  .so-cap-body p { font-size: 16.5px; }
-  .so-src { display: none; }
 }

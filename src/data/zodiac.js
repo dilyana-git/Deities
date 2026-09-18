@@ -5,8 +5,8 @@
    star pattern — an approximation of the true constellation figure — so the
    Zodiac view stands on its own, apart from the mythology graph.
 
-   Coordinate space is the viewBox -100..100 (centred on 0,0), matching the
-   ConstellationStage engine. spec fields: m = motion key · b = bright node
+   Coordinate space is the viewBox -100..100 (centred on 0,0). Spec fields:
+   m = motion key · b = bright node
    indices · n = node [x,y] coords · e = edges as index pairs.
 
    Accents follow the four classical elements so each triad shares a hue:

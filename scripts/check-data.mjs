@@ -12,7 +12,6 @@
 import { nodes, links } from '../src/data/mythology.js'
 import { deityStories } from '../src/data/deityStories.js'
 import { TOURS } from '../src/data/tours.js'
-import { CONSTELLATIONS } from '../src/data/constellations.js'
 import { categoryOrder } from '../src/data/categoryConfig.js'
 import { linkTypeOrder } from '../src/data/linkTypeConfig.js'
 
@@ -48,7 +47,7 @@ for (const l of links) {
 }
 
 // ── tours: every beat's fig must be a real node (documented hard requirement,
-//    beats[].figures[] must resolve too — StoryOrbit/DetailPanel treat both as
+//    beats[].figures[] must resolve too — GuidedSky/DetailPanel treat both as
 //    clickable navigation targets) ───────────────────────────────────────────
 for (const tour of TOURS) {
   // the hero is the face GuidedSky burns at the centre of the constellation
@@ -60,8 +59,6 @@ for (const tour of TOURS) {
   for (const beat of tour.beats) {
     if (!nodeIds.has(beat.fig)) {
       errors.push(`tour "${tour.id}" beat references unknown fig "${beat.fig}"`)
-    } else if (!(beat.fig in CONSTELLATIONS)) {
-      warnings.push(`tour "${tour.id}" beat "${beat.fig}" has no constellation spec — falls back to generateSpec()`)
     }
   }
 }
@@ -76,11 +73,6 @@ for (const [id, entry] of Object.entries(deityStories)) {
       if (!nodeIds.has(fig)) errors.push(`deityStories["${id}"] beat "${beat.label}" links to unknown figure "${fig}"`)
     }
   }
-}
-
-// ── constellations: specs authored for ids that no longer exist ─────────────
-for (const id of Object.keys(CONSTELLATIONS)) {
-  if (!nodeIds.has(id)) warnings.push(`constellations["${id}"] has no matching node — dead spec`)
 }
 
 // ── report ───────────────────────────────────────────────────────────────────
