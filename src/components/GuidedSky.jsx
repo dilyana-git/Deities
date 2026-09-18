@@ -24,7 +24,22 @@ const TOUR_TALES = TOURS.map(t => ({
 function figureTale(id) {
   const node  = _nodeMap[id]
   const story = deityStories[id]
-  if (!node || !story?.beats?.length) return null
+  if (!node || !story) return null
+  /* A figure whose tale was never cut into chapters still has exactly one door
+     — this one. It opens as prose: the constellation stands down to the hero
+     alone and the column holds the whole retelling in place of a chapter. The
+     single beat is scaffolding and never renders; it keeps the chapter
+     machinery (the plane's lean, the centre face, the rail) reading a real
+     object rather than sprouting a guard at every use. */
+  if (!story.beats?.length) {
+    if (!story.story) return null
+    return {
+      key: `fig:${id}`, figure: id, hero: id, prose: true,
+      kicker: 'The Story', title: node.name, epithet: node.epithet,
+      source: story.source, full: story.story,
+      beats: [{ fig: id, label: node.name, text: story.story, figures: [] }],
+    }
+  }
   return {
     key: `fig:${id}`, figure: id, hero: id,
     kicker: 'The Story in Stars', title: node.name, epithet: node.epithet,
@@ -38,8 +53,8 @@ function figureTale(id) {
 
 /* Walk only the exact generated variants that exist for this figure. `size` is
    the tier the caller is about to draw at: chapter stars are 44-96px and ask
-   for the 192px `node` crop, the hero orb is 164px and asks for the 360px
-   `head` one. */
+   for the 192px `node` crop, the hero orb is 190-240px (`--hero-d`) and asks
+   for the 360px `head` one — which is also what caps it. */
 function usePortrait(id, size = 'node') {
   const chain = useMemo(() => portraitSources(id, size), [id, size])
   const [attempt, setAttempt] = useState({ id, idx: 0 })
@@ -351,8 +366,8 @@ function SkyChart({ lean }) {
    constellation: the figure of the chapter in play burns at the centre,
    every chapter is a star scattered around it, a dashed grey line shows the
    whole figure and a gold thread inks itself over the part already told.
-   The centre face changes with the chapter; the column's "Following" line
-   keeps the credit for whose tale it is. The plane drifts a little against
+   The centre face changes with the chapter; the hero's face at the centre of
+   the figure is where a tour says whose tale it is. The plane drifts a little against
    the chapter in play, so each advance reads as the sky turning rather than
    a swap. ▶ / spacebar autoplays at reading pace; OTHER STORIES switches
    tales.
@@ -361,6 +376,11 @@ function SkyChart({ lean }) {
    from a figure's ENTER THE STORY — that figure's own titled chapters from
    deityStories.js, with the figures each chapter names as links under the
    prose and the whole retelling one click away in the column.
+
+   A figure whose story was never cut into chapters arrives here too, since
+   ENTER THE STORY is every figure's only story door: the tale opens as prose
+   with the hero alone on the plane, and the column's reading row holds the
+   retelling entire instead of a chapter (`tale.prose`).
    ════════════════════════════════════════════════════════════════════════ */
 export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, onClose, onBeatChange, onNavigate }) {
   /* the figure's own tale, when opened from its panel. It stays at the head of
@@ -383,15 +403,23 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
 
   const beat  = beats[cur]
   const node  = _nodeMap[beat.fig]
-  const heroNode = _nodeMap[tale.hero]
   const accent = CAT[node?.category] || CAT.primordial
   const catLabel = (categoryConfig[node?.category]?.label || node?.category || '').toUpperCase()
-  const following = tale.figure ? tale.epithet : `Following ${heroNode?.name || tale.hero}`
+  /* A figure's own tale sets its epithet under the title. A tour has none, and
+     is no longer credited with a "Following <hero>" line either: the hero is
+     the face holding the centre of the constellation, which is where a tour
+     says whose it is — naming it again in the head was a third line of chrome
+     between the title and the chapter, for a fact the sky already carries. */
+  const following = tale.figure ? tale.epithet : null
   /* the "With …" line is held on every chapter of a tale that names anyone,
      so chapters with and without names hang from the same baseline */
   const withLine = !!onNavigate && beats.some(b => b.figures?.length)
+  /* A chapterless tale *is* the full tale: the reading row opens on it and has
+     no chapters to go back to. `showFull` is what the rest of the view reads;
+     `fullOpen` stays the reader's own toggle on a chaptered tale. */
+  const showFull = fullOpen || !!tale.prose
   /* autoplay holds while the full tale is open */
-  const ticking  = playing && !fullOpen
+  const ticking  = playing && !showFull
 
   /* a figure's own tale hands the reader back to that figure — the panel they
      opened it from — while a tour leaves the sky on its last chapter */
@@ -431,6 +459,9 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
   const stars = useMemo(() => pathFor(beats.length), [beats.length])
   const allPts   = useMemo(() => stars.map(pt).join(' '), [stars])
   const tracePts = stars.slice(0, cur + 1).map(pt).join(' ')
+  /* what the plane leans toward and the light pool stands behind: the chapter
+     in play — or the hero itself, when there are no chapters to travel */
+  const focus = tale.prose ? HERO : stars[cur]
 
   /* moving to a chapter always brings the row back from the full tale */
   const next = useCallback(() => { setFullOpen(false); setCur(c => Math.min(c + 1, beats.length - 1)) }, [beats.length])
@@ -468,19 +499,19 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
     function onKey(e) {
       if (e.key === 'Escape') {
         if (talesOpen) setTalesOpen(false)
-        else if (fullOpen) setFullOpen(false)
+        else if (fullOpen && !tale.prose) setFullOpen(false)
         else close()
         return
       }
       /* the full tale is read, not stepped through — the keys wait for it */
-      if (fullOpen) return
+      if (showFull) return
       if (e.key === 'ArrowRight') next()
       else if (e.key === 'ArrowLeft') prev()
       else if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p) }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [next, prev, close, talesOpen, fullOpen])
+  }, [next, prev, close, talesOpen, fullOpen, showFull, tale.prose])
 
   /* close the tale picker on outside click */
   useEffect(() => {
@@ -507,18 +538,18 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
 
       {/* the atlas's sky chart behind the tale. It leans half as far as the
           plane in front of it, so it reads as farther away. */}
-      <SkyChart lean={`translate(${((HERO.x - stars[cur].x) * 0.065).toFixed(2)}%, ${((HERO.y - stars[cur].y) * 0.065).toFixed(2)}%)`}/>
+      <SkyChart lean={`translate(${((HERO.x - focus.x) * 0.065).toFixed(2)}%, ${((HERO.y - focus.y) * 0.065).toFixed(2)}%)`}/>
 
       {/* the constellation plane — the whole screen right of the column. It
           drifts against the chapter in play (a fraction of the offset from
           the hero, so the motion is a lean, not a pan). */}
       <div className="gsr-plane" style={{
-        transform: `translate(${((HERO.x - stars[cur].x) * 0.13).toFixed(2)}%, ${((HERO.y - stars[cur].y) * 0.13).toFixed(2)}%)`,
+        transform: `translate(${((HERO.x - focus.x) * 0.13).toFixed(2)}%, ${((HERO.y - focus.y) * 0.13).toFixed(2)}%)`,
       }}>
         {/* the chapter light — a soft pool standing behind the chapter in
             play, travelling with it along the figure as the tale advances */}
         <div className="gsr-light" style={{
-          transform: `translate(${(stars[cur].x - 50).toFixed(2)}%, ${(stars[cur].y - 50).toFixed(2)}%)`,
+          transform: `translate(${(focus.x - 50).toFixed(2)}%, ${(focus.y - 50).toFixed(2)}%)`,
         }}/>
         <div className="gsr-bloom"/>
 
@@ -532,16 +563,20 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
         {/* the whole figure in dashed grey, the told part inked over it in
             gold — so the tale's shape is legible from the first chapter and
             the reader can see how much sky is left */}
-        <svg className="gsr-web" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <polyline className="gsr-web-all" points={allPts}/>
-          <polyline className="gsr-web-trace" key={`${tale.key}-${cur}`} points={tracePts}/>
-        </svg>
+        {/* a chapterless tale draws no figure — one star traces nothing, and a
+            lone dashed stub reads as a tale that failed to load */}
+        {!tale.prose && (
+          <svg className="gsr-web" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <polyline className="gsr-web-all" points={allPts}/>
+            <polyline className="gsr-web-trace" key={`${tale.key}-${cur}`} points={tracePts}/>
+          </svg>
+        )}
 
         {/* keyed on the tale, not the figure: within a tale the orb has to
             persist so it can cross-fade; a new tale replays its entrance */}
         <HeroOrb key={tale.key} fig={beat.fig}/>
 
-        {beats.map((b, i) => (
+        {!tale.prose && beats.map((b, i) => (
           <ChapterStar key={`${tale.key}-${i}`} beat={b} i={i} cur={cur} at={stars[i]} onSelect={goTo}/>
         ))}
       </div>
@@ -560,7 +595,7 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
               onClick={() => setTalesOpen(o => !o)} aria-expanded={talesOpen}>
               OTHER STORIES <span className="car">▾</span>
             </button>
-            {tale.full && (
+            {tale.full && !tale.prose && (
               <button className={`gsr-tales-btn ${fullOpen ? 'open' : ''}`}
                 onClick={() => setFullOpen(o => !o)} aria-pressed={fullOpen}>
                 {fullOpen ? 'BACK TO CHAPTERS' : 'FULL TALE'}
@@ -581,11 +616,13 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
         </div>
 
         <div className="gsr-col-read" ref={readRef}>
-          {fullOpen ? (
+          {showFull ? (
             /* the whole retelling takes the chapter's place in the column —
                already the reading surface, so no veil goes over the sky */
             <div className="gsr-full" key={`f${tale.key}`}>
-              <div className="gsr-beat-head"><span className="l">The Full Tale</span></div>
+              <div className="gsr-beat-head">
+                <span className="l">{tale.prose ? 'The Tale' : 'The Full Tale'}</span>
+              </div>
               {tale.full.split('\n\n').map((para, i) => (
                 <p key={i} className={i === 0 ? 'story-text' : undefined}>{para}</p>
               ))}
@@ -632,6 +669,9 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
         </div>
 
         <div className="gsr-col-foot">
+          {/* nothing to step through and nothing to time, so a chapterless
+              tale's foot keeps only the way out */}
+          {!tale.prose && (<>
           <div className="gsr-rail">
             <div className={`gsr-rail-fill ${ticking ? 'ticking' : ''}`}
               key={ticking ? `r${tale.key}-${cur}` : 'rest'}
@@ -650,7 +690,10 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
             <button className="gsr-step" onClick={next} aria-label="Next chapter">›</button>
             <span className="gsr-counter">CHAPTER {cur + 1} / {beats.length}</span>
           </div>
-          <div className="gsr-hint">← → to move · space to play · esc to close</div>
+          </>)}
+          <div className="gsr-hint">
+            {tale.prose ? 'esc to close' : '← → to move · space to play · esc to close'}
+          </div>
         </div>
       </div>
 

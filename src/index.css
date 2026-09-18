@@ -127,47 +127,49 @@ body {
    the nodes stand in, so every figure is a light mark on a dark ground. Do not
    reintroduce a centre-bright wash here: it lifts the backdrop above the
    content's own values and the whole field sinks into a hole. */
+
+/* NOT screen-blended, though it reads as though it were. A blend has to read
+   its backdrop back, and this band spans the viewport in a layer that repaints
+   whenever the backdrop moves, so it was charged on every one of those
+   repaints: dropping the blend took the resting field from 18.8 to 22.7 fps
+   (1.21x) before the ambient ticker below, and 42.8 to 53.5 (1.25x) after it.
+   It is the same trade the category halos already took — at 0.30 alpha over a
+   near-black sky, screen and source-over are the same picture. A/B'd inside one
+   frozen page load: mean delta 0.59/255, with only 16 pixels of 1.14M moving by
+   more than 16/255 (bright stars under the band, which screen would have added
+   to rather than covered). Deleting the limb outright is 1.98 by the same
+   measure, so the blend was worth a third of one deletion's worth of nothing.
+   Don't put it back. */
 .dome-limb {
-  mix-blend-mode: screen;
   pointer-events: none;
 }
 
-/* ── Depth haze: barely-perceptible nebula ring behind the web ────────────── */
-@keyframes haze-drift {
-  0%   { transform: translate(0, 0)     rotate(0deg); }
-  33%  { transform: translate(40px, -20px) rotate(3deg); }
-  66%  { transform: translate(-30px, 15px) rotate(-2deg); }
-  100% { transform: translate(0, 0)     rotate(0deg); }
-}
-/* ── why the slow drifts are stepped ──────────────────────────────────────
-   Everything in #sky is one SVG, and Chrome gives an SVG's children no
-   compositor layers of their own: a transform on a group is not moved by the
-   GPU, it is REDRAWN, and these five transform whole layers — so each one
-   repaints the entire field (151 filtered elements, 11 blended) every frame.
-   Measured on an integrated Radeon: 21fps at rest with them running, 35
-   without, GPU ~95% busy either way.
-
-   They are also the slowest motion on the page — a pixel a second or less —
-   so a step every 250-500ms lands sub-pixel and looks identical, while the
-   repaint it costs drops from 60/s to 2-4/s. Keep the step counts matched to
-   the durations below (steps are PER KEYFRAME SEGMENT, not per cycle) if you
-   retime one: 2-4 updates a second is the target, and much coarser starts to
-   tick on high-contrast edges. */
+/* ── Depth haze: barely-perceptible nebula ring behind the web ──────────────
+   Drifts and turns over ~90s, from the ambient ticker (see its note below). */
 .depth-haze {
-  animation: haze-drift 90s steps(120) infinite;
   pointer-events: none;
   mix-blend-mode: screen;
-  will-change: transform;
 }
-@media (prefers-reduced-motion: reduce) {
-  .depth-haze { animation: none; }
-}
-.paused .depth-haze { animation-play-state: paused; }
 
 /* category territory halos — soft colour fields grouping each cluster.
-   `screen` blending makes overlapping family colours add luminously. */
+   These used to carry `mix-blend-mode: screen`, so overlapping family colours
+   added luminously. It was by a wide margin the most expensive thing on the
+   field: a blend has to read its backdrop back, and nine of them spread across
+   the viewport meant nine readbacks on every repaint of the atlas — and the
+   atlas repaints whenever *anything* in it animates (see the layer-stack note
+   in CLAUDE.md). Measured on the settled sky: dropping the blend alone took the
+   resting field from 4.8 to 8.7 fps — 1.81x, nearly all of the 1.86x that
+   deleting the halos outright would buy.
+
+   It costs almost nothing to look at, because these fields peak at 0.12 alpha
+   and sit on a near-black sky, where `screen` and plain source-over are within
+   a rounding error of each other. A/B'd inside one page load (same layout, same
+   frame): mean delta 1.06/255, with 0.67% of channels moving more than 8 —
+   against 17.33/255 and 72% for removing the halos. Don't put the blend back to
+   recover a luminosity that measures at one part in 240; if these ever need to
+   add over something bright, give them a brighter gradient instead. */
 .cat-halo {
-  mix-blend-mode: screen;
+  mix-blend-mode: normal;
   pointer-events: none;
 }
 
@@ -180,7 +182,7 @@ body {
   font-weight: 600;
   font-size: 13px;
   letter-spacing: .65em;
-  fill: #46566f;
+  fill: #66788f;
   pointer-events: none;
   text-transform: uppercase;
   transition: opacity .4s ease;
@@ -192,139 +194,81 @@ body {
 
 /* ── Flaring stars ─────────────────────────────────────────────────────────
    A plain opacity-pulse on a ~1px circle never reads — the absolute pixel
-   delta is too small to register against the graph/clouds/grain. Instead each
-   flare is a separate, much larger, blurred halo (#glow filter, 5x the star's
-   radius) that blooms from invisible to --flare-peak and fades — a real
-   change in lit pixel area, not just a brightness fraction. --flare-peak/
-   --flare-dur/--flare-delay are set per element in SkyGraph so ~70 of the
-   brightest stars bloom out of phase. */
-/* Asymmetric flash — quick bloom (peak at 18%), long slow fade — reads as a
-   genuine "flare" rather than a smooth breathing pulse, and arrives fast
-   enough to actually catch the eye. */
-@keyframes star-flare {
-  0%   { opacity: 0; }
-  18%  { opacity: var(--flare-peak, 0.35); }
-  100% { opacity: 0; }
-}
+   delta is too small to register against the graph and the grain. Instead each
+   flare is a separate, much larger, soft-gradient halo (5x the star's radius)
+   that blooms from invisible to --flare-peak and fades — a real change in lit
+   pixel area, not just a brightness fraction. The bloom is an asymmetric flash
+   (peak at 18% of the cycle, then a long slow fade), which reads as a flare
+   rather than a breathing pulse; --flare-peak is set per element in SkyGraph so
+   the brightest stars bloom out of phase.
+
+   The curve itself lives in `stepAmbient`, not in keyframes here — see the
+   ticker note below. The opacity set here is what a sky with no ticker shows
+   (reduced motion, or the frames before the first step lands). */
 .flare {
-  animation: star-flare var(--flare-dur, 2.4s) ease-out infinite;
-  animation-delay: var(--flare-delay, 0s);
   pointer-events: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .flare { animation: none; opacity: calc(var(--flare-peak, 0.35) * 0.5); }
+  opacity: calc(var(--flare-peak, 0.35) * 0.5);
 }
 
 /* ── Asynchronous star shimmer ──────────────────────────────────────────────
-   ~15% of background star dots shimmer on randomized long loops (3–7s).
-   Opacity dips and recovers, plus a subtle scale breath. Randomized phase
-   (--shimmer-delay) means they never pulse in unison. */
-@keyframes star-shimmer {
-  0%, 100% { opacity: var(--shimmer-base, 0.2); transform: scale(1); }
-  40%      { opacity: calc(var(--shimmer-base, 0.2) * 0.35); transform: scale(0.7); }
-  60%      { opacity: calc(var(--shimmer-base, 0.2) * 1.6);  transform: scale(1.25); }
-}
-.star-shimmer {
-  animation: star-shimmer var(--shimmer-dur, 5s) ease-in-out infinite;
-  animation-delay: var(--shimmer-delay, 0s);
-  transform-origin: center;
-  transform-box: fill-box;
-}
-@media (prefers-reduced-motion: reduce) {
-  .star-shimmer { animation: none; }
-}
+   ~15% of background star dots shimmer on randomized long loops (3-7s), out of
+   phase with each other. Driven from `stepAmbient`, not from keyframes — see
+   the ticker note below. The scale breath the keyframes used to carry went with
+   them: on a sub-pixel dot a 1.0->1.25 scale is invisible (which is the very
+   reason the blurred `.flare` exists next door), and it cost 63 extra transform
+   nodes on the backdrop. */
 
-/* ── Slow celestial drift ──────────────────────────────────────────────────
-   The constellation field rotates ~3° over 2 minutes around the viewBox
-   centre. Background stars drift at a slower, different cadence via
-   bg-drift — creating two-layer parallax depth.
-   transform-origin centres on the 1200×740 viewBox. */
-@keyframes celestial-rotate {
-  0%   { transform: rotate(0deg); }
-  50%  { transform: rotate(2.8deg); }
-  100% { transform: rotate(0deg); }
-}
-.celestial-rotate {
-  animation: celestial-rotate 130s steps(130) infinite;   /* 2 segments of 65s → 2/s */
-  transform-origin: 600px 370px;
-}
-@keyframes bg-parallax-drift {
-  0%   { transform: rotate(0deg) translate(0, 0); }
-  33%  { transform: rotate(-1.2deg) translate(3px, -2px); }
-  66%  { transform: rotate(0.6deg) translate(-2px, 1px); }
-  100% { transform: rotate(0deg) translate(0, 0); }
-}
-.bg-drift {
-  animation: bg-parallax-drift 180s steps(120) infinite;  /* 3 segments of ~60s → 2/s */
-  transform-origin: 600px 370px;
-  will-change: transform;
-}
-@media (prefers-reduced-motion: reduce) {
-  .celestial-rotate, .bg-drift { animation: none; }
-}
+/* ── the resting sky's motion: one stepped ticker, not 240 CSS animations ──
+   Everything that moves on the idle sky — the field's slow drift and float,
+   139 node glows twinkling, ~6 hubs breathing, 63 background stars shimmering,
+   17 flares blooming, the haze and the backdrop's own parallax — used to be a
+   CSS animation per element. All of it is now driven from ONE rAF ticker
+   stepping at `AMBIENT_HZ` (`stepAmbient` in SkyGraph.jsx), which is why the
+   keyframes that used to live here are gone.
 
-/* ── Floating graph ────────────────────────────────────────────────────────
-   Nested bob + drift compose into a slow organic loop; physics-driven node
-   positions are untouched. `will-change` on the content-holding layer
-   (float-x) promotes it to its own compositor layer, so the three nested
-   transform animations wrapping it (celestial-rotate → float-y → float-x)
-   just re-transform one cached raster instead of repainting the whole
-   filtered field subtree on every frame. */
-@keyframes float-bob {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-5px); }
-}
-@keyframes float-drift {
-  0%, 100% { transform: translateX(0); }
-  50%      { transform: translateX(4px); }
-}
-.float-y {
-  animation: float-bob 14s steps(28) infinite;            /* 2 segments of 7s → 4/s */
-}
-.float-x {
-  animation: float-drift 70s steps(70) infinite;          /* 2 segments of 35s → 2/s */
-  animation-delay: -25s;
-  will-change: transform;
-}
-@media (prefers-reduced-motion: reduce) {
-  .float-y, .float-x { animation: none; }
-}
+   A *running* CSS animation is not priced per frame it changes, it is priced
+   per frame, full stop: Chrome regenerates the layer's raster while any
+   animation on it is running, whether or not the animation's computed value
+   moved that frame. An SVG's children get no compositor layers of their own,
+   so "the layer" here is the whole atlas — 139 portraits, 139 text labels, 258
+   edges. Stepping a CSS animation therefore buys nothing (`steps()` still runs
+   every frame, which is why the old note here measured 1.06x for it); writing
+   the same attribute from JS buys everything, because a frame nobody wrote to
+   is a frame nobody repaints.
 
-/* ── Twinkling deity-stars ──────────────────────────────────────────────────
-   Each node's glow halo breathes around its base opacity. Randomised phase
-   (--twinkle-delay) keeps them asynchronous. */
-@keyframes node-twinkle {
-  0%, 100% { opacity: calc(var(--glow-base, 0.1) * 0.5);  }
-  50%      { opacity: calc(var(--glow-base, 0.1) * 1.55); }
-}
-.node .glow {
-  animation: node-twinkle var(--twinkle-dur, 6s) ease-in-out infinite;
-  animation-delay: var(--twinkle-delay, 0s);
-}
+   Measured at 1440x900, headless software raster, interleaved inside one page
+   load (fps by rAF against a 60 ceiling, so 60 means free):
 
-/* ── Hub breathing ─────────────────────────────────────────────────────────
-   The major gods (Zeus, Gaia, Chaos…) get a dedicated slow pulse that
-   cycles BOTH radius and opacity over ~4s — marking them as gravitational
-   centres before any interaction. Layered on top of the general twinkle
-   via a separate animation name so both run. */
-@keyframes hub-breath {
-  0%, 100% {
-    r: var(--glow-r);
-    opacity: calc(var(--glow-base, 0.1) * 0.6);
-  }
-  50% {
-    r: var(--glow-r-peak);
-    opacity: calc(var(--glow-base, 0.1) * 1.6);
-  }
-}
-.node .glow.hub-breath {
-  animation:
-    node-twinkle var(--twinkle-dur, 6s) ease-in-out infinite var(--twinkle-delay, 0s),
-    hub-breath var(--breath-dur, 4s) ease-in-out infinite var(--breath-delay, 0s);
-}
-@media (prefers-reduced-motion: reduce) {
-  .node .glow, .node .glow.hub-breath { animation: none; }
-}
+     resting sky, as it was                          18.6
+     ditto, every CSS animation here disabled        60.0    <- 3.2x of headroom
+     139 glows animated by CSS                       18.8
+      75 of them (tiers 1+2)                         28.7
+      12 of them (tier 1 only)                       38.5    <- still a third of
+     139 glows written from JS at 5Hz                57.0       the frame budget
+     the whole ticker at 6 / 10 / 15 Hz    55.0 / 52.8 / 48.7
+
+   Two things fall out of those numbers and are easy to get wrong. Cutting the
+   COUNT of CSS-animated elements is not a fix — 12 glows still cost a third of
+   the budget, because the cost tracks the screen area the animating elements
+   cover, not how many there are. And moving the drift onto the `<svg>` ELEMENT
+   as a CSS transform is not a fix either: an svg root with this much content in
+   it is repainted, not composited (22.1 fps, 1.13x). 10Hz is the chosen rate —
+   6Hz measures ~4% better and looks it on the flares' quick bloom.
+
+   The drift is still a TRANSLATION and must stay one. It used to be a ~3°
+   rotation, and the angle alone cost about half the frame budget whether or not
+   it moved (animated rotate 8.3 fps, static rotate(2.8deg) 9.1, static
+   rotate(0deg) 18.6): a subtree under a non-right-angle rotation loses every
+   axis-aligned fast path beneath it, and rotated text in particular cannot come
+   from the cached glyph atlas. Don't give the atlas an angle again. The
+   backdrop's own drift may still rotate — it carries no text and no images.
+
+   The old per-element custom properties (--twinkle-dur/-delay, --breath-dur/
+   -delay, --glow-r/-peak, --shimmer-dur/-delay, --flare-dur/-delay) went with
+   the keyframes; the ticker holds those numbers itself. `--glow-base` STAYS:
+   the hover, selection and ambient-flare paths express brightness by writing
+   it, and the ticker reads it back on every step, so all of them keep working
+   untouched. */
 
 /* ── Genesis ignition titles ───────────────────────────────────────────────
    Brief generation labels ("PRIMORDIALS", "TITANS"…) that flash at the
@@ -339,19 +283,13 @@ body {
   text-transform: uppercase;
 }
 
-/* Pause sky-layer CSS animations when nothing can see them (a hidden tab, or a
-   full-screen overlay). Keyed on `.paused` alone rather than `#sky.paused`:
-   SkyGraph sets that class on BOTH of its svgs, and half of these animations
-   now live in the backdrop one (#sky-bg). Nothing else in the app uses the
-   class, so the bare selector is exact. */
-.paused .flare,
-.paused .star-shimmer,
-.paused .celestial-rotate,
-.paused .bg-drift,
-.paused .float-y,
-.paused .float-x,
-.paused .node .glow,
-.paused .node .glow.hub-breath,
+/* Pause what is still a CSS animation when nothing can see it (a hidden tab, or
+   a full-screen overlay). Keyed on `.paused` alone rather than `#sky.paused`:
+   SkyGraph sets the class on BOTH of its svgs, and nothing else in the app uses
+   it, so the bare selector is exact. Most of what this rule used to pause is no
+   longer a CSS animation at all — the ambient ticker stops itself when the sky
+   goes dormant, which is cheaper than pausing 240 animations. What is left here
+   is the motion that only exists while the viewer is driving something. */
 .paused .node .sel-halo,
 .paused .link-transformed,
 .paused .link-cursed {
@@ -378,17 +316,17 @@ body {
    at deep zoom: zoom is what buys detail, so the resting view stays quiet. */
 .node.tier-1 .node-label {
   font-size: 15px;
-  opacity: .82;
+  opacity: .92;
   fill: #dbe0ea;
   letter-spacing: .01em;
 }
 .node.tier-2 .node-label { opacity: 0; transition: opacity .4s; }
-#sky.zoomed-mid .node.tier-2 .node-label { opacity: .52; }
-#sky.zoomed-in  .node.tier-2 .node-label { opacity: .68; }
+#sky.zoomed-mid .node.tier-2 .node-label { opacity: .74; }
+#sky.zoomed-in  .node.tier-2 .node-label { opacity: .88; }
 
 /* the tail: plain dots, named only when you have zoomed all the way in */
-.node.tier-3 .node-label { opacity: 0; transition: opacity .4s; font-size: 12px; }
-#sky.zoomed-in .node.tier-3 .node-label { opacity: .5; }
+.node.tier-3 .node-label { opacity: 0; transition: opacity .4s; font-size: 13.5px; }
+#sky.zoomed-in .node.tier-3 .node-label { opacity: .76; }
 
 /* portrait soft fade — dissolves each portrait's edges into the sky so the
    figure floats frameless over its star (no circular crop, no ring). A CSS
@@ -491,6 +429,11 @@ body {
 .node.route   .core  { opacity: 1; }
 .node.route   .node-label { opacity: 1 !important; fill: #cdb88a !important; }
 .node.nolabel .node-label { opacity: 0 !important; }
+/* …but an isolated star still has to name itself when you lean on it. The
+   label is hidden at rest because a lone name floating in empty sky is
+   clutter; on hover it is the only thing that identifies the figure, and
+   with the tooltip gone there is nothing else to. */
+.nodes.focusing .node.nolabel.lit .node-label { opacity: 1 !important; fill: #e7ebf2; }
 
 /* link interaction states */
 .link { transition: opacity .22s, stroke-width .18s, stroke .18s; }
@@ -514,7 +457,7 @@ body {
 @keyframes labelIn { from { opacity: 0 } to { opacity: 1 } }
 .link-labels text {
   font-family: 'Cinzel', serif;
-  font-size: 7px;
+  font-size: 11px;
   letter-spacing: .04em;
   pointer-events: none;
   paint-order: stroke;
@@ -739,13 +682,13 @@ body {
 .col-epithet {
   margin: 16px 0 0;
   font-family: 'EB Garamond', Georgia, serif; font-style: italic;
-  font-size: clamp(16px, 5.7cqw, 22px); color: #cdb88a;
+  font-size: clamp(17.5px, 6cqw, 23px); color: #cdb88a;
   text-shadow: 0 1px 20px rgba(5,7,12,.95);
 }
 .col-prose {
   margin: clamp(20px, 3vh, 30px) 0 0;
   font-family: 'Crimson Pro', Georgia, serif;
-  font-size: clamp(14.5px, 4.3cqw, 16.5px); line-height: 1.7;
+  font-size: clamp(16px, 4.6cqw, 18px); line-height: 1.68;
   color: #c9d0dd; text-wrap: pretty;
   text-shadow: 0 1px 12px rgba(6,8,14,.95);
   max-height: 12em; overflow: hidden;
@@ -757,79 +700,6 @@ body {
 /* No drop cap. The display name already carries the opening flourish; a second
    large initial letter in the prose competes with it for "first thing read"
    (and its baseline never aligned over only two lines). The body simply begins. */
-.col-source {
-  margin: 14px 0 0; font-family: 'EB Garamond', Georgia, serif; font-style: italic;
-  font-size: 12.5px; color: #4a5364;
-}
-
-/* READ THE FULL STORY — a door, so upright like the nav rows, and gold like the
-   rest of the panel's chrome; quieter than ENTER THE STORY, which stays the
-   primary action */
-.col-read {
-  display: inline-flex; align-items: baseline; gap: 12px;
-  margin: 16px 0 0; padding: 4px 0;
-  background: none; border: 0; cursor: pointer;
-  font-family: 'Cinzel', serif; font-size: 10.5px; letter-spacing: .24em;
-  text-transform: uppercase; color: #cdb88a;
-  transition: color .15s;
-}
-/* the underline sits on the label only — carried by the button it would also
-   run under the reading time and make it look like a second link */
-.col-read-k {
-  text-decoration-line: underline; text-decoration-thickness: 1px;
-  text-decoration-color: rgba(205,184,138,.22); text-underline-offset: 5px;
-  transition: text-decoration-color .15s;
-}
-.col-read:hover,
-.col-read:focus-visible { color: #eadbb4; outline: none; }
-.col-read:hover .col-read-k,
-.col-read:focus-visible .col-read-k { text-decoration-color: rgba(205,184,138,.7); }
-.col-read-min {
-  font-family: 'EB Garamond', Georgia, serif; font-style: italic;
-  font-size: 12.5px; letter-spacing: 0; text-transform: none; color: #6b6450;
-}
-
-/* ── the story reader ──────────────────────────────────────────────────────
-   The same measure, turned into a scrolling page. The column's scrollbar is
-   hidden for the summary (nothing there should scroll), so the reader brings
-   back a discreet one — a 2,000-character tale in a hidden-scrollbar column
-   gives no sign that it goes on — and fades the page out under both edges
-   instead of cutting lines off at the panel's top and bottom. */
-.col-type.reading {
-  scrollbar-width: thin; scrollbar-color: rgba(205,184,138,.22) transparent;
-  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 30px, #000 calc(100% - 44px), transparent 100%);
-          mask-image: linear-gradient(180deg, transparent 0, #000 30px, #000 calc(100% - 44px), transparent 100%);
-}
-.col-type.reading::-webkit-scrollbar { width: 5px; }
-.col-type.reading::-webkit-scrollbar-track { background: transparent; }
-.col-type.reading::-webkit-scrollbar-thumb { background: rgba(205,184,138,.22); border-radius: 3px; }
-/* the text keeps clear of the thumb; the eyebrow rule and CTA still share one
-   right edge inside it */
-.col-story { padding: 26px 16px 36px 0; }
-.col-story-back {
-  background: none; border: 0; padding: 4px 0; cursor: pointer;
-  font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: .3em;
-  color: #8c7d59; white-space: nowrap; transition: color .15s;
-}
-.col-story-back:hover,
-.col-story-back:focus-visible { color: #cdb88a; outline: none; }
-/* the name is a running head here, not the display — the prose is the page */
-.col-name.col-story-name { font-size: min(58px, var(--name-cq, 16cqw)); }
-.col-story-body { margin-top: clamp(22px, 3.4vh, 34px); }
-.col-story-body p {
-  margin: 0 0 1.05em;
-  font-family: 'Crimson Pro', Georgia, serif;
-  font-size: clamp(15px, 4.4cqw, 17px); line-height: 1.74;
-  color: #c9d0dd; text-wrap: pretty;
-  text-shadow: 0 1px 12px rgba(6,8,14,.95);
-}
-.col-story-body p:last-child { margin-bottom: 0; }
-.col-story-end {
-  margin: 26px 0 0; text-align: center;
-  font-size: 17px; color: rgba(205,184,138,.4);
-}
-.col-story-return { margin-top: 22px; }
-.col-story .col-enter { margin-top: 22px; }
 
 /* label → value rows, in two registers. Five identical italic lines of the
    same size read as a receipt, so the foot is split by what the line *does*:
@@ -841,9 +711,15 @@ body {
 .col-rows-attr { display: flex; flex-direction: column; gap: 5px; }
 .col-rows-nav  { display: flex; flex-direction: column; gap: 11px; }
 .col-row { display: flex; align-items: baseline; gap: 14px; }
+/* The key column is sized for the longest key ("SYMBOLS", 7 glyphs) at the
+   larger of the two registers. Cinzel small caps run ~.68em a glyph, so this
+   width has to move with the size: at 62px the bigger keys spill into the gap
+   and touch their own values. Tracking comes down as size goes up — .26em was
+   holding a 10.5px label together; at 12.5px it only adds width the measure
+   has to find. */
 .col-row-k {
-  width: 62px; flex-shrink: 0;
-  font-family: 'Cinzel', serif; letter-spacing: .26em;
+  width: 84px; flex-shrink: 0;
+  font-family: 'Cinzel', serif; letter-spacing: .2em;
   text-transform: uppercase;
 }
 .col-row-v {
@@ -853,25 +729,28 @@ body {
 }
 
 /* attributes — what she is: quiet, tight, italic */
-.col-rows-attr .col-row-k { font-size: 8px; color: #574f3c; }
+.col-rows-attr .col-row-k { font-size: 12px; color: #9b8b63; }
 .col-rows-attr .col-row-v {
-  font-style: italic; font-size: 13.5px; line-height: 1.5; color: #656e80;
+  font-style: italic; font-size: 16px; line-height: 1.5; color: #9aa3b4;
 }
 .col-em { color: #939db0; }
 
 /* navigation — where she leads: upright, a step brighter, underlines on hover */
-.col-rows-nav .col-row-k { font-size: 8.5px; color: #7c7152; }
-.col-rows-nav .col-row-v { font-size: 15.5px; line-height: 1.62; color: #9ba6b9; }
+.col-rows-nav .col-row-k { font-size: 12.5px; color: #a2916a; }
+.col-rows-nav .col-row-v { font-size: 17px; line-height: 1.6; color: #9ba6b9; }
 
-.col-sep  { color: #2a3242; }
+.col-sep  { color: #66788f; }
 
 /* The remainder is a disclosure, not a label: it opens the rest of the row in
-   place. It stays italic and dim in both registers — it is not one of the
-   values, so it must not borrow the navigable row's upright type — but it is
-   pressable, so it carries a cursor, a hover lift and the same gold underline
-   the links use. Button resets are explicit: it inherits the row's serif. */
+   place. It stays italic and at the row's quiet colour in both registers — it
+   is not one of the values, so it must not borrow the navigable row's upright
+   type — but it is pressable, so it carries a cursor, a hover lift and the
+   same gold underline the links use, at a lower amplitude: #b9ad92 rather than
+   the links' full #cdb88a, .4 rather than .55. The base colour is the
+   readability floor's, not a dimmer one — a control may not read fainter than
+   the values it sits among. Button resets are explicit: it inherits the serif. */
 .col-more {
-  font: inherit; font-style: italic; color: #4a5364;
+  font: inherit; font-style: italic; color: #8a94a6;
   background: none; border: 0; padding: 0;
   cursor: pointer;
   text-decoration-line: underline; text-decoration-thickness: 1px;
@@ -880,7 +759,7 @@ body {
 }
 .col-more:hover,
 .col-more:focus-visible {
-  color: #9a8a66; text-decoration-color: rgba(205,184,138,.4); outline: none;
+  color: #b9ad92; text-decoration-color: rgba(205,184,138,.4); outline: none;
 }
 .col-link {
   font: inherit; color: inherit; background: none; border: 0; padding: 0;
@@ -899,7 +778,7 @@ body {
    border falls exactly on the column boundary the eyebrow rule reaches too:
    one defined right edge shared top and bottom of the measure. */
 .col-enter {
-  display: flex; align-items: center; gap: 12px; width: 100%;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; width: 100%;
   margin-top: 26px; padding: 12px 15px;
   background: color-mix(in oklab, #cdb88a 5%, transparent);
   border: 1px solid rgba(205,184,138,.28); border-radius: 9px;
@@ -927,7 +806,7 @@ body {
      chrome and this is the one button scoped to the panel being open. */
   position: absolute; top: 58px; right: 24px; z-index: 6; pointer-events: auto;
   background: none; border: 0; padding: 6px; cursor: pointer;
-  font-size: 15px; line-height: 1; color: rgba(205,184,138,.5);
+  font-size: 17px; line-height: 1; color: rgba(205,184,138,.8);
   transition: color .15s;
 }
 .col-close:hover { color: #cdb88a; }
@@ -962,8 +841,7 @@ body {
     height: clamp(220px, 42svh, 380px); margin: 0 16px;
     animation: none; will-change: auto;
   }
-  .col-type,
-  .col-type.reading {
+  .col-type {
     position: relative; left: auto; top: auto; bottom: auto;
     width: auto; margin: 0 24px;
     padding: 0 0 max(28px, env(safe-area-inset-bottom));
@@ -974,22 +852,17 @@ body {
   .col-main, .col-foot { margin-top: 0; }
   .col-foot { padding-top: 28px; }
   .col-name { font-size: min(54px, var(--name-cq, 16cqw)); }
-  .col-name.col-story-name { font-size: min(42px, var(--name-cq, 16cqw)); }
   .col-eyebrow { flex-wrap: wrap; gap: 8px; }
   /* every chapter opening (at most 258 characters) fits inside 14em at a phone
-     measure; a figure without chapters shows its whole story here, so it stays
-     capped and fades, and READ THE FULL STORY is where the rest lives */
-  .col-prose { max-height: 14em; font-size: 17px; }
-  .col-read { min-height: 44px; flex-wrap: wrap; }
+     measure; a chapterless figure shows the head of its retelling here, so it
+     stays capped and fades, and ENTER THE STORY is where the rest lives */
+  .col-prose { max-height: 14em; font-size: 18px; }
   .col-row { gap: 10px; }
-  .col-rows-attr .col-row-v { font-size: 15px; }
+  .col-rows-attr .col-row-v { font-size: 17px; }
   .col-link,
   .col-more { min-height: 44px; padding: 8px 2px; }
   .col-enter { flex-wrap: wrap; justify-content: center; gap: 10px; }
   .col-enter-rule { display: none; }
-  .col-story { padding: 12px 0 0; }
-  .col-story-body p { font-size: 17px; }
-  .col-story-back { min-height: 44px; }
 }
 
 /* ── Tour bar slide-up ─────────────────────────────────────────────────────── */
@@ -1070,34 +943,6 @@ body {
   text-shadow: 0 0 18px rgba(205,184,138,.22);
 }
 
-/* ── Tip tooltip — micro-card with category dot + name + epithet ────────── */
-#tip {
-  position: fixed; z-index: 50; pointer-events: none; opacity: 0;
-  transition: opacity .12s;
-  background: rgba(6,8,14,.92); border: 1px solid #262e3c; border-radius: 7px;
-  padding: 6px 11px; transform: translateY(-50%);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 6px 20px rgba(0,0,0,.45);
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; max-width: 240px;
-}
-#tip .tip-cat {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  display: inline-block;
-}
-#tip .tip-name {
-  font-family: 'Cinzel', serif; font-size: 12.5px; letter-spacing: .06em;
-  color: #e7ebf2; white-space: nowrap;
-}
-#tip .tip-epi {
-  font-family: 'Crimson Pro', serif; font-style: italic; font-size: 11px;
-  color: #5c6678; width: 100%; padding-left: 15px; margin-top: -2px;
-}
-#tip .tip-conn {
-  font-family: 'Crimson Pro', serif; font-size: 10px;
-  color: #3a4354; width: 100%; padding-left: 15px; margin-top: 1px;
-}
-
-
 /* ── SVG star elements ── */
 .wf-page .wfstar   { fill: #586074 }
 .wf-page .wfmid    { fill: #8b93a4 }
@@ -1126,11 +971,11 @@ body {
 
 /* ── rings / labels ── */
 .wf-page .wfring    { fill: none; stroke: #39414f; stroke-width: 1; stroke-dasharray: 2 6 }
-.wf-page .wfringlbl { fill: #5b6476; font-family: 'EB Garamond', serif; font-size: 13px; letter-spacing: .22em }
+.wf-page .wfringlbl { fill: #8a94a6; font-family: 'EB Garamond', serif; font-size: 13px; letter-spacing: .22em }
 .wf-page .wfhorizon { stroke: #2a3140; stroke-width: 1; stroke-dasharray: 3 6; fill: none }
 
 /* ── UI label text inside SVG ── */
-.wf-page .wfuitext    { fill: #5b6476; font-family: 'Kalam', cursive; font-size: 13px }
+.wf-page .wfuitext    { fill: #8a94a6; font-family: 'Kalam', cursive; font-size: 13px }
 .wf-page .wfuitext.sm { font-size: 11px }
 
 /* ── chalk annotations ── */
@@ -1332,7 +1177,7 @@ body {
    ════════════════════════════════════════════════════════════════════════ */
 .gs-root {
   --gold: #cdb88a; --gold-dim: #8c7d59;
-  --ink: #d6dbe6; --ink-dim: #9aa3b4; --faint: #5a6273;
+  --ink: #d6dbe6; --ink-dim: #9aa3b4; --faint: #8a94a6;
   position: fixed; inset: 0; z-index: 1000; overflow: hidden;
   background: radial-gradient(130% 100% at 72% 30%, #0e1322 0%, #080a12 52%, #04060c 100%);
   font-family: 'Crimson Pro', Georgia, serif;
@@ -1392,7 +1237,7 @@ body {
   padding: 30px 40px; gap: 16px;
 }
 .gs-story { display: flex; flex-direction: column; gap: 5px; margin-left: 60px; min-width: 0; }
-.gs-kicker { font-family: Cinzel, serif; font-size: 11px; letter-spacing: .4em; color: var(--gold-dim); text-transform: uppercase; }
+.gs-kicker { font-family: Cinzel, serif; font-size: 12.5px; letter-spacing: .34em; color: var(--gold-dim); text-transform: uppercase; }
 .gs-storytitle { font-family: Cinzel, serif; font-weight: 500; font-size: 19px; letter-spacing: .06em; color: #ece6d6; }
 
 .gs-counter { display: flex; align-items: baseline; gap: 8px; font-family: Cinzel, serif; color: var(--gold); flex-shrink: 0; margin-right: 268px; }
@@ -1405,11 +1250,11 @@ body {
   position: absolute; left: 0; right: 0; z-index: 6; padding: 0 56px; max-width: 520px;
   top: 50%; transform: translateY(-50%);
 }
-.gs-cat { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 12px; font-family: Cinzel, serif; font-size: 10.5px; letter-spacing: .32em; }
+.gs-cat { display: inline-flex; align-items: center; gap: 9px; margin-bottom: 12px; font-family: Cinzel, serif; font-size: 12px; letter-spacing: .28em; }
 .gs-cat::before { content: ''; width: 26px; height: 1px; background: currentColor; opacity: .7; }
 .gs-name { font-family: Cinzel, serif; font-weight: 700; color: #f3efe4; font-size: 54px; line-height: .98; letter-spacing: .01em; margin: 0; text-shadow: rgba(0,0,0,.7) 0 4px 40px; }
-.gs-epithet { font-style: italic; font-size: 17px; color: var(--gold); margin: 6px 0 16px; letter-spacing: .02em; }
-.gs-narration { font-size: 18px; line-height: 1.55; color: var(--ink); max-width: 42ch; margin: 0; text-shadow: rgba(0,0,0,.8) 0 2px 24px; }
+.gs-epithet { font-style: italic; font-size: 18.5px; color: var(--gold); margin: 6px 0 16px; letter-spacing: .02em; }
+.gs-narration { font-size: 19.5px; line-height: 1.56; color: var(--ink); max-width: 42ch; margin: 0; text-shadow: rgba(0,0,0,.8) 0 2px 24px; }
 
 .zs-glyph { font-size: .56em; margin-right: .32em; opacity: .9; vertical-align: .06em; font-weight: 400; font-variant-emoji: text; }
 
@@ -1423,7 +1268,7 @@ body {
 /* ── hint ── */
 .gs-hint {
   position: absolute; bottom: 104px; left: 40px; z-index: 6;
-  font-size: 11.5px; font-style: italic; color: var(--ink-dim); letter-spacing: .04em;
+  font-size: 14.5px; font-style: italic; color: var(--ink-dim); letter-spacing: .04em;
   opacity: .72;
 }
 
@@ -1452,8 +1297,8 @@ body {
   transition: border-color .25s, background .25s; min-width: 0;
 }
 .gs-cell:hover { border-color: rgba(205,184,138,.4); background: rgba(10,14,24,.7); }
-.gs-cell-n { font-family: Cinzel, serif; font-size: 11px; letter-spacing: .18em; color: var(--faint); }
-.gs-cell-name { font-family: Cinzel, serif; font-size: 14px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gs-cell-n { font-family: Cinzel, serif; font-size: 12.5px; letter-spacing: .14em; color: var(--faint); }
+.gs-cell-name { font-family: Cinzel, serif; font-size: 15px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gs-cell-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--accent); transform: scaleX(0); transform-origin: left center; transition: transform .3s; }
 .gs-cell.done .gs-cell-n { color: var(--gold-dim); }
 .gs-cell.done .gs-cell-name { color: var(--ink-dim); }
@@ -1483,14 +1328,14 @@ body {
   position: static; width: 36px; height: 36px; font-size: 14px; flex-shrink: 0;
 }
 .zs-header-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.zs-header-text .gs-storytitle { font-size: 16px; letter-spacing: .14em; }
+.zs-header-text .gs-storytitle { font-size: 17px; letter-spacing: .14em; }
 .zs-progress {
   margin-left: auto; font-family: Cinzel, serif;
   display: flex; align-items: baseline; gap: 2px; flex-shrink: 0;
 }
 .zs-step { font-size: 20px; font-weight: 600; color: var(--gold); }
-.zs-slash { font-size: 13px; color: var(--faint); margin: 0 2px; }
-.zs-total { font-size: 13px; color: var(--ink-dim); }
+.zs-slash { font-size: 14.5px; color: var(--faint); margin: 0 2px; }
+.zs-total { font-size: 14.5px; color: var(--ink-dim); }
 
 /* ── text scrim ──
    A soft dark-to-transparent wash down the left edge so the caption sits on a
@@ -1552,7 +1397,7 @@ body {
 .zs-label {
   font-family: Cinzel, serif; fill: #7e879c; text-anchor: middle;
   dominant-baseline: auto; pointer-events: none;
-  font-size: 9px; letter-spacing: .06em;
+  font-size: 12px; letter-spacing: .06em;
 }
 
 /* ── caption: a calm rectangle, vertically centred against the dome ──
@@ -1565,14 +1410,14 @@ body {
   z-index: 7; max-width: 600px; padding: 0 40px 0 56px;
 }
 .zs-cap-kicker {
-  font-family: Cinzel, serif; font-size: 10px; letter-spacing: .38em;
+  font-family: Cinzel, serif; font-size: 12.5px; letter-spacing: .32em;
   text-transform: uppercase; color: var(--gold-dim); margin-bottom: 16px;
 }
 .zs-caption .gs-name { font-size: 52px; }
 /* dates pulled down under the title — a tight metadata line, not a top eyebrow */
 .zs-caption .gs-cat { margin: 15px 0 11px; }
 .zs-caption .gs-epithet { margin: 0 0 20px; letter-spacing: .03em; }
-.zs-caption .gs-narration { font-size: 18px; line-height: 1.62; max-width: 50ch; }
+.zs-caption .gs-narration { font-size: 19.5px; line-height: 1.62; max-width: 50ch; }
 .zs-caption .gs-narration + .gs-narration { margin-top: .85em; }
 
 /* kicker joins the staggered fade-in when the sign changes */
@@ -1601,7 +1446,7 @@ body {
 .zs-sname {
   position: absolute; bottom: calc(100% + 6px); left: 50%;
   transform: translateX(-50%) translateY(3px);
-  font-family: Cinzel, serif; font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+  font-family: Cinzel, serif; font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase;
   color: #ece6d6; white-space: nowrap; pointer-events: none;
   opacity: 0; transition: opacity .18s, transform .18s;
 }
@@ -1648,22 +1493,22 @@ body {
   .gs-counter { margin-right: 0; }
   .gs-caption { top: auto; bottom: 96px; transform: none; padding: 0 20px; max-width: 100%; }
   .gs-name { font-size: 40px; }
-  .gs-epithet { font-size: 16px; margin: 6px 0 12px; }
-  .gs-narration { font-size: 16px; max-width: 100%; }
+  .gs-epithet { font-size: 17.5px; margin: 6px 0 12px; }
+  .gs-narration { font-size: 17px; max-width: 100%; }
   .gs-hint { display: none; }
   .gs-bottom { padding: 0 16px 16px; }
   .gs-cell-name { display: none; }
   .zs-header { padding: 14px 16px; gap: 10px; }
   .zs-header .gs-exit { width: 32px; height: 32px; font-size: 12px; }
-  .zs-header-text .gs-kicker { font-size: 8px; }
-  .zs-header-text .gs-storytitle { font-size: 14px; }
+  .zs-header-text .gs-kicker { font-size: 11.5px; }
+  .zs-header-text .gs-storytitle { font-size: 15px; }
   .zs-textscrim { display: none; }
   .zs-caption { top: auto; bottom: 72px; transform: none; padding: 0 20px; max-width: 100%; }
-  .zs-caption .zs-cap-kicker { font-size: 8.5px; letter-spacing: .3em; margin-bottom: 10px; }
+  .zs-caption .zs-cap-kicker { font-size: 12px; letter-spacing: .26em; margin-bottom: 10px; }
   .zs-caption .gs-name { font-size: 32px; }
   .zs-caption .gs-cat { margin: 10px 0 9px; }
   .zs-caption .gs-epithet { margin: 0 0 14px; }
-  .zs-caption .gs-narration { font-size: 15px; max-width: 100%; }
+  .zs-caption .gs-narration { font-size: 16.5px; max-width: 100%; }
   .zs-strip { gap: 2px; padding: 10px 8px 14px; }
   .zs-glyph-btn { padding: 6px 8px; }
   .zs-sym { font-size: 20px; }
@@ -1698,8 +1543,19 @@ body {
 @property --gsr-tint { syntax: '<color>'; inherits: true; initial-value: #8c7d59; }
 .gsr-root {
   --gold: #cdb88a; --gold-dim: #8c7d59;
+  /* The hero's diameter, and the glow's with it. It was a flat 164px, but the
+     room the face has is the plane's, not the viewport's — so it is biggest
+     where there is room and holds back on a small window. Measured on the
+     map's own rule (spacing on 0.8 of the box, since both orbs carry the same
+     mask: full alpha to 55%, under .55 by 80%), the tightest hero↔chapter body
+     gap over every live tale length and PATHS 4-8 runs 44px at 1280x800 to
+     107px at 1920x1080 — against 55-138px at the old 164. The cap is the head
+     crop's own resolution: the orb asks for the 360px `head` variant, so 240px
+     is 1.33x on a DPR-2 screen at the extreme, which the mask's soft outer
+     fifth carries. Don't raise the cap without a larger crop to draw from. */
+  --hero-d: clamp(190px, min(15vw, 26vh), 240px);
   transition: --gsr-tint 1.6s ease;
-  --ink: #e4e8f0; --ink-dim: #8f98a9; --faint: #5c6678;
+  --ink: #e4e8f0; --ink-dim: #8f98a9; --faint: #8a94a6;
   --col-w: clamp(420px, 34%, 560px);
   position: fixed; inset: 0; z-index: 1000; overflow: hidden;
   background: radial-gradient(120% 90% at 64% 46%, #131a2b 0%, #0a0e18 46%, #05070c 100%);
@@ -1807,15 +1663,18 @@ body {
 }
 .gsr-hero-glow {
   position: absolute; left: 50%; top: 50%;
-  width: calc(300px * var(--pscale, 1)); height: calc(300px * var(--pscale, 1));
-  margin: calc(-150px * var(--pscale, 1)) 0 0 calc(-150px * var(--pscale, 1));
+  /* 1.8x the orb — the ratio the flat 300/164 had, kept so the light the face
+     floats in grows with the face instead of closing in on it */
+  width: calc(var(--hero-d) * 1.8 * var(--pscale, 1));
+  height: calc(var(--hero-d) * 1.8 * var(--pscale, 1));
+  margin: calc(var(--hero-d) * -0.9 * var(--pscale, 1)) 0 0 calc(var(--hero-d) * -0.9 * var(--pscale, 1));
   border-radius: 50%; pointer-events: none;
   background: radial-gradient(closest-side, rgba(205,184,138,.5) 0%, rgba(205,184,138,.16) 42%, transparent 72%);
   filter: blur(16px); animation: gsr-glow 5.5s ease-in-out infinite;
 }
 .gsr-hero-orb {
   position: relative;
-  width: calc(164px * var(--pscale, 1)); height: calc(164px * var(--pscale, 1));
+  width: calc(var(--hero-d) * var(--pscale, 1)); height: calc(var(--hero-d) * var(--pscale, 1));
   border-radius: 50%; overflow: hidden;
   background: radial-gradient(circle at 36% 32%, #fdf8ea, #ecd9a8 45%, #b28f5a 78%, #6b5638);
   /* frameless, as `.node image` on the map: the edge dissolves into the sky
@@ -1869,18 +1728,18 @@ body {
 .gsr-orb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .gsr-num {
   font-family: 'EB Garamond', serif; letter-spacing: .18em; white-space: nowrap;
-  font-size: 13px; color: var(--ink-dim); opacity: .34;
+  font-size: 15px; color: var(--ink-dim); opacity: .58;
   transition: color .6s, opacity .6s, font-size .6s;
 }
 
 .gsr-star.told .gsr-orb { opacity: .8; filter: saturate(.8); }
-.gsr-star.told .gsr-num { opacity: .62; }
+.gsr-star.told .gsr-num { opacity: .82; }
 .gsr-star.ahead .gsr-orb { opacity: .42; filter: saturate(.45); }
 .gsr-star.on .gsr-halo {
   background: radial-gradient(closest-side, rgba(205,184,138,.55) 0%, rgba(205,184,138,.18) 40%, transparent 70%);
   animation-name: gsr-glow;
 }
-.gsr-star.on .gsr-num { font-size: 15px; color: var(--gold); opacity: 1; }
+.gsr-star.on .gsr-num { font-size: 17.5px; color: var(--gold); opacity: 1; }
 .gsr-star:not(.on):hover .gsr-num { color: #c2cad8; opacity: 1; }
 .gsr-star:not(.on):hover .gsr-orb { opacity: 1; filter: none; }
 .gsr-star:focus-visible { outline: none; }
@@ -1898,18 +1757,26 @@ body {
 }
 
 .gsr-col-head { position: relative; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
-.gsr-kicker { font-family: Cinzel, serif; font-size: 11px; letter-spacing: .4em; color: var(--gold-dim); text-transform: uppercase; }
-.gsr-title { font-family: Cinzel, serif; font-size: clamp(19px, 3.1vh, 29px); line-height: 1.15; letter-spacing: .04em; color: #ece6d6; }
+.gsr-kicker { font-family: Cinzel, serif; font-size: 12.5px; letter-spacing: .34em; color: var(--gold-dim); text-transform: uppercase; }
+.gsr-title { font-family: Cinzel, serif; font-size: clamp(21px, 3.3vh, 31px); line-height: 1.15; letter-spacing: .04em; color: #ece6d6; }
+/* A figure's epithet, under the title. (A tour used to be credited here with
+   a "Following <hero>" line; it is not any more — the hero is the face at the
+   centre of the constellation.) It was #7e879c: 5.6:1 on this ground, so it
+   passed the contrast floor and was still hard to read, because a floor is
+   measured on a colour and read on a *face* — fine-stroked EB Garamond italic
+   at the dimmest step in the column, directly under 30px of near-white. At
+   #9aa3b4 (7.9:1) it is also no longer dimmer than the citation line below it
+   (#8a94a6), which had the head reading title → source → epithet. */
 .gsr-following {
   margin-top: clamp(2px, 1vh, 10px);
   font-family: 'EB Garamond', serif; font-style: italic;
-  font-size: clamp(12px, 1.7vh, 15px); color: #7e879c;
+  font-size: clamp(15.5px, 2vh, 18px); color: #9aa3b4;
 }
 /* a figure's own tale cites its source under the epithet */
 .gsr-source {
   margin-top: -2px;
   font-family: 'EB Garamond', serif; font-style: italic;
-  font-size: clamp(11.5px, 1.5vh, 13px); color: var(--faint);
+  font-size: clamp(13.5px, 1.7vh, 15px); color: var(--faint);
 }
 /* OTHER STORIES, and FULL TALE beside it when the tale has one */
 .gsr-head-actions {
@@ -1918,11 +1785,11 @@ body {
 }
 .gsr-tales-btn {
   padding: 0;
-  font-family: Cinzel, serif; font-size: 11px; letter-spacing: .24em;
+  font-family: Cinzel, serif; font-size: 12.5px; letter-spacing: .2em;
   color: var(--gold-dim); transition: color .2s;
 }
 .gsr-tales-btn:hover, .gsr-tales-btn.open { color: var(--gold); }
-.gsr-tales-btn .car { display: inline-block; font-size: 14px; letter-spacing: 0; transition: transform .25s; }
+.gsr-tales-btn .car { display: inline-block; font-size: 15px; letter-spacing: 0; transition: transform .25s; }
 .gsr-tales-btn.open .car { transform: rotate(180deg); }
 .gsr-tales {
   margin-top: 12px; display: flex; flex-direction: column; gap: 2px;
@@ -1939,8 +1806,8 @@ body {
   display: flex; flex-direction: column; gap: 3px; transition: opacity .2s;
 }
 .gsr-tale:hover { opacity: .8; }
-.gsr-tale-k { font-family: Cinzel, serif; font-size: 9px; letter-spacing: .26em; color: var(--gold-dim); text-transform: uppercase; }
-.gsr-tale-t { font-family: Cinzel, serif; font-size: 14px; letter-spacing: .06em; color: var(--ink-dim); transition: color .2s; }
+.gsr-tale-k { font-family: Cinzel, serif; font-size: 12px; letter-spacing: .22em; color: var(--gold-dim); text-transform: uppercase; }
+.gsr-tale-t { font-family: Cinzel, serif; font-size: 15.5px; letter-spacing: .06em; color: var(--ink-dim); transition: color .2s; }
 .gsr-tale.on .gsr-tale-t { color: #ece6d6; }
 
 /* the chapter in play. `.gsr-read-pad` is the flex spacer that hangs the
@@ -1975,18 +1842,37 @@ body {
   flex-shrink: 0; overflow: hidden;
   display: flex; flex-direction: column; gap: clamp(8px, 1.8vh, 18px);
 }
+/* The chapter head OUTSIZES its prose — it is the heading of the row, and the
+   reader's eye has to land on it first. It used to be the other way round: the
+   prose ran to 28px against a flat 16px head, which reads as a caption over a
+   body, and the ratio drifted with the viewport because only one of them
+   scaled. Both scale together now, ~1.2:1 at every size, on the same min(vw,vh)
+   so a short window shrinks them in step. The head's floor is deliberately the
+   higher one (19 vs 17), or the two would meet at the narrow breakpoint where
+   both bottom out and the hierarchy would vanish exactly where the column is
+   widest. Tracking came down .16 → .12em with the size, per the type scale's
+   rule — at 23px the old tracking is width the measure cannot spare. */
 .gsr-beat-head {
-  display: flex; align-items: baseline; gap: 12px; flex-shrink: 0;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; flex-shrink: 0;
   animation: gsr-head .9s ease both;
 }
-.gsr-beat-head .n { font-family: Cinzel, serif; font-size: 13px; letter-spacing: .1em; color: var(--gold); }
-.gsr-beat-head .l { font-family: Cinzel, serif; font-size: 15px; letter-spacing: .22em; color: var(--gold); text-transform: uppercase; }
+.gsr-beat-head .n {
+  font-family: Cinzel, serif; font-size: clamp(15px, min(1.25vw, 2.35vh), 18.5px);
+  letter-spacing: .1em; color: var(--gold);
+}
+.gsr-beat-head .l {
+  font-family: Cinzel, serif; font-size: clamp(19px, min(1.6vw, 3vh), 24px);
+  line-height: 1.24; letter-spacing: .12em; color: var(--gold); text-transform: uppercase;
+}
 /* the family colour, as everywhere else the graph names a category — it is
-   the only trace of the map's palette left in this layout */
-.gsr-beat-head .cat { font-family: Cinzel, serif; font-size: 10px; letter-spacing: .22em; margin-left: auto; opacity: .85; }
+   the only trace of the map's palette left in this layout. `flex-wrap` above is
+   for this item: a tour's head sets a figure's *name* in .l, and a long one
+   ("Hermaphroditus" + NYMPHS & MINOR) outran the measure and squeezed the name
+   into two lines rather than letting the tag drop to its own. */
+.gsr-beat-head .cat { font-family: Cinzel, serif; font-size: 13px; letter-spacing: .18em; margin-left: auto; opacity: .85; }
 .gsr-beat {
   margin: 0; flex-shrink: 0;
-  font-size: clamp(16px, min(1.55vw, 3.1vh), 27px); line-height: 1.5;
+  font-size: clamp(17px, min(1.35vw, 2.6vh), 20.5px); line-height: 1.62;
   color: var(--ink); text-wrap: pretty;
   animation: gsr-fade 1s cubic-bezier(.22,.61,.36,1) .12s both;
 }
@@ -1998,12 +1884,12 @@ body {
 .gsr-figs {
   display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 9px; row-gap: 2px;
   min-height: 1.5em; flex-shrink: 0;
-  font-size: 15.5px; line-height: 1.5;
+  font-size: 17px; line-height: 1.5;
   animation: gsr-head .9s ease .3s both;
 }
 .gsr-figs .k {
   margin-right: 5px;
-  font-family: Cinzel, serif; font-size: 10px; letter-spacing: .26em;
+  font-family: Cinzel, serif; font-size: 12.5px; letter-spacing: .22em;
   color: var(--gold-dim); text-transform: uppercase;
 }
 .gsr-figs .sep { color: var(--faint); }
@@ -2024,12 +1910,14 @@ body {
 .gsr-full .gsr-beat-head { margin-bottom: clamp(10px, 2vh, 18px); animation: none; }
 .gsr-full p {
   margin: 0 0 1em;
-  font-size: clamp(15px, min(1.1vw, 2.2vh), 19px); line-height: 1.62;
+  /* the same expression as `.gsr-beat`: it is the same prose in the same
+     measure, and a size step on the toggle read as a different typeface */
+  font-size: clamp(17px, min(1.35vw, 2.6vh), 20.5px); line-height: 1.64;
   color: #c9d0dc; text-wrap: pretty;
 }
 .gsr-full p.gsr-full-src {
   margin: 1.4em 0 0;
-  font-family: 'EB Garamond', serif; font-style: italic; font-size: 14px; color: var(--faint);
+  font-family: 'EB Garamond', serif; font-style: italic; font-size: 15.5px; color: var(--faint);
 }
 
 /* ── the transport ── */
@@ -2045,21 +1933,21 @@ body {
 .gsr-play {
   width: 34px; height: 34px; flex-shrink: 0; border-radius: 50%;
   border: 1px solid rgba(205,184,138,.4); color: var(--gold);
-  display: grid; place-items: center; font-size: 11px;
+  display: grid; place-items: center; font-size: 12.5px;
   transition: border-color .2s, background .2s;
 }
 .gsr-play:hover, .gsr-play.on { border-color: var(--gold); }
 .gsr-play.on { background: rgba(205,184,138,.08); }
-.gsr-step { font-size: 20px; color: var(--ink-dim); padding: 0 4px; transition: color .2s; }
+.gsr-step { font-size: 22px; color: var(--ink-dim); padding: 0 4px; transition: color .2s; }
 .gsr-step:hover { color: var(--gold); }
-.gsr-counter { margin-left: auto; font-family: Cinzel, serif; font-size: 12px; letter-spacing: .14em; color: var(--faint); }
-.gsr-hint { font-family: 'EB Garamond', serif; font-style: italic; font-size: 14px; color: #4d5566; }
+.gsr-counter { margin-left: auto; font-family: Cinzel, serif; font-size: 13.5px; letter-spacing: .12em; color: var(--faint); }
+.gsr-hint { font-family: 'EB Garamond', serif; font-style: italic; font-size: 15.5px; color: #8a94a6; }
 
 .gsr-exit {
   position: absolute; right: 40px; top: 40px; z-index: 9;
   width: 38px; height: 38px; border-radius: 50%;
   border: 1px solid rgba(126,135,156,.35); color: #9aa3b4;
-  display: grid; place-items: center; font-size: 13px;
+  display: grid; place-items: center; font-size: 15px;
   transition: border-color .2s, color .2s;
   animation: gsr-in .8s ease .5s backwards;
 }
@@ -2091,6 +1979,14 @@ body {
   /* the column's width is now the viewport's, but the measure is not — all
      three rows keep one width so they still share a right edge */
   .gsr-col-head, .gsr-col-read, .gsr-col-foot { max-width: 620px; }
+  /* …and that measure is up to 620px — nearly twice the wide layout's 330-440,
+     so the reading sizes take a step up instead of bottoming out on floors
+     written for a narrow column. At 17px a 620px measure runs ~78 characters
+     to the line; 18.5 brings it back to ~71, and the head moves with it to
+     hold the same ~1.2:1 as everywhere else. */
+  .gsr-beat, .gsr-full p { font-size: 18.5px; }
+  .gsr-beat-head .l { font-size: 22px; }
+  .gsr-beat-head .n { font-size: 17px; }
   /* no bottom-hang here: the row is short and the measure wide, so a beat is
      two or three lines and the spacer would open a void above it */
   .gsr-read-pad { display: none; }
@@ -2211,10 +2107,10 @@ body {
   to   { box-shadow: 0 0 36px rgba(205,184,138,.7), 0 0 120px rgba(205,184,138,.34), 0 0 210px color-mix(in oklch, var(--accent) 30%, transparent); }
 }
 .so-sun-name {
-  font-family: Cinzel, serif; font-size: 16px; letter-spacing: .22em; text-transform: uppercase;
+  font-family: Cinzel, serif; font-size: 17.5px; letter-spacing: .2em; text-transform: uppercase;
   color: #f0ecdf; margin-top: 13px; text-shadow: 0 2px 14px rgba(0,0,0,.9);
 }
-.so-sun-epithet { font-style: italic; font-size: 12.5px; color: #5c6678; margin-top: 2px; }
+.so-sun-epithet { font-style: italic; font-size: 14px; color: #8a94a6; margin-top: 2px; }
 
 /* beat planets — ignite in story order when the orbit opens */
 .so-planet {
@@ -2258,11 +2154,11 @@ body {
   opacity: .3;
 }
 .so-tag {
-  display: block; margin-top: 9px; font-family: Cinzel, serif; font-size: 9px;
-  letter-spacing: .16em; text-transform: uppercase; color: #5c6678;
-  transition: color .3s, opacity .3s; max-width: 150px;
+  display: block; margin-top: 9px; font-family: Cinzel, serif; font-size: 12px;
+  letter-spacing: .14em; text-transform: uppercase; color: #8a94a6;
+  transition: color .3s, opacity .3s; max-width: 172px;
 }
-.so-tag .n { color: rgba(205,184,138,.6); margin-right: 5px; }
+.so-tag .n { color: rgba(205,184,138,.85); margin-right: 5px; }
 .so-planet:hover .so-orb { transform: scale(1.12); }
 .so-planet:hover .so-tag { color: #c2cad8; }
 .so-planet:focus-visible { outline: none; }
@@ -2280,9 +2176,9 @@ body {
   opacity: .88;
   box-shadow: 0 0 0 1px rgba(205,184,138,.25), 0 0 14px color-mix(in oklch, var(--mid-c) 40%, transparent);
 }
-.so-planet.told:not(:hover) .so-tag { opacity: .85; color: #7d8698; }
+.so-planet.told:not(:hover) .so-tag { opacity: .9; color: #8a94a6; }
 .so-planet.ahead:not(:hover) .so-orb { opacity: .42; }
-.so-planet.ahead:not(:hover) .so-tag { opacity: .55; }
+.so-planet.ahead:not(:hover) .so-tag { opacity: .72; }
 
 /* caption — one beat at a time, fixed footprint */
 .so-caption {
@@ -2302,25 +2198,25 @@ body {
 }
 @keyframes so-progress-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .so-cap-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 7px; }
-.so-cap-head .n { font-family: Cinzel, serif; font-size: 10px; color: rgba(205,184,138,.55); }
-.so-cap-head .l { font-family: Cinzel, serif; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: #cdb88a; }
-.so-cap-head .c { font-family: Cinzel, serif; font-size: 9px; letter-spacing: .12em; color: #5c6678; }
-.so-cap-cat { margin-left: auto; font-family: Cinzel, serif; font-size: 9.5px; letter-spacing: .22em; text-transform: uppercase; }
+.so-cap-head .n { font-family: Cinzel, serif; font-size: 12.5px; color: rgba(205,184,138,.85); }
+.so-cap-head .l { font-family: Cinzel, serif; font-size: 13.5px; letter-spacing: .16em; text-transform: uppercase; color: #cdb88a; }
+.so-cap-head .c { font-family: Cinzel, serif; font-size: 12px; letter-spacing: .12em; color: #8a94a6; }
+.so-cap-cat { margin-left: auto; font-family: Cinzel, serif; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; }
 .so-tale-btn {
   margin-left: auto; margin-right: 10px;
-  font-family: Cinzel, serif; font-size: 9.5px; letter-spacing: .14em;
-  color: #8c7d59; padding: 2px 8px; border-radius: 12px;
+  font-family: Cinzel, serif; font-size: 12px; letter-spacing: .12em;
+  color: #a2916a; padding: 2px 8px; border-radius: 12px;
   border: 1px solid transparent; transition: color .15s, border-color .15s;
 }
 .so-tale-btn:hover { color: #cdb88a; border-color: rgba(205,184,138,.35); }
 .so-cap-body { min-height: var(--capmin, 96px); animation: so-cap-in .45s ease both; }
 @keyframes so-cap-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.so-cap-body p { margin: 0; font-size: 16px; line-height: 1.6; color: #c6cedb; }
+.so-cap-body p { margin: 0; font-size: 17.5px; line-height: 1.6; color: #c6cedb; }
 
 .so-figs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .so-chip {
   display: inline-flex; align-items: center; gap: 6px;
-  font-family: Cinzel, serif; font-size: 10px; letter-spacing: .08em;
+  font-family: Cinzel, serif; font-size: 12.5px; letter-spacing: .08em;
   color: var(--chip); background: rgba(6,8,14,.5);
   border: 1px solid color-mix(in oklch, var(--chip) 35%, transparent);
   border-radius: 20px; padding: 3px 11px 3px 8px;
@@ -2340,15 +2236,15 @@ body {
   box-shadow: 0 0 10px color-mix(in oklch, var(--chip) 30%, transparent);
   transform: translateY(-1px); outline: none;
 }
-.so-chip .fly { opacity: .45; font-size: 9px; }
+.so-chip .fly { opacity: .7; font-size: 11.5px; }
 
 .so-cap-nav { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .so-nav-btn {
-  border: 1px solid #262e3c; border-radius: 6px; color: #5c6678; font-size: 13px;
-  width: 28px; height: 26px; display: grid; place-items: center; transition: .15s;
+  border: 1px solid #262e3c; border-radius: 6px; color: #8a94a6; font-size: 15px;
+  width: 32px; height: 30px; display: grid; place-items: center; transition: .15s;
 }
 .so-nav-btn:hover { color: #cdb88a; border-color: rgba(205,184,138,.5); }
-.so-play { font-size: 9px; letter-spacing: 1px; }
+.so-play { font-size: 12px; letter-spacing: 1px; }
 .so-play.on { color: #cdb88a; border-color: rgba(205,184,138,.5); background: rgba(205,184,138,.06); }
 .so-dots { display: flex; gap: 7px; margin: 0 auto; }
 .so-dot {
@@ -2357,7 +2253,7 @@ body {
 }
 .so-dot:hover { background: #7a8496; }
 .so-dot.on { background: #cdb88a; transform: scale(1.3); box-shadow: 0 0 6px rgba(205,184,138,.6); }
-.so-src { font-style: italic; font-size: 11px; color: #3a4354; white-space: nowrap; }
+.so-src { font-style: italic; font-size: 14px; color: #7a8396; white-space: nowrap; }
 
 /* The reading room's veil is a FULL-SCREEN `backdrop-filter`, and a backdrop
    that changes cannot be cached — every twinkling star and floating planet
@@ -2388,9 +2284,9 @@ body {
   display: flex; align-items: baseline; gap: 12px;
   padding: 18px 24px 12px; border-bottom: 1px solid #19202d;
 }
-.so-tale-head .k { font-family: Cinzel, serif; font-size: 9.5px; letter-spacing: .28em; color: #8c7d59; text-transform: uppercase; }
-.so-tale-head .t { font-family: Cinzel, serif; font-size: 15px; letter-spacing: .1em; color: #ece6d6; }
-.so-tale-head .x { margin-left: auto; color: #5c6678; font-size: 14px; padding: 2px 6px; align-self: center; transition: color .15s; }
+.so-tale-head .k { font-family: Cinzel, serif; font-size: 12px; letter-spacing: .24em; color: #a2916a; text-transform: uppercase; }
+.so-tale-head .t { font-family: Cinzel, serif; font-size: 16.5px; letter-spacing: .1em; color: #ece6d6; }
+.so-tale-head .x { margin-left: auto; color: #8a94a6; font-size: 16px; padding: 2px 6px; align-self: center; transition: color .15s; }
 .so-tale-head .x:hover { color: #cdb88a; }
 .so-tale-body {
   overflow-y: auto; padding: 20px 24px 24px;
@@ -2398,9 +2294,9 @@ body {
 }
 .so-tale-body::-webkit-scrollbar { width: 8px; }
 .so-tale-body::-webkit-scrollbar-thumb { background: #19202d; border-radius: 4px; }
-.so-tale-body p { margin: 0 0 1em; font-size: 15.5px; line-height: 1.66; color: #c2cad8; }
+.so-tale-body p { margin: 0 0 1em; font-size: 17px; line-height: 1.64; color: #c2cad8; }
 .so-tale-body p:last-child { margin-bottom: 0; }
-.so-tale-body .src { font-style: italic; font-size: 12px; color: #5c6678; margin-top: 6px; }
+.so-tale-body .src { font-style: italic; font-size: 14.5px; color: #8a94a6; margin-top: 6px; }
 
 @media (prefers-reduced-motion: reduce) {
   .so-star, .so-float, .so-sun-orb { animation: none; }
@@ -2411,12 +2307,12 @@ body {
   .so-orb, .so-planet.on .so-orb { transition: none; }
 }
 @media (max-width: 760px) {
-  .so-tag { font-size: 8px; max-width: 90px; }
+  .so-tag { font-size: 11.5px; max-width: 104px; }
   .so-sun-orb { width: 56px; height: 56px; }
-  .so-sun-name { font-size: 13px; }
+  .so-sun-name { font-size: 15.5px; }
   .so-caption { bottom: 14px; padding: 13px 16px 12px; }
   /* narrower line → more wraps than the desktop estimate reserved for */
   .so-cap-body { min-height: calc(var(--capmin, 96px) * 1.6); }
-  .so-cap-body p { font-size: 14px; }
+  .so-cap-body p { font-size: 16.5px; }
   .so-src { display: none; }
 }

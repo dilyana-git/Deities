@@ -363,32 +363,31 @@ function Prose({ text }) {
   return <p ref={ref} className="col-prose">{text}</p>
 }
 
-/* the full retelling, as paragraphs — the stories are written with blank-line breaks */
-const paragraphsOf = text => (text || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean)
-
 /* reading time at an unhurried ~200 words a minute, never below one */
 const readMinutes = text => Math.max(1, Math.round((text || '').split(/\s+/).filter(Boolean).length / 200))
 
-/* ENTER THE STORY — the panel's primary action. A real, bordered hit area (not
-   a caption), spanning the full measure so its right border lands on the same
-   column boundary as the eyebrow rule above it. Shared by the summary and the
-   story reader, which both end on it. */
-function EnterStory({ chapters, onOpen }) {
+/* ENTER THE STORY — the panel's primary action, and every figure's only story
+   door: the panel holds the opening, the overlay holds the rest. A real,
+   bordered hit area (not a caption), spanning the full measure so its right
+   border lands on the same column boundary as the eyebrow rule above it.
+   `meta` is the tale's length in whatever unit the figure has — chapters when
+   it was cut into them, else the reading time of the prose. */
+function EnterStory({ meta, onOpen }) {
   return (
     <button className="col-enter" onClick={onOpen}>
-      <span style={{ color:GOLD, fontSize:11 }}>✦</span>
+      <span style={{ color:GOLD, fontSize:12.5 }}>✦</span>
       <span style={{
-        fontFamily:'Cinzel, serif', fontSize:11.5, letterSpacing:'.28em',
+        fontFamily:'Cinzel, serif', fontSize:13, letterSpacing:'.24em',
         color:GOLD, whiteSpace:'nowrap',
       }}>
         ENTER THE STORY
       </span>
       <span className="col-enter-rule"/>
       <span style={{
-        fontFamily:'Cinzel, serif', fontSize:9.5, letterSpacing:'.2em',
-        color:'#8c7d59', whiteSpace:'nowrap',
+        fontFamily:'Cinzel, serif', fontSize:12, letterSpacing:'.18em',
+        color:'#a2916a', whiteSpace:'nowrap',
       }}>
-        {chapters} CHAPTERS
+        {meta}
       </span>
     </button>
   )
@@ -438,49 +437,25 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
   const [noArt, setNoArt] = useState(false)
   const shaped = ratio != null && !noArt
 
+  /* ONE story door per figure, and it is ENTER THE STORY. The measure holds the
+     opening — a chaptered figure's first chapter, or the head of a prose
+     figure's retelling, clamped with its fade — and the overlay holds the rest:
+     the chapters as a constellation, or (`tale.prose` in GuidedSky) the
+     retelling entire in the reading column. The panel used to carry a second
+     reader of its own behind READ THE FULL STORY, which put two labels on one
+     room and, on the 119 chaptered figures, a third path to prose the overlay
+     already showed behind FULL TALE. The citation went with it: it belongs with
+     the prose it credits — the overlay's column head and the foot of the tale —
+     not under an excerpt that stops mid-story. `node.description` is the
+     fallback for a figure with no story entry at all; there is nothing for the
+     overlay to open, so it gets no door. */
   const story    = deityStories[node.id]
   const beats    = story?.beats
-  /* a beat-based story only lends its opening to the measure — the whole tale
-     lives in the Guided Sky reading column behind ENTER THE STORY */
-  const hasStory = !!(beats?.length && onOpenStory)
-  const prose    = (hasStory ? beats[0].text : story?.story || node.description) || ''
-  const source   = hasStory ? null : story?.source || null
-
-  /* The measure only has room for the opening, so the whole retelling gets its
-     own view: READ THE FULL STORY swaps the column into a scrolling reader, with
-     the figure left standing beside it. Every figure has one — a beat-based
-     tale's chapters are a condensation of the same prose, so ENTER THE STORY is
-     not a substitute for reading it. */
-  const fullText   = story?.story || node.description || ''
-  const paragraphs = paragraphsOf(fullText)
-  const [reading, setReading] = useState(false)
-  const typeRef  = useRef(null)
-  const prevReading = useRef(reading)
-  useEffect(() => {
-    /* only on a real toggle: opening a figure must not pull focus off the map's
-       roving star. Compared against the last value rather than a "first run"
-       flag, because StrictMode re-runs effects in dev with refs intact — a flag
-       is already spent by the second run, which then steals focus on mount.
-       After a toggle, show the new view and put focus on its way back, so
-       Escape and Tab carry on from there. */
-    if (prevReading.current === reading) return
-    prevReading.current = reading
-    const el = typeRef.current
-    if (!el) return
-    const target = el.querySelector(reading ? '.col-story-back' : '.col-read')
-    /* On phones the whole portrait-and-text panel scrolls as one page, so the
-       top of the panel is the top of the portrait. Entering the reader brings
-       its first line up; leaving it returns to the button that opened it,
-       rather than to a portrait with focus somewhere below the fold. */
-    const panel = el.closest('.detail-panel')
-    if (panel && getComputedStyle(panel).overflowY !== 'hidden') {
-      if (reading) el.scrollIntoView({ block: 'start' })
-      else target?.scrollIntoView({ block: 'center' })
-    } else {
-      el.scrollTop = 0
-    }
-    target?.focus({ preventScroll: true })
-  }, [reading])
+  const chapters = beats?.length || 0
+  const fullText = story?.story || ''
+  const hasTale  = !!(onOpenStory && (chapters || fullText))
+  const prose    = (chapters ? beats[0].text : fullText || node.description) || ''
+  const taleMeta = chapters ? `${chapters} CHAPTERS` : `${readMinutes(fullText)} MIN`
 
   const bonds = [...(_adj[node.id] || [])]
     .map(id => _nodeMap[id]).filter(Boolean)
@@ -520,47 +495,7 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
       </div>
 
       {/* ── the measure — one column, strict left margin ────────────── */}
-      <div ref={typeRef} className={`col-type ${reading ? 'reading' : ''}`}
-        onKeyDown={reading ? e => {
-          /* Escape from inside the reader steps back to the summary rather than
-             closing the whole panel (App's document listener, which this stops) */
-          if (e.key === 'Escape') { e.stopPropagation(); setReading(false) }
-        } : undefined}>
-
-        {reading ? (
-          <div className="col-story panel-section">
-            <div className="col-eyebrow">
-              <button className="col-story-back" onClick={() => setReading(false)}
-                aria-label={`Back to ${node.name}`}>
-                ‹&nbsp;&nbsp;BACK
-              </button>
-              <span className="col-eyebrow-rule"/>
-              <span style={{
-                fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.34em',
-                color:'#a2916a', whiteSpace:'nowrap',
-              }}>
-                <span style={{ color:GOLD }}>✦</span>&nbsp;&nbsp;THE STORY
-              </span>
-            </div>
-
-            <h2 className="col-name col-story-name" style={{ '--name-cq': nameCq(node.name) }}>
-              {node.name}
-            </h2>
-            {node.epithet && <p className="col-epithet">{node.epithet}</p>}
-
-            <div className="col-story-body">
-              {paragraphs.map((p, i) => <p key={i}>{p}</p>)}
-            </div>
-            {story?.source && <p className="col-source">— {story.source}</p>}
-
-            <div className="col-story-end" aria-hidden="true">❧</div>
-            {hasStory && <EnterStory chapters={beats.length} onOpen={onOpenStory}/>}
-            <button className="col-read col-story-return" onClick={() => setReading(false)}>
-              <span className="col-read-k">‹&nbsp;&nbsp;Back to {node.name}</span>
-            </button>
-          </div>
-        ) : (<>
-
+      <div className="col-type">
         <div className="col-main panel-section" style={{ animationDelay:'.08s' }}>
           {/* the eyebrow's accent is GOLD like the rest of the panel's chrome —
               the family's coral/violet/etc. lives on the figure aura and the
@@ -568,9 +503,9 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
               child so it always runs to the measure's right edge — the same
               column boundary the CTA below shares. */}
           <div className="col-eyebrow">
-            <span style={{ color:GOLD, fontSize:9, lineHeight:1 }}>✦</span>
+            <span style={{ color:GOLD, fontSize:12, lineHeight:1 }}>✦</span>
             <span style={{
-              fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.34em',
+              fontFamily:'Cinzel, serif', fontSize:12, letterSpacing:'.3em',
               color:'#a2916a', whiteSpace:'nowrap',
             }}>
               {(catCfg.label || node.category).toUpperCase()}
@@ -578,7 +513,7 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
             {node.roman_equivalent && (
               <span style={{
                 fontFamily:"'EB Garamond', Georgia, serif", fontStyle:'italic',
-                fontSize:12.5, color:'#6b7486', whiteSpace:'nowrap',
+                fontSize:14, color:'#9aa3b4', whiteSpace:'nowrap',
               }}>
                 ≡ {node.roman_equivalent}
               </span>
@@ -600,13 +535,6 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
           {node.epithet && <p className="col-epithet">{node.epithet}</p>}
 
           {prose && <Prose text={prose}/>}
-          {source && <p className="col-source">— {source}</p>}
-          {paragraphs.length > 0 && (
-            <button className="col-read" onClick={() => setReading(true)}>
-              <span className="col-read-k">Read the full story&nbsp;&nbsp;›</span>
-              <span className="col-read-min">{readMinutes(fullText)} min</span>
-            </button>
-          )}
         </div>
 
         <div className="col-foot panel-section" style={{ animationDelay:'.22s' }}>
@@ -634,10 +562,8 @@ function PanelContent({ node, onClose, onNavigate, onOpenStory, onOpenTale }) {
             </div>
           </div>
 
-          {hasStory && <EnterStory chapters={beats.length} onOpen={onOpenStory}/>}
+          {hasTale && <EnterStory meta={taleMeta} onOpen={onOpenStory}/>}
         </div>
-
-        </>)}
       </div>
     </>
   )

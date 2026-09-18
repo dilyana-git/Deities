@@ -132,12 +132,14 @@ export default function StoryOrbit({ nodeId, onClose, onNavigate }) {
   }, [beats, accent])
 
   /* reserve room for the story's longest beat so the caption never jumps
-     while stepping through — ~78 chars per line at the caption's width;
-     the mobile media query scales this up via the --capmin custom prop */
+     while stepping through; the mobile media query scales this up via the
+     --capmin custom prop. Both numbers are read off `.so-cap-body p` and
+     have to move with it: ~71 characters per line and a 28px line box at
+     its 17.5px/1.6, plus ~44px for the figure chips. */
   const capMinHeight = useMemo(() => {
     const maxLen = Math.max(0, ...beats.map(b => b.text.length))
     const anyFigs = beats.some(b => b.figures?.length)
-    return Math.ceil(maxLen / 78) * 26 + (anyFigs ? 40 : 0)
+    return Math.ceil(maxLen / 71) * 28 + (anyFigs ? 44 : 0)
   }, [beats])
 
   const next = useCallback(() => setCur(c => (c + 1) % beats.length), [beats.length])

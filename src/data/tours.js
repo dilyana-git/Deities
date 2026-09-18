@@ -6,8 +6,9 @@
    keep this file to ids + prose so the two never drift out of sync.
 
    `hero` names the figure the tale follows — the one who burns at the centre
-   of the Guided Sky constellation while the chapters scatter around it, and
-   the one the reading column's "Following …" line credits. It is an editorial
+   of the Guided Sky constellation while the chapters scatter around it. That
+   face is the only place a tour credits its figure, the reading column's
+   "Following …" line having been dropped. It is an editorial
    choice, not the first beat: several tours open on the god who sets things in
    motion rather than on their protagonist (the Argonautica opens on Hera, and
    is Jason's). Absent, GuidedSky falls back to the first beat's figure. */

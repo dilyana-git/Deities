@@ -37,14 +37,14 @@ class OverlayBoundary extends Component {
           </p>
           <div style={{ display:'flex', gap:14, justifyContent:'center' }}>
             <button onClick={() => window.location.reload()} style={{
-              fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.2em', textTransform:'uppercase',
+              fontFamily:'Cinzel, serif', fontSize:12.5, letterSpacing:'.18em', textTransform:'uppercase',
               color:'#cdb88a', background:'color-mix(in oklab, #cdb88a 8%, transparent)',
               border:'1px solid rgba(205,184,138,.4)', borderRadius:8, padding:'9px 16px', cursor:'pointer' }}>
               Reload
             </button>
             <button onClick={this.dismiss} style={{
-              fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.2em', textTransform:'uppercase',
-              color:'#5c6678', background:'none', border:'none', padding:'9px 8px', cursor:'pointer' }}>
+              fontFamily:'Cinzel, serif', fontSize:12.5, letterSpacing:'.18em', textTransform:'uppercase',
+              color:'#8a94a6', background:'none', border:'none', padding:'9px 8px', cursor:'pointer' }}>
               Back to the sky
             </button>
           </div>
@@ -117,7 +117,7 @@ const S = {
      panels — just letterspaced small caps floating directly on the void, dim
      until the cursor finds them. */
   hbtn: {
-    fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.22em', color:'#525c6e',
+    fontFamily:'Cinzel, serif', fontSize:12.5, letterSpacing:'.18em', color:'#8a94a6',
     background:'transparent', border:'none', padding:'6px 3px', cursor:'pointer',
     transition:'color .18s', display:'inline-flex', alignItems:'center', gap:7,
     textTransform:'uppercase',
@@ -135,7 +135,7 @@ const S = {
   },
   input: {
     width:'100%', background:'rgba(6,8,14,.7)', border:'1px solid #262e3c', borderRadius:7,
-    padding:'8px 11px', color:'#aab2c0', fontFamily:"'Crimson Pro', serif", fontSize:15,
+    padding:'9px 11px', color:'#aab2c0', fontFamily:"'Crimson Pro', serif", fontSize:16,
     outline:'none',
   },
   acItem: {
@@ -197,9 +197,9 @@ function AutocompleteInput({ value, onChange, onPick, placeholder, sortedNodes, 
             >
               <span style={{ width:8, height:8, borderRadius:'50%', flexShrink:0,
                 background: CAT[n.category] || '#888', boxShadow:`0 0 6px ${CAT[n.category]||'#888'}` }}/>
-              <span style={{ fontSize:15, color:'#aab2c0', flex:1 }}>{n.name}</span>
-              <span style={{ fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.12em',
-                color:'#3a4354', textTransform:'uppercase' }}>
+              <span style={{ fontSize:16, color:'#aab2c0', flex:1 }}>{n.name}</span>
+              <span style={{ fontFamily:'Cinzel, serif', fontSize:12, letterSpacing:'.1em',
+                color:'#7a8396', textTransform:'uppercase' }}>
                 {categoryConfig[n.category]?.label || n.category}
               </span>
             </button>
@@ -230,14 +230,14 @@ function SummonSearch({ open, onClose, sortedNodes, onPick }) {
       onMouseDown={onClose}>
       <div className="pop-in" onMouseDown={e => e.stopPropagation()}
         style={{ position:'absolute', top:'20vh', left:'50%', transform:'translateX(-50%)', width:'min(440px,84vw)' }}>
-        <p style={{ fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.28em', color:'#5c6678',
+        <p style={{ fontFamily:'Cinzel, serif', fontSize:12.5, letterSpacing:'.24em', color:'#8a94a6',
           textTransform:'uppercase', margin:'0 0 6px' }}>Name a figure</p>
         <AutocompleteInput
           value={q} onChange={setQ} onPick={n => { onPick(n.id); onClose() }}
           placeholder="Zeus, Medusa, Chaos…" sortedNodes={sortedNodes}
           inputStyle={S.bareInput} autoFocus
         />
-        <p style={{ fontStyle:'italic', fontSize:12.5, color:'#3a4354', margin:'8px 2px 0' }}>
+        <p style={{ fontStyle:'italic', fontSize:14, color:'#7a8396', margin:'8px 2px 0' }}>
           Choose a figure or press Enter · Tap outside or Esc to dismiss
         </p>
       </div>
@@ -261,7 +261,7 @@ function EraAxis() {
   return (
     <div style={{ position:'absolute', left:20, bottom:18, zIndex:12, pointerEvents:'none',
       opacity:0.72 }}>
-      <p style={{ fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.26em', color:'#4a5364',
+      <p style={{ fontFamily:'Cinzel, serif', fontSize:12, letterSpacing:'.22em', color:'#8a94a6',
         textTransform:'uppercase', margin:'0 0 9px 2px' }}>Depth of Ages</p>
       <div style={{ display:'flex' }}>
         {/* the axis line */}
@@ -272,9 +272,9 @@ function EraAxis() {
             <div key={e.r} style={{ display:'flex', alignItems:'center', gap:9, position:'relative' }}>
               <span style={{ position:'absolute', left:-18, width:7, height:7, borderRadius:'50%',
                 background:e.c, boxShadow:`0 0 7px ${e.c}` }}/>
-              <span style={{ fontFamily:'Cinzel, serif', fontSize:11, color:'#7c8698', width:16 }}>{e.r}</span>
-              <span style={{ fontFamily:"'Crimson Pro', serif", fontStyle:'italic', fontSize:13,
-                color:'#6b7488' }}>{e.label}</span>
+              <span style={{ fontFamily:'Cinzel, serif', fontSize:12.5, color:'#7c8698', width:19 }}>{e.r}</span>
+              <span style={{ fontFamily:"'Crimson Pro', serif", fontStyle:'italic', fontSize:14.5,
+                color:'#9aa3b4' }}>{e.label}</span>
             </div>
           ))}
         </div>
@@ -306,11 +306,11 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
       boxShadow:'0 18px 50px rgba(0,0,0,.5)', backdropFilter:'blur(10px)',
     }} className="pop-in path-panel">
       <div style={{ display:'flex', alignItems:'center', marginBottom:11 }}>
-        <span style={{ fontFamily:'Cinzel, serif', fontSize:12, letterSpacing:'.18em', color:'#cdb88a', textTransform:'uppercase' }}>
+        <span style={{ fontFamily:'Cinzel, serif', fontSize:13.5, letterSpacing:'.16em', color:'#cdb88a', textTransform:'uppercase' }}>
           Trace a Path
         </span>
         <button onClick={onClose}
-          style={{ marginLeft:'auto', background:'none', border:'none', color:'#5c6678', cursor:'pointer', fontSize:15 }}>
+          style={{ marginLeft:'auto', background:'none', border:'none', color:'#8a94a6', cursor:'pointer', fontSize:17 }}>
           ✕
         </button>
       </div>
@@ -324,7 +324,7 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
       {from && to && (
         <div className="path-result" style={{ marginTop:8 }}>
           {!path ? (
-            <p style={{ fontStyle:'italic', color:'#5c6678', fontSize:14, margin:'8px 0 0' }}>
+            <p style={{ fontStyle:'italic', color:'#8a94a6', fontSize:15.5, margin:'8px 0 0' }}>
               No chain of relation links these two.
             </p>
           ) : (
@@ -357,13 +357,13 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
                       >
                         <span style={{ width:9, height:9, borderRadius:'50%', flexShrink:0,
                           background: CAT[n.category]||'#888', boxShadow:`0 0 6px ${CAT[n.category]||'#888'}` }}/>
-                        <span style={{ fontFamily:"'Crimson Pro', serif", fontSize:15.5, color:'#dbe1ec' }}>
+                        <span style={{ fontFamily:"'Crimson Pro', serif", fontSize:17, color:'#dbe1ec' }}>
                           {n.name}
                         </span>
                       </button>
                       {rel && (
                         <p style={{
-                          fontStyle:'italic', fontSize:12.5, color:'#8c7f5e',
+                          fontStyle:'italic', fontSize:14, color:'#a2916a',
                           margin:0, marginLeft:18, paddingLeft:11,
                           borderLeft:'1px dotted #5a5440', lineHeight:1.4,
                         }}>{rel}</p>
@@ -372,7 +372,7 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
                   )
                 })}
               </div>
-              <p style={{ fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.1em', color:'#5c6678', margin:'9px 0 0' }}>
+              <p style={{ fontFamily:'Cinzel, serif', fontSize:12.5, letterSpacing:'.1em', color:'#8a94a6', margin:'9px 0 0' }}>
                 {path.length - 1} steps · {path.length} figures
               </p>
             </>
@@ -386,7 +386,7 @@ function PathPanel({ sortedNodes, nodeById, adj, onClose, onFlyTo, onHighlight }
 function PathSlot({ label, value, onChange, onPick, sortedNodes }) {
   return (
     <div>
-      <span style={{ fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.16em', color:'#5c6678',
+      <span style={{ fontFamily:'Cinzel, serif', fontSize:12, letterSpacing:'.14em', color:'#8a94a6',
         textTransform:'uppercase', display:'block', marginBottom:4 }}>
         {label}
       </span>
@@ -402,18 +402,18 @@ function PathSlot({ label, value, onChange, onPick, sortedNodes }) {
 function LegendPanel({ onClose }) {
   return (
     <div style={{
-      position:'absolute', right:20, bottom:52, zIndex:24, width:248,
+      position:'absolute', right:20, bottom:52, zIndex:24, width:290,
       ...S.overlay, padding:'14px 16px',
       boxShadow:'0 18px 50px rgba(0,0,0,.5)',
     }} className="pop-in">
       <button onClick={onClose}
         style={{ position:'absolute', top:11, right:13, background:'none', border:'none',
-          color:'#5c6678', cursor:'pointer', fontSize:14 }}>✕</button>
+          color:'#8a94a6', cursor:'pointer', fontSize:16 }}>✕</button>
 
       <LegHead>Entities — brightness is renown</LegHead>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'5px 12px' }}>
         {categoryOrder.map(c => (
-          <div key={c} style={{ display:'flex', alignItems:'center', gap:8, fontFamily:"'Crimson Pro', serif", fontSize:13.5, color:'#aab2c0' }}>
+          <div key={c} style={{ display:'flex', alignItems:'center', gap:8, fontFamily:"'Crimson Pro', serif", fontSize:15, color:'#aab2c0' }}>
             <span style={{ width:9, height:9, borderRadius:'50%', flexShrink:0,
               background:'#ece6d6', boxShadow:`0 0 0 1.5px ${CAT[c]||'#888'}` }}/>
             {categoryConfig[c]?.label || c}
@@ -424,7 +424,7 @@ function LegendPanel({ onClose }) {
       <LegHead style={{ marginTop:14 }}>Relations</LegHead>
       <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
         {linkTypeOrder.map(t => (
-          <div key={t} style={{ display:'flex', alignItems:'center', gap:8, fontFamily:"'Crimson Pro', serif", fontSize:13.5, color:'#aab2c0' }}>
+          <div key={t} style={{ display:'flex', alignItems:'center', gap:8, fontFamily:"'Crimson Pro', serif", fontSize:15, color:'#aab2c0' }}>
             <span style={{ width:18, height:2, borderRadius:2, flexShrink:0, background: LCOL[t]||'#888' }}/>
             {linkTypeConfig[t]?.label || t}
           </div>
@@ -432,7 +432,7 @@ function LegendPanel({ onClose }) {
       </div>
 
       <p style={{
-        fontStyle:'italic', fontSize:12, color:'#3a4354', margin:'12px 0 0', lineHeight:1.4,
+        fontStyle:'italic', fontSize:14, color:'#7a8396', margin:'12px 0 0', lineHeight:1.45,
         borderTop:'1px solid #19202d', paddingTop:9,
       }}>
         A figure's star shines brighter the more myths bind it to others.
@@ -443,7 +443,7 @@ function LegendPanel({ onClose }) {
 
 function LegHead({ children, style }) {
   return (
-    <p style={{ fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.2em', color:'#5c6678',
+    <p style={{ fontFamily:'Cinzel, serif', fontSize:12.5, letterSpacing:'.18em', color:'#8a94a6',
       textTransform:'uppercase', margin:'0 0 8px', ...style }}>
       {children}
     </p>
@@ -676,7 +676,7 @@ export default function App() {
   function navHover(active) {
     return {
       onMouseEnter: e => { e.currentTarget.style.color = '#cdb88a' },
-      onMouseLeave: e => { e.currentTarget.style.color = active ? '#cdb88a' : '#525c6e' },
+      onMouseLeave: e => { e.currentTarget.style.color = active ? '#cdb88a' : '#8a94a6' },
     }
   }
 
@@ -697,7 +697,7 @@ export default function App() {
         <div style={{ position:'absolute', top:20, left:22, zIndex:30, pointerEvents:'none' }}>
           <div style={{ fontFamily:'Cinzel, serif', fontWeight:500, fontSize:19, letterSpacing:'.34em',
             color:'#cdb88a', paddingLeft:'.34em' }}>THEOGONY</div>
-          <div style={{ fontFamily:'Cinzel, serif', fontSize:9, letterSpacing:'.24em', color:'#4a5364',
+          <div style={{ fontFamily:'Cinzel, serif', fontSize:12, letterSpacing:'.22em', color:'#8a94a6',
             textTransform:'uppercase', margin:'5px 0 0 .34em' }}>A Web of Becoming</div>
           {/* the invitation — the one line that says what to do */}
           <button
@@ -771,11 +771,11 @@ export default function App() {
         {/* hint */}
         <p style={{
           position:'absolute', left:'50%', bottom:16, transform:'translateX(-50%)',
-          zIndex:10, fontStyle:'italic', fontSize:13.5, color:'#3a4354',
+          zIndex:10, fontStyle:'italic', fontSize:15, color:'#7a8396',
           pointerEvents:'none', transition:'opacity .3s', opacity: hintFaded ? 0 : 1,
           whiteSpace:'nowrap', margin:0,
         }}>
-          Click a star to explore · Drag to roam · Scroll to zoom · <span style={{ color:'#5c6678' }}>/</span> to search
+          Click a star to explore · Drag to roam · Scroll to zoom · <span style={{ color:'#8a94a6' }}>/</span> to search
         </p>
 
         {/* reset view — dissolved to bare small caps like the rest of the chrome */}
@@ -783,12 +783,12 @@ export default function App() {
           onClick={closeDetail}
           style={{
             position:'absolute', right:24, bottom:18, zIndex:22,
-            fontFamily:'Cinzel, serif', fontSize:10, letterSpacing:'.2em', color:'#3e4654',
+            fontFamily:'Cinzel, serif', fontSize:12.5, letterSpacing:'.18em', color:'#7a8396',
             background:'none', border:'none', padding:'6px 3px', cursor:'pointer',
             transition:'color .18s', textTransform:'uppercase',
           }}
           onMouseEnter={e => { e.currentTarget.style.color='#cdb88a' }}
-          onMouseLeave={e => { e.currentTarget.style.color='#3e4654' }}
+          onMouseLeave={e => { e.currentTarget.style.color='#7a8396' }}
         >
           ⤢ Reset View
         </button>
@@ -802,9 +802,6 @@ export default function App() {
         />
       </main>
 
-      {/* tooltip anchor (position driven by mousemove in SkyGraph) */}
-      <div id="tip"/>
-
       {/* keyboard shortcuts overlay */}
       {shortcutsOpen && (
         <div style={{
@@ -816,9 +813,9 @@ export default function App() {
             padding:'28px 36px', maxWidth:360, width:'90%', boxShadow:'0 16px 48px rgba(0,0,0,.6)',
           }} onClick={e => e.stopPropagation()}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
-              <span style={{ fontFamily:'Cinzel, serif', fontSize:14, letterSpacing:'.18em', color:'#cdb88a' }}>SHORTCUTS</span>
+              <span style={{ fontFamily:'Cinzel, serif', fontSize:15.5, letterSpacing:'.16em', color:'#cdb88a' }}>SHORTCUTS</span>
               <button onClick={() => setShortcutsOpen(false)} style={{
-                background:'none', border:'none', color:'#5c6678', fontSize:16, cursor:'pointer', padding:4,
+                background:'none', border:'none', color:'#8a94a6', fontSize:18, cursor:'pointer', padding:4,
               }}>✕</button>
             </div>
             {[
@@ -831,8 +828,8 @@ export default function App() {
               ['Space', 'Play / pause tour'],
             ].map(([key, desc]) => (
               <div key={key} style={{ display:'flex', justifyContent:'space-between', gap:16, padding:'7px 0', borderBottom:'1px solid #141820' }}>
-                <span style={{ fontFamily:'Cinzel, serif', fontSize:11, letterSpacing:'.06em', color:'#ece6d6', whiteSpace:'nowrap' }}>{key}</span>
-                <span style={{ fontSize:13, fontStyle:'italic', color:'#5c6678', textAlign:'right' }}>{desc}</span>
+                <span style={{ fontFamily:'Cinzel, serif', fontSize:12.5, letterSpacing:'.06em', color:'#ece6d6', whiteSpace:'nowrap' }}>{key}</span>
+                <span style={{ fontSize:14.5, fontStyle:'italic', color:'#8a94a6', textAlign:'right' }}>{desc}</span>
               </div>
             ))}
           </div>
