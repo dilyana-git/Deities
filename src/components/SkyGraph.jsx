@@ -1886,7 +1886,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
 
     /* edge labels — short relationship names riding the selected node's lit edges */
     const MAX_EDGE_LABELS = 10
-    const EDGE_LABEL_PAD = 6, EDGE_LABEL_H = 10
+    const EDGE_LABEL_PAD = 6, EDGE_LABEL_H = 12
     const edgeKey = l => srcId(l) + '|' + tgtId(l) + '|' + l.type
     const edgeLabelSize = new Map()
     const edgeLabelPos  = new Map()
