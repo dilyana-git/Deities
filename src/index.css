@@ -346,7 +346,15 @@ body {
    `.glow`, which is why that one uses a gradient instead of a blur). Mostly it
    burns under an opaque portrait; what it is really for is the primaries with
    no artwork, which have to read as stars on their own. */
-.node .core.pip { filter: drop-shadow(0 0 3px #fff7e0) drop-shadow(0 0 7px rgba(205,184,138,.55)); }
+/* The bloom is tier 1's only, though every portrait star now wears a `.pip`
+   (the pip is what stops a full-radius family disc ringing the art through its
+   own faded fringe — see coreRadius). Two drop-shadows are two per-pixel
+   convolutions, and widening this rule from 12 elements to 75 is exactly the
+   standing filter cost the glow gradient and the ambient ticker were built to
+   get off this field. A secondary's pip sits under an opaque portrait and is
+   not there to be seen; a primary's is the mark an art-less figure would be
+   left with, so it keeps the light. */
+.node.tier-1 .core.pip { filter: drop-shadow(0 0 3px #fff7e0) drop-shadow(0 0 7px rgba(205,184,138,.55)); }
 
 /* node interaction states */
 .node .core { transition: opacity .2s; }

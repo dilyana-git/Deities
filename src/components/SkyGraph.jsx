@@ -318,7 +318,17 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        plate. Sized once here because two paths draw a core (birth and
        `sizeNode`) and a pip on one of them only is a flicker on selection. */
     const CORE_R = 0.2
-    const coreRadius = (n, r) => n.tier === 1 ? r * CORE_R : r
+    /* Which stars draw a portrait. One rule, shared by the <image> append, the
+       glow and the core — all three key off it, so they cannot drift apart. */
+    const hasPortrait = n => n.tier !== 3 && portraitEntries(n.id).length > 0
+    /* A star with a face on it gets a pip; one without gets the full-radius
+       family disc. This used to read `n.tier === 1`, written when secondaries
+       showed no portrait at rest — they always do now, and a full-radius disc
+       under a portrait is a coloured RING: the mask holds full alpha only to
+       55% of the box (0.55 x IMG_SCALE = 0.80r), so a disc of radius r shows
+       through the art's fringe from 0.80r to a hard edge at exactly 1.0r.
+       Ember-red around every monster's face, teal around every sea god's. */
+    const coreRadius = (n, r) => hasPortrait(n) ? r * CORE_R : r
 
     /* Resting-camera bleed. A disc floating dead-centre with even margins on
        every side reads as small — a coin on a table. Overscaling it slightly
@@ -1026,11 +1036,27 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        even before any interaction. Separate from the general twinkle. */
     const hubBreathThreshold = promRank[Math.min(5, promRank.length - 1)] || 0.6
 
-    /* No `filter` here any more: the gradient IS the softness, so the glow
+    /* The coloured halo is for stars with no face on them, and ONLY those.
+       `GLOW_R` is 1.5 and `IMG_SCALE` 1.45, so the glow disc is very nearly the
+       portrait's own size — and the portrait mask holds full alpha only to 55%
+       of its box and is transparent by 100%, so the category colour came up
+       through the art's whole outer fringe as a coral/violet/teal ring sitting
+       inside the figure. A frameless portrait is the point (see the mask note
+       in index.css); a ring of family colour hooped around it is the ring that
+       design removed, reintroduced as light.
+
+       So: tier 3, which draws no <image>, keeps the glow — there the halo IS
+       the star, and 64 bare 3.4px dots would otherwise have nothing. A tier
+       1/2 figure added with no art keeps it too (none today, but a new one
+       would otherwise be a 30–44px void). Everything with a face on it is lit
+       by the portrait itself, the `.core` pip under it, and the gold
+       `.sel-halo` behind it.
+
+       No `filter` here any more: the gradient IS the softness, so the glow
        reads the same at every radius instead of depending on a fixed-pixel
        blur that only some nodes were even given. That also drops a
        per-pixel convolution from ~137 nodes. */
-    gNode.append('circle').attr('class','glow')
+    gNode.filter(d => !hasPortrait(d)).append('circle').attr('class','glow')
       .attr('r',        d => radius(d) * GLOW_R)
       .attr('fill',     d => `url(#node-glow-${d.category})`)
       .attr('opacity',  d => 0.07 + d.prom * 0.14)
@@ -1059,20 +1085,21 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
       .attr('fill',    'url(#sel-bloom)')
       .attr('opacity', 0)
 
-    /* the core. For the secondaries and the tail — which show NO portrait at
-       rest — it is a full-radius disc carrying a lot of the family colour;
-       those saturated little discs are the most legible things on the field and
-       do the identifying work portraits used to. A primary instead gets a `pip`
-       at CORE_R (see above): the same near-white/gold mark the constellation
-       stages use for a hero star (`.cl-core.hero`), so the same vocabulary
-       stands for a figure on the map as in its tale. It stays under the
-       portrait — the light the face is lit by, not a glint punched over it —
-       and needs no prom ramp, since the tier's radius ramp already carries the
-       size difference into the pip. */
+    /* the core. On the tail — which draws no portrait — it is a full-radius
+       disc carrying a lot of the family colour; those saturated little discs
+       are the most legible things on the field and do the identifying work a
+       portrait would. Anything with a face on it gets a `pip` at CORE_R
+       instead: the same near-white/gold mark the constellation stages use for
+       a hero star (`.cl-core.hero`), so the same vocabulary stands for a
+       figure on the map as in its tale. It stays under the portrait — the
+       light the face is lit by, not a glint punched over it, and never wide
+       enough to reach the fringe the art fades through — and needs no prom
+       ramp, since the tier's radius ramp already carries the size difference
+       into the pip. */
     gNode.append('circle').attr('class','core')
-      .classed('pip',  d => d.tier === 1)
+      .classed('pip',  hasPortrait)
       .attr('r',       d => coreRadius(d, radius(d)))
-      .attr('fill',    d => d.tier === 1
+      .attr('fill',    d => hasPortrait(d)
         ? '#fff7e0'
         : `color-mix(in oklab, ${CAT[d.category]} 66%, #efe8d6)`)
       .attr('opacity', d => d.tier === 1 ? 1 : 0.92)
@@ -1096,7 +1123,7 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        of the bytes and of the decode. */
     const nodeVariant = d => mapPortraitVariant(d.id)
 
-    gNode.filter(d => d.tier !== 3 && portraitEntries(d.id).length > 0).append('image')
+    gNode.filter(hasPortrait).append('image')
       .attr('x',                  d => -radius(d) * IMG_SCALE)
       .attr('y',                  d => -radius(d) * IMG_SCALE)
       .attr('width',              d => radius(d) * 2 * IMG_SCALE)
@@ -2447,10 +2474,18 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
     function flareTerminal(id) {
       const d = byId[id]
       if (!d || id === _grownId) return
+      /* Only art-less stars carry a `.glow` now, so the heir a descent lands on
+         may have nothing to flare. Bail BEFORE `_flareId` is set: it is cleared
+         in the transition's `end`, and a transition on an empty selection never
+         ends — the id would latch and stepAmbient would stand aside from that
+         node's radius for the rest of the session. The arrival still reads:
+         `layResidue` inks the thread either way. */
+      const glow = gNode.filter(n => n.id === id).select('.glow')
+      if (glow.empty()) return
       const peak = Math.max(radius(d) * GLOW_R_NOVA, selRadius(d) * GLOW_R)
       const baseOp = 0.07 + d.prom * 0.14
       _flareId = id
-      gNode.filter(n => n.id === id).select('.glow')
+      glow
         .interrupt('ambient-flare')
         .style('--glow-base', Math.min(baseOp * 3.2, 0.38).toFixed(3))
         .transition('ambient-flare').duration(260).ease(d3.easeCubicOut)
