@@ -42,7 +42,7 @@ src/
 │   ├── DetailPanel.jsx            # Right-hand slide-in detail view (opens on node select)
 │   ├── GuidedSky.jsx              # Full-screen guided tour overlay — a fixed reading column against the tale drawn as a constellation
 │   ├── ConstellationStage.jsx     # Imperative SVG engine for abstract constellation animations — DEAD CODE: nothing imports it
-│   ├── StoryOrbit.jsx             # DEAD CODE: nothing imports it (the panel reads the tale inline). Full-screen story overlay — the selected deity's tale as beat-planets on orbits; a gold thread traces told chapters into a constellation; autoplay (▶/space) + full-tale reader
+│   ├── StoryOrbit.jsx             # Full-screen story overlay — a deity's tale as beat-planets on orbits — DEAD CODE: nothing imports it; ENTER THE STORY opens GuidedSky with a figureId
 │   ├── ZodiacSky.jsx              # Full-screen zodiac view — auto-advancing carousel with caption panel + glyph strip
 │   └── ZodiacSphere.jsx           # Interactive 3D-projected celestial globe of all 12 zodiac constellations
 └── data/
@@ -107,7 +107,7 @@ Keyed by node id. `DetailPanel`'s "Origins" section renders `story` (falling bac
 ```
 11 guided tours. Every beat's `fig` must be a valid node id in `mythology.js` — `check-data` fails the build on a dangling one.
 
-**`hero` is the figure the tale follows**, not its first beat: GuidedSky burns that one face at the centre of the constellation for the whole tour and credits it in the reading column's "Following …" line, so it is an editorial choice — several tours open on the god who sets things in motion rather than on their protagonist (the Argonautica opens on Hera and is Jason's; the Gorgon opens on Poseidon and is Perseus's). `check-data` validates it too; absent, GuidedSky falls back to `beats[0].fig`.
+**`hero` is the figure the tale follows**, not its first beat: GuidedSky burns that one face at the centre of the constellation for the whole tour, which is the only place a tour says whose tale it is — the column's "Following …" credit line was dropped, so the face *is* the credit. It is an editorial choice — several tours open on the god who sets things in motion rather than on their protagonist (the Argonautica opens on Hera and is Jason's; the Gorgon opens on Poseidon and is Perseus's). `check-data` validates it too; absent, GuidedSky falls back to `beats[0].fig`.
 
 A beat no longer needs a spec in `constellations.js` — nothing imports `ConstellationStage` any more (see the legacy note), so the checker's missing-spec message is a warning, not an error.
 
@@ -345,11 +345,13 @@ It is a **stage, not a scrolling column of sections** (layout `3a Colossus` from
   - A **16px LQIP data-URI per figure was measured and rejected**: 28.7KB in the main bundle, on the critical path this work exists to shorten, to speed up a secondary interaction the cached `node` tier already covers for free.
 - **`HoloSigil` fallback** (no portrait, i.e. `ratio` still null): the rotating 3D constellation of the node's top neighbors — perspective-projected, depth-sorted, rAF-driven, pausing when the tab is hidden — centred in her place via `.col-sigil`.
 - **Name sizing is length-driven.** Cinzel renders lowercase as small caps and runs **~0.71em/glyph** with the .03em tracking, so at the design's 96px "Persephone" is four columns wide. `.col-type` is a `container-type: inline-size` container and `nameCq()` sets `--name-cq` in `cqw` from the name's **longest word** (not its total length — "Colchian Dragon" wraps at the space and only has to fit eight glyphs), with 0.84 as the per-glyph divisor for headroom on wide-letter names. `.col-name` caps it at 96px. That keeps the display size right at every panel width — don't reintroduce a viewport-only `clamp()` here, and don't lower the divisor: `.col-type` is `overflow-x: hidden`, so an over-wide name is silently chopped.
-- **Prose** (`Prose`) shows the opening only: `deityStories[id].beats[0].text` when the figure has a beat-based tale (the whole thing lives in the Story Orbit overlay behind ENTER THE STORY), else `story.story` → `node.description`, with `source` as a citation line. `.col-prose` caps at ~7 lines; a `ResizeObserver` toggles `.clamped` (a bottom fade mask) only when it *actually* overflows the live measure — a character count would be right at 384px and wrong at 200px.
-- **The foot is five `Row`s in two registers.** Every row shares one skeleton — a Cinzel label, dot-joined values, truncated with the remainder spelled out in **arabic** (`+14 more`, so the count reads as information rather than roman decoration), no chips/borders/bullets — but they are split into two groups, because five identical italic lines of the same size read as a receipt rather than as information. `.col-rows-attr` holds **Domains, Symbols, Myths** (attributes: italic, 13.5px, dim, 5px gaps — one tight block); `.col-rows-nav` holds **Bonds** and **Tales** (navigation: upright, 15.5px, a step brighter, gold hover underline on `.col-link`). **Upright type is the click affordance — don't set a non-navigable row in it.** That is why **Myths stays with the attributes** despite reading as titles: a myth name is a keyword with no target behind it. **Bonds** are the top-degree neighbours and call `onNavigate(id)`; **Tales** come from the module-level `_talesByFig` index (walks `TOURS` once, mapping node id → tales with the **first** beat index where the figure takes the stage) and call `onOpenTale(tourId, beat)` → the Guided Sky overlay opens *at that chapter*. Myths use `emphasize={_famousMyths}` (shared by 3+ figures) → `.col-em`.
+- **Prose** (`Prose`) shows the opening only — `deityStories[id].beats[0].text` for a chaptered figure, else the head of `story.story` (→ `node.description`); the rest is behind ENTER THE STORY in the GuidedSky overlay. No citation line: the source sits with the prose it credits, in the overlay. `.col-prose` caps at ~7 lines; a `ResizeObserver` toggles `.clamped` (a bottom fade mask) only when it *actually* overflows the live measure — a character count would be right at 384px and wrong at 200px.
+- **One story door per figure, and it is ENTER THE STORY.** The panel holds the opening; the overlay holds the rest, for **every** figure — so the panel has no reading surface of its own. It used to: `READ THE FULL STORY` (`.col-read`) swapped the measure into a scrolling in-panel reader (`.col-story`) of `story.story`. That put two gold doors on one measure, and on the 119 chaptered figures it was a *third* path to prose the overlay already showed behind FULL TALE. Both are deleted — the button, the reader view, the `reading` state and its focus/scroll effect, and ~75 lines of `.col-read*` / `.col-story*` / `.col-type.reading` CSS. What made that possible is that **GuidedSky now opens a chapterless figure too** (see `tale.prose`); before, `figureTale` returned `null` without beats and those 20 figures had nowhere else to read.
+  - **`hasTale` is `chapters || story.story`, not `beats.length`.** All 139 figures have a `deityStories` entry (119 chaptered, 20 prose), so every figure gets the door. A figure added with no entry at all gets none — there is nothing for the overlay to open — and falls back to `node.description` in the measure.
+- **The foot is five `Row`s in two registers.** Every row shares one skeleton — a Cinzel label, dot-joined values, truncated with the remainder spelled out in **arabic** (`+14 more`, so the count reads as information rather than roman decoration), no chips/borders/bullets — but they are split into two groups, because five identical italic lines of the same size read as a receipt rather than as information. `.col-rows-attr` holds **Domains, Symbols, Myths** (attributes: italic, 16px, dim, 5px gaps — one tight block); `.col-rows-nav` holds **Bonds** and **Tales** (navigation: upright, 17px, a step brighter, gold hover underline on `.col-link`). **Upright type is the click affordance — don't set a non-navigable row in it.** That is why **Myths stays with the attributes** despite reading as titles: a myth name is a keyword with no target behind it. **Bonds** are the top-degree neighbours and call `onNavigate(id)`; **Tales** come from the module-level `_talesByFig` index (walks `TOURS` once, mapping node id → tales with the **first** beat index where the figure takes the stage) and call `onOpenTale(tourId, beat)` → the Guided Sky overlay opens *at that chapter*. Myths use `emphasize={_famousMyths}` (shared by 3+ figures) → `.col-em`.
 - **The eyebrow accent is gold, not the family colour.** The panel's chrome is uniformly gold (`#cdb88a`) — the eyebrow ✦, the epithet, the CTA — so the eyebrow star is gold too; the category's coral/violet/etc. lives on the figure aura (`.col-aura`), the sigil, and the map, never orphaned on a single glyph in the text column. The `roman_equivalent` (`≡ Jupiter`) sits **before** the `.col-eyebrow-rule`, so the rule always runs to the measure's right edge — the same column boundary the CTA's right border lands on (one shared, visible right edge for the measure).
-- **ENTER THE STORY is a real button, not a caption.** `.col-enter` is a bordered, padded, full-measure hit area (hover: brighter border + fill + shadow), its chapter count spelled in arabic (`5 CHAPTERS`) and pushed to the right by a dotted leader. Its right border defines the measure's column boundary (see the eyebrow rule above).
-- **Cut in this layout:** the holographic hero chrome (scanlines, light sweep, opacity flicker, cursor tilt — calibrated for a small square hero, noise across 820px of face), the `StorySpine` vertical constellation and its `MiniConstellation` (already unreachable, since `App` always passes `onOpenOrbit`), and the per-section `Section`/`QuietList`/`TaleList` scaffolding. **Archetype** and the **Connections** list were cut earlier and stay cut — the graph is the relationship surface.
+- **ENTER THE STORY is a real button, not a caption.** `.col-enter` is a bordered, padded, full-measure hit area (hover: brighter border + fill + shadow), with a dotted leader pushing its `meta` to the right. **`meta` is the tale's length in the unit the figure actually has** — `5 CHAPTERS` where it was cut into them, `2 MIN` (`readMinutes`) for a prose figure, both spelled in arabic. A prose figure has no chapter count, and labelling it `1 CHAPTER` off the synthesized beat would be a lie about what opens. Its right border defines the measure's column boundary (see the eyebrow rule above).
+- **Cut in this layout:** the holographic hero chrome (scanlines, light sweep, opacity flicker, cursor tilt — calibrated for a small square hero, noise across 820px of face), the `StorySpine` vertical constellation and its `MiniConstellation` (already unreachable, since `App` always passes `onOpenStory`), and the per-section `Section`/`QuietList`/`TaleList` scaffolding. **Archetype** and the **Connections** list were cut earlier and stay cut — the graph is the relationship surface.
 - **`{id}-head.webp` is a real head crop.** A node glyph is ~40px across and a whole standing figure shrunk into that is an unreadable speck, so `scripts/gen-portraits.mjs` frames the head *before* downscaling. Framing comes from `scripts/head-boxes.json` — 71 figures framed by hand as `{ cx, cy, s }` (head centre as a fraction of source width/height; square side as a fraction of source **width**) — and from a fallback for everything else: square sources are already busts and pass through whole, while a standing figure gets the top 42% of its detected subject, centred on the median x of its upper band. Detection keys on local **detail energy**, not brightness: the figures are often the same value as their backdrop, but the backdrop is smooth and they are not. Re-running needs `portraits-src/` (gitignored, not in the repo). Sources that are pure landscape or artefact (charybdis, rhea, uranus, tartarus, helios) have no head to find — they crop to their subject and that is the intended result.
 
   **A hand box can be wrong, and it fails silently — as a dark disc.** A full audit of all 118 head tiers re-framed **32** of them (`scripts/head-boxes.json` now holds 80 hand boxes). The failure is always the same shape: the crop lands on the crest, the crown, the neck texture or a blank flank, with the eyes clipped off an edge and the rest of the square filled by the plate's backdrop. Masked into a node that is a shadow with a sliver of figure in it, not a face — the symptom to look for. Three rules the audit produced:
@@ -380,8 +382,14 @@ It is a **stage, not a scrolling column of sections** (layout `3a Colossus` from
 - **The plane leans, it does not pan** — 13% of the current chapter's offset from the hero, over 2.2s. Enough that an advance reads as the sky turning under the tale; more, and the constellation reads as a map being scrolled past a fixed camera.
 - **The rail is place-marker and dwell timer in one.** At rest it stands at the end of the chapter in play; under autoplay (`.ticking`, keyed on the chapter so it restarts) it crosses that chapter's own segment over exactly `beatMs`, so it always ends where the resting position would have put it. The inline `animationDuration` is what supplies the shorthand's missing duration.
 - **Chapter labels are the numeral alone.** The figure's name is set once, large, in the column; repeating it eight times across the sky only competes with it.
-- **Portrait tiers follow the drawn size**, as everywhere else: chapter stars are 44–96px and ask `portraitSources(id, 'node')` for the 192px crop, the 164px hero orb asks for `'head'`. Both are frameless, dissolving through the same radial mask `.node image` uses on the map.
+- **Portrait tiers follow the drawn size**, as everywhere else: chapter stars are 44–96px and ask `portraitSources(id, 'node')` for the 192px crop, the hero orb asks for `'head'`. Both are frameless, dissolving through the same radial mask `.node image` uses on the map.
+- **The hero's diameter is `--hero-d`, `clamp(190px, min(15vw, 26vh), 240px)`** (was a flat 164px), with `.gsr-hero-glow` at 1.8× it — the ratio the old flat 300/164 had, so the light the face floats in grows with the face. The room it has belongs to the *plane*, not the viewport, so it scales: **192px at 1280×800, 216 at 1440×900, 240 from 1600×900 up.** Two things bound it:
+  - **Spacing is measured on 0.8 of the box**, the map's `bodyR` rule — both orbs carry the same mask (full alpha to 55%, under .55 by 80%), so interleaving outer fifths are not a collision. Over every live tale length against `PATHS` 4–8, the tightest hero↔chapter body gap runs **44px at 1280×800 to 107px at 1920×1080** (against 55–138px at 164px). The binding case is always the 8-chapter path's second star at `[32,51]` on the smallest plane; two tours are 8 chapters long, so it is live. Narrow (`--pscale` .5) the orb goes 82 → 95px and the tightest gap is 18px on a 390px phone.
+  - **The head crop caps it.** The orb draws from the 360px `head` variant, so 240px is a 1.33× upscale at DPR 2 — carried by the mask's soft outer fifth, but it is the ceiling. Raising the cap means generating a larger crop first (needs `portraits-src/`, which is not in the repo), not just changing the number.
 - **Autoplay** dwell scales with the beat's length (`beatMs`), rests at the last chapter; ▶ or spacebar toggles. **Navigation:** arrow keys, ‹ ›, or clicking a star. **Tale picker:** OTHER STORIES in the column head; esc closes it, then the overlay.
+- **A figure whose story was never cut into chapters opens here as prose** (`tale.prose`, set by `figureTale` when `deityStories[id]` has `story` but no `beats` — 20 of 139). ENTER THE STORY is every figure's only door, so this view is what is behind it for them: the reading row opens on the retelling entire (`showFull`, the `gsr-full` block, headed *The Tale*), the plane keeps the hero orb and stands everything else down — no chapter stars, no dashed figure, no rail or transport — and the foot's hint shrinks to *esc to close*. Two details are load-bearing:
+  - **The tale carries one synthesized beat** (`{ fig: id, text: story.story }`) that is never rendered. `beat.fig`, `beatMs(beat)`, `stars[cur]` and `onBeatChange` are read unconditionally all through the component, so the alternative is a guard at every one of them; a placeholder object keeps the chapter machinery honest instead.
+  - **`showFull = fullOpen || tale.prose`, and `fullOpen` stays the reader's own toggle.** Everything that leaves the full tale — the FULL TALE button, arrow keys, ▶, Escape, `selectTale` — is keyed on `showFull` or gated on `!tale.prose`, so a view with nothing behind it cannot be stepped out of into a blank chapter. Escape closes the overlay from there rather than "going back to chapters" that do not exist.
 - **`initialBeat` prop:** the chapter to open on (clamped to the tour's length). The DetailPanel's Tales rows use it to land the reader on the chapter where that figure enters; the gold thread still traces from chapter Ⅰ up to it.
 - **Narrow (≤900px) the cut turns horizontal** — column across the foot, constellation above — and `--pscale` shrinks every orb at once, since their sizes are inline px chosen for the wide stage. **The plane has to end exactly where the column starts** (`bottom` = the column's `height`): it is not enough for it to be merely shorter than the column is tall, because the constellation is laid out in % of the plane and its lowest chapters sit at 75% — at `bottom: 36%` against a 66%-tall column, the opening chapter and the hero both parked behind the plate. The column's rows also keep a `max-width` there, so a full-viewport-wide column still has a reading measure and one shared right edge, and `.gsr-read-pad` is dropped — the row is short and the measure wide, so a beat is two or three lines and the spacer only opens a void above it.
 - **`ConstellationStage` is not involved** and has not been for some time; it remains dead code (see the legacy note).
@@ -406,7 +414,7 @@ It is a **stage, not a scrolling column of sections** (layout `3a Colossus` from
 - **Legend** — `LegendPanel` popover, built from `categoryOrder`/`linkTypeOrder` + `CAT`/`LCOL`.
 - **Zodiac** — launches `ZodiacSky` as a full-screen overlay.
 - **No hover tooltip — hover names the star itself.** The `<div id="tip">` card (category dot, name, epithet, connection count) was removed, along with its `mousemove` positioner. Its headline was a second copy of something already on screen: `.nodes.focusing .node.lit .node-label` lights the hovered node's name **and every lit neighbour's** to full opacity at any zoom and any tier, 14px from the star, so for 136 of the 139 figures the card restated a label it was simultaneously covering. What it uniquely carried — the epithet and the connection count — is one click away in the panel, whose Bonds row spells the remainder in arabic. It was also the last piece of furniture in a design that had removed every other one: a 1px border, a radius, a drop shadow and a `backdrop-filter` blur, on a map that argues at length for frameless portraits, a core pip instead of a lit plate, and a horizon ring held at 0.03 because a stroke there is a bezel. **Don't reintroduce it** — and read a proposal to make it dodge as the symptom it is: a card that needs to project all 139 nodes and score eight seats to stop covering the stars the hover just lit is a card in the wrong place by construction.
-- **The three full-screen overlays are `React.lazy`** — GuidedSky, ZodiacSky and StoryOrbit each drag in their own engine and are only reachable behind a button, so they leave the initial bundle (verified: a cold load fetches `index`/`react`/`d3` only, and `GuidedSky-*.js` arrives on the first STORY click). A `<Suspense>` veil covers that fetch, and **`OverlayBoundary`** sits above it: a lazy chunk that fails to arrive — a blip, or a stale chunk name after a deploy — throws during render and would otherwise white-screen an atlas that is still perfectly good, so the boundary offers Reload / Back to the sky.
+- **Both full-screen overlays are `React.lazy`** — GuidedSky and ZodiacSky each drag in their own engine and are only reachable behind a button, so they leave the initial bundle (verified: a cold load fetches `index`/`react`/`d3` only, and `GuidedSky-*.js` arrives on the first STORY click). A `<Suspense>` veil covers that fetch, and **`OverlayBoundary`** sits above it: a lazy chunk that fails to arrive — a blip, or a stale chunk name after a deploy — throws during render and would otherwise white-screen an atlas that is still perfectly good, so the boundary offers Reload / Back to the sky.
 
 ### State
 
@@ -422,8 +430,9 @@ storyOpen        — GuidedSky cinematic overlay visible
 storyTourId      — which tour the GuidedSky overlay opened with
 storyBeat        — which chapter it opens on (0 from the STORY button; the figure's
                    entry chapter when opened from a DetailPanel Stories row)
+storyFigId       — set by ENTER THE STORY: the figure whose own tale GuidedSky opens
+                   with (chaptered, or prose — see tale.prose). null for a tour
 zodiacOpen       — ZodiacSky overlay visible
-orbitOpen        — StoryOrbit overlay visible (opened from DetailPanel's "Enter the story"; needs selectedId)
 ```
 
 Selection is push-based: graph → `onSelect` → `selectedId`; App → `graphRef` imperative calls → graph. Opening Path or starting a Tour clears the current selection so modes don't overlap.
@@ -431,6 +440,99 @@ Selection is push-based: graph → `onSelect` → `selectedId`; App → `graphRe
 ## Extending the Dataset
 
 Edit `src/data/mythology.js` (nodes/links) and optionally add a matching `src/data/deityStories.js` entry. For guided tours, add the beat to `src/data/tours.js`; a tour also names a `hero` (see the tour schema). Run `npm run build` to verify there are no broken references. To add imagery, drop the artwork in `portraits-src/` and run `node scripts/gen-portraits.mjs` — it writes all three tiers into `public/portraits/` (head-cropping the two small ones from **one** shared box) and regenerates `src/data/portraitManifest.generated.js`. **Files dropped straight into `public/portraits/` are no longer picked up**: the runtime reads only the manifest, so art has to go through the generator to exist. `--manifest-only` rebuilds just the manifest; `--dry` reports without writing. **Then commit both `public/portraits/` and the manifest** — the deployed site is built from the repo, so art that exists only on your disk never ships, and an untracked manifest fails the host's build outright (`SkyGraph` imports it). If the auto-framing misses a face, add a `{ cx, cy, s }` entry for that id to `scripts/head-boxes.json` and re-run. **Name the source file for the node id exactly** — that id is the only thing a portrait is resolved by, so art filed under a variant spelling silently never loads and its figure stays a bare star. (`callisto`, `euryale`, `tethys`, `graeae`, `muses` and `gorgons` were each filed under a variant once, and were invisible until renamed.)
+
+## Type Readability Floor
+
+The sky is dark and the chrome is deliberately quiet, but "quiet" was being spent
+down to where QA could not read it. Two floors now hold across `index.css` and the
+inline styles in `App.jsx` / `DetailPanel.jsx`, and both are easy to undo one
+declaration at a time:
+
+- **No reading text below 4.5:1** against the surface behind it. The app's grounds
+  run `#06080e` (page) → `#07090f` (panel plate) → `#131a2b` (the lightest overlay
+  core), so a colour is only safe if it clears 4.5 on the *lightest* of those. The
+  muted scale is three steps, all measured against all four grounds:
+  **`#9aa3b4`** (6.8–7.9, bright secondary — row values, prose asides),
+  **`#8a94a6`** (5.7–6.6, mid — the default for quiet chrome, and `--faint`),
+  **`#7a8396`** (4.6–5.3, floor — captions, tooltips' second line, hints).
+  Gold-family labels take **`#a2916a`** (5.6–6.4) or **`#9b8b63`** (5.2–6.0) rather
+  than the old `--gold-dim` `#8c7d59`. Anything dimmer than the floor now is either
+  a border, a gradient stop, a separator, or dead `.wf-page` CSS.
+- **No Cinzel label below 12px, and no reading text below 14px.** Cinzel renders
+  lowercase as small caps and every eyebrow here carries .12–.34em tracking, so a
+  small label is letterforms with more gap than stroke. The first pass at this only
+  lifted the worst cases to 10.5px and left the rest, which on a real screen still
+  read as decoration rather than as text; the floors are now a whole step up and
+  applied across every surface at once, so the app has one scale rather than a
+  per-component one:
+
+  | register | size | where |
+  |---|---|---|
+  | Cinzel eyebrow / row key / small-caps button | **12 – 13.5px** | `.gsr-kicker`, `.gs-kicker`, `.col-row-k`, `.so-cap-head`, `S.hbtn`, the legend heads |
+  | Cinzel title inside a panel | **15 – 17.5px** | `.gsr-tale-t`, `.so-sun-name`, `.so-tale-head .t` |
+  | Cinzel heading *over its own prose* | **19 – 24px** | `.gsr-beat-head .l` — the chapter in play, which has to outsize the beat under it |
+  | italic caption / citation / hint | **14 – 15.5px** | `.gsr-source`, `.gsr-hint`, `.gs-hint`, the atlas's bottom hint |
+  | italic epithet under a title | **15.5 – 18px** | `.gsr-following` — a figure's epithet in the reading column, at `#9aa3b4` |
+  | body a reader actually reads | **16.5 – 20.5px** | `.col-prose`, `.gsr-beat`, `.gsr-full p`, `.gs-narration`, `.so-cap-body p` |
+
+  The graph's relationship labels (`.link-labels text`) are the one exception at
+  **11px** — they ride an edge and cannot take more, but 9.5px was reading as
+  texture on the line rather than as a word.
+
+Three things move with the sizes and are not independent of them:
+
+- **Tracking comes down as size goes up.** .26–.4em was holding a 10.5px label
+  together; at 12.5px the same tracking only adds width the measure has to find, and
+  every tracked eyebrow here sits in a narrow column. So each label that grew lost
+  .02–.06em with it (`.gs-kicker` .4 → .34, `.col-row-k` .26 → .2, `.gsr-beat-head
+  .l` .22 → .12). Don't raise one without the other.
+- **A box measured in px has to grow with the type inside it**, and three did:
+  `.col-row-k`'s fixed **84px** (was 62 — "SYMBOLS" at 12px is ~74px and spilled
+  into the gap onto its own value), the legend popover's **290px** (was 248 — the
+  two-column grid wrapped "Nymphs & Minor"), and `#tip`'s **276px** max-width.
+  `EDGE_LABEL_H` in `SkyGraph` (10 → 12) is the same thing for the edge labels'
+  de-collision boxes, and `StoryOrbit`'s `capMinHeight` (`maxLen / 71 * 28`) for the
+  caption's reserved height. `.col-enter` also gained `flex-wrap`, since at a narrow
+  measure it can no longer hold its label, leader and chapter count on one line.
+
+- **A floor is measured on a colour and read on a *face*.** `.gsr-following`
+  (a figure's epithet under the title) sat at `#7e879c` — **5.6:1** on the
+  reading column's ground, comfortably over the floor, and still hard to read:
+  fine-stroked EB Garamond *italic* at the dimmest step in the column, directly
+  under 30px of near-white title. Passing the ratio is necessary, not
+  sufficient; a light italic serif needs a step or two of headroom that upright
+  Crimson at the same size does not. It is `#9aa3b4` (7.9:1) now, which also
+  undid an **inversion** worth checking for elsewhere: at `#7e879c` it was
+  *dimmer* than the citation line beneath it (`#8a94a6`), so the head read
+  title → source → epithet. (`#7e879c` survives once more, on `.zs-label` in
+  the zodiac sphere — a different ground, and dimmed to .25 for unselected
+  signs, so it was left alone.)
+- **A floor is not a hierarchy.** Raising every reading size at once inverted
+  one pair: `.gsr-beat` went to `clamp(17.5px, min(1.7vw, 3.3vh), 28px)` while
+  its own heading stayed flat at 16px, so the chapter head read as a caption on
+  a body — and because only the prose scaled, the inversion got worse the wider
+  the window (0.65:1 at 1440, 0.57:1 at 1920). A heading and the prose it heads
+  are **one relationship, not two sizes**: both are now written on the same
+  `min(vw, vh)` and hold **~1.2:1** at every viewport (head 19–24px, prose
+  17–20.5px). Two things that look incidental and are not: the head's floor is
+  the *higher* one (19 vs 17), because both bottom out at the ≤900px breakpoint
+  and the ratio would vanish exactly where the column is widest; and the ≤900px
+  block then steps both up (22/18.5), since the measure there is up to 620px
+  against 330–440 wide, and a 17px line across 620px runs ~78 characters.
+  `.gsr-full p` shares `.gsr-beat`'s expression exactly — it is the same prose
+  in the same measure, and a size step on the FULL TALE toggle read as a
+  different typeface.
+- **Opacity multiplies the contrast.** A tier-2 node label at `.52` of `#c4cad6`
+  lands near 3.4:1 however bright the fill is, so the zoom-gated label opacities are
+  **.74 / .88** (tier 2 at `zoomed-mid` / `zoomed-in`), **.76** (tier 3), **.92**
+  (tier 1). Same reason the GuidedSky chapter numerals run **.58 → .82 → 1**
+  (ahead → told → current) instead of starting at .34: the three states still read
+  as a progression, just above the floor rather than through it.
+- **The value structure is untouched.** These changes are all *type* — the limb
+  glow, core shade, haze, `rimBias`, vignette, `cat-halos` and the dashed
+  constellation strokes keep their measured values. Lifting a backdrop to make text
+  readable is the fix this section exists to avoid; brighten the glyph, never the
+  ground behind it.
 
 ## CSS Classes of Note
 
@@ -456,7 +558,7 @@ Edit `src/data/mythology.js` (nodes/links) and optionally add a matching `src/da
 | `.col-name` / `.col-epithet` / `.col-prose` (+ `.clamped`) | Display name (capped 96px, `--name-cq`) / gold epithet / opening prose with overflow fade (no drop-cap — the title carries the opening flourish) |
 | `.col-row` + `.col-row-k` / `.col-row-v` | Foot rows: Cinzel label → dot-joined values (`.col-sep`, `.col-more`, `.col-em`) |
 | `.col-rows-attr` / `.col-rows-nav` | The two foot registers — quiet italic attributes / upright navigable rows whose `.col-link`s underline in gold on hover |
-| `.col-enter` (+ `.col-enter-rule`) / `.col-close` | ENTER THE STORY — bordered CTA button, dotted leader to the chapter count / bare ✕ |
+| `.col-enter` (+ `.col-enter-rule`) / `.col-close` | ENTER THE STORY — the panel's one story door: bordered CTA button, dotted leader to the tale's length (chapters, or minutes for a prose figure) / bare ✕ |
 | `.panel-section` | Staggered fade-in, used by the Colossus main + foot blocks (`@keyframes panelFadeIn`) |
 | `.story-text::first-letter` | Drop-cap on the StoryOrbit reader prose |
 | `.tourbar` (+ `.open`) | Bottom guided-tour caption bar |
