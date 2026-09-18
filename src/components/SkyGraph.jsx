@@ -1036,27 +1036,23 @@ const SkyGraph = forwardRef(function SkyGraph({ onSelect }, ref) {
        even before any interaction. Separate from the general twinkle. */
     const hubBreathThreshold = promRank[Math.min(5, promRank.length - 1)] || 0.6
 
-    /* The coloured halo is for stars with no face on them, and ONLY those.
-       `GLOW_R` is 1.5 and `IMG_SCALE` 1.45, so the glow disc is very nearly the
-       portrait's own size — and the portrait mask holds full alpha only to 55%
-       of its box and is transparent by 100%, so the category colour came up
-       through the art's whole outer fringe as a coral/violet/teal ring sitting
-       inside the figure. A frameless portrait is the point (see the mask note
-       in index.css); a ring of family colour hooped around it is the ring that
-       design removed, reintroduced as light.
-
-       So: tier 3, which draws no <image>, keeps the glow — there the halo IS
-       the star, and 64 bare 3.4px dots would otherwise have nothing. A tier
-       1/2 figure added with no art keeps it too (none today, but a new one
-       would otherwise be a 30–44px void). Everything with a face on it is lit
-       by the portrait itself, the `.core` pip under it, and the gold
-       `.sel-halo` behind it.
+    /* Every star keeps its halo, portrait or not. It was briefly taken off the
+       75 that draw a face, on the theory that it was the coloured ring showing
+       through the art's fringe — it was not. The ring was `.core`, a
+       full-radius family disc with a HARD edge at exactly 1.0r (see
+       `coreRadius`); removing this actually sharpened it, by taking away the
+       falloff that had been blending past that edge. This is a smooth gradient
+       running to nothing at 1.5r at 0.07–0.21 opacity, which is the light the
+       portrait floats in, and it is the substrate every emphasis path animates:
+       the ignition birth flare, the hub breath, the hover swell and the
+       selection nova all write this circle's `r` and `--glow-base`. Take it
+       away and those four silently become no-ops on an empty selection.
 
        No `filter` here any more: the gradient IS the softness, so the glow
        reads the same at every radius instead of depending on a fixed-pixel
        blur that only some nodes were even given. That also drops a
        per-pixel convolution from ~137 nodes. */
-    gNode.filter(d => !hasPortrait(d)).append('circle').attr('class','glow')
+    gNode.append('circle').attr('class','glow')
       .attr('r',        d => radius(d) * GLOW_R)
       .attr('fill',     d => `url(#node-glow-${d.category})`)
       .attr('opacity',  d => 0.07 + d.prom * 0.14)
