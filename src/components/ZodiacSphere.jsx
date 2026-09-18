@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { zodiacPlace } from '../data/zodiac.js'
 
 /* ════════════════════════════════════════════════════════════════════════
    Zodiac Sphere — an interactive 3D-projected celestial globe rendered in
@@ -265,6 +266,31 @@ class SphereEngine {
       this.contentG.appendChild(g)
       return { g, nodes, edges, edgeGlows, label, signLon }
     })
+
+    // TODAY — where the current date falls on the ecliptic. The wheel is a
+    // calendar, but with twelve fixed spans drawn all at once there is nothing
+    // saying which part of it is now; one mark turns the dates in the caption
+    // from a label into a position you can see. It rides the ring itself
+    // (lat 0) at the longitude the date maps to, so it turns with the sphere
+    // and hides on the back face like everything else here.
+    this.today = zodiacPlace()
+    if (this.today) {
+      const g = document.createElementNS(SVGNS, 'g')
+      g.setAttribute('class', 'zs-today')
+      this.todayGlow = this._circle(0, 0, 7,   'zs-today-glow')
+      this.todayHalo = this._circle(0, 0, 3.6, 'zs-today-halo')
+      this.todayCore = this._circle(0, 0, 1.7, 'zs-today-core')
+      g.appendChild(this.todayGlow); g.appendChild(this.todayHalo); g.appendChild(this.todayCore)
+      this.todayG = g
+      this.contentG.appendChild(g)
+
+      // the word rides the unmasked label layer, same as the sign names, so the
+      // limb feather never eats it
+      this.todayLabel = document.createElementNS(SVGNS, 'text')
+      this.todayLabel.setAttribute('class', 'zs-today-label')
+      this.todayLabel.textContent = 'TODAY'
+      this.labelG.appendChild(this.todayLabel)
+    }
   }
 
   _circle(cx, cy, r, cls) {
@@ -410,6 +436,24 @@ class SphereEngine {
     }
     this.eclipticPath.setAttribute('d', ecl)
     this.eclipticGlow.setAttribute('d', ecl)
+
+    // today's place on that ring
+    if (this.today) {
+      const p = this._projectPoint(this.today.lon, 0)
+      const front = p.z > 0.02
+      this.todayG.style.opacity = front ? (0.45 + 0.55 * p.z).toFixed(3) : '0'
+      if (front) this.todayG.setAttribute('transform', `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`)
+      // the word is gated harder than the dot (LABEL_Z, as the sign names are):
+      // type skewed flat against the limb is unreadable well before the mark it
+      // belongs to stops being worth drawing
+      if (p.z > LABEL_Z) {
+        this.todayLabel.setAttribute('x', p.x.toFixed(1))
+        this.todayLabel.setAttribute('y', (p.y - 14).toFixed(1))
+        this.todayLabel.style.opacity = (0.3 + 0.7 * ((p.z - LABEL_Z) / (1 - LABEL_Z))).toFixed(3)
+      } else {
+        this.todayLabel.style.opacity = '0'
+      }
+    }
 
     // constellations
     this.consts.forEach((c, ci) => {

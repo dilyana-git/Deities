@@ -71,8 +71,19 @@ export default function ZodiacSky({ onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
+  /* Swipe-to-page, but NOT over the sphere. A horizontal drag on the globe is
+     already direct manipulation — ZodiacSphere's own pointer handlers turn it
+     under the finger, and turning it forward through the zodiac means dragging
+     RIGHT (va climbs, so the front face travels right). The carousel reading of
+     the same gesture is the opposite one, swipe LEFT for the next sign, so arming
+     both made one finger mean two contradictory things: the globe followed the
+     finger one way and the snap paged it the other. The sphere owns its own
+     surface; everything above it (the caption plate, chiefly, at z-index 7)
+     keeps the pager, where there is no globe to disagree with. A finger and a
+     mouse now do the same thing in the same place. */
   const touchRef = useRef(null)
   const handleTouchStart = useCallback(e => {
+    if (e.target.closest?.('.zs-sphere')) { touchRef.current = null; return }
     touchRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
   }, [])
   const handleTouchEnd = useCallback(e => {

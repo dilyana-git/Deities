@@ -1375,6 +1375,28 @@ body {
 }
 .zs-bgstar { fill: #c8cfe0; }
 
+/* ── TODAY on the ecliptic ──
+   Where the current date falls on the wheel. It takes the ecliptic's own gold
+   rather than the sign's element accent — the Zodiac view speaks in one accent,
+   and this mark belongs to the ring it sits on, not to whichever figure happens
+   to be standing over it this month. What separates it from the hundreds of
+   stars around it is not colour or size but that it BREATHES: a still dot at
+   this scale is just another star, and making it big enough to read as a marker
+   would have it competing with the figures. The pulse is opacity only, so it
+   costs a composite and never a re-raster. */
+.zs-today-glow { fill: rgba(205,184,138,.22); filter: url(#ecl-glow); }
+.zs-today-halo {
+  fill: rgba(205,184,138,.5);
+  animation: zs-today-pulse 3.4s ease-in-out infinite;
+}
+.zs-today-core { fill: #f6efdc; }
+.zs-today-label {
+  font-family: Cinzel, serif; font-size: 8px; letter-spacing: .26em;
+  text-anchor: middle; fill: var(--gold-dim); pointer-events: none;
+}
+.zs-today { pointer-events: none; }
+@keyframes zs-today-pulse { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
+
 /* The dome speaks one accent language: GOLD = the zodiac path. Inactive
    constellations are neutral starlight; the active sign takes the ecliptic's
    gold. Element colour (var(--accent)) is reserved for the caption + rail
