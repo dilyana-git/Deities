@@ -1343,17 +1343,54 @@ body {
 @property --gsr-tint { syntax: '<color>'; inherits: true; initial-value: #8c7d59; }
 .gsr-root {
   --gold: #cdb88a; --gold-dim: #8c7d59;
-  /* The hero's diameter, and the glow's with it. It was a flat 164px, but the
-     room the face has is the plane's, not the viewport's — so it is biggest
-     where there is room and holds back on a small window. Measured on the
-     map's own rule (spacing on 0.8 of the box, since both orbs carry the same
-     mask: full alpha to 55%, under .55 by 80%), the tightest hero↔chapter body
-     gap over every live tale length and PATHS 4-8 runs 44px at 1280x800 to
-     107px at 1920x1080 — against 55-138px at the old 164. The cap is the head
-     crop's own resolution: the orb asks for the 360px `head` variant, so 240px
-     is 1.33x on a DPR-2 screen at the extreme, which the mask's soft outer
-     fifth carries. Don't raise the cap without a larger crop to draw from. */
+  /* The room the centre is allowed, and the glow's size with it. It was a flat
+     164px, but the room the figure has is the plane's, not the viewport's — so
+     it is biggest where there is room and holds back on a small window.
+     Measured on the map's own rule (spacing on 0.8 of the box, since the
+     chapter orbs carry the same mask: full alpha to 55%, under .55 by 80%),
+     the tightest centre↔chapter body gap over every live tale length and
+     PATHS 4-8 ran 44px at 1280x800 to 107px at 1920x1080 — against 55-138px
+     at the old 164 — and `--hero-w` sits inside that at 0.85 of it.
+     Resolution is no longer the cap: the centre draws the 820px `full` plate,
+     so 240px is a downscale at any DPR. What caps it is the clearance above. */
   --hero-d: clamp(190px, min(15vw, 26vh), 240px);
+  /* the box fitted inside that room. The centre is a standing figure now, not
+     a disc, so `--hero-d` is the room it is allowed rather than the thing
+     itself: the width stays inside the clearance `PATHS` are hand-set to
+     leave, and the height is free to run past it, because the stars that
+     bound the centre sit above and to the sides of it — the lowest on any
+     path are at y 73-76 and x 18-20 / 79-88, a third of the plane away.
+     Measured on the body rule (0.8 of the drawn box, both sides) against
+     every tale length in the data — 4 to 8 — over 1280x800 up to 2560x1440,
+     ONE case binds at every size: the lit chapter star at the 8-chapter
+     path's [32,51], at 1280x800. Nothing else on the plane ever comes close,
+     which is why the figure can be this large at all. The frontier, gap in
+     px, and the reason the lit star came down to 82 with it:
+
+           hero-w    lit 96   lit 88   lit 82   lit 76
+           0.95        36.3     39.5     41.9     44.3
+           1.15        19.4     22.6   > 25.0 <   27.4
+           1.25        11.0     14.2     16.6     19.0
+
+     That table assumed the constellation could not move, and it was the
+     hand-set paths that could not: they were drawn around a 164px disc and
+     were the one thing still sized for it. They are relaxed against the
+     centre's clearance now, like the gestures already were (`HERO_CLEAR` in
+     GuidedSky.jsx), so the figure sets the spacing rather than inheriting it.
+     Re-audited with the paths adapting, over every shape at every length and
+     1280x800 up to 2560x1440: at 1.5 the tightest gap is **34px**, better
+     than the 25px that shipped, and ~16% of stars sit against the frame
+     against ~14% before. `--hero-fill` is the square plates' share of it:
+     the min() pair below spends only 1/1.5 of the height on them, so at the
+     same width they read smaller than a standing figure, and they have the
+     clearance to take it back.
+
+     What caps it is the NAME, not the constellation: the box hangs off the
+     centre at 63% of the plane and the label sits under it, so on a short
+     viewport the two run past the bottom. Hence the `54vh` — at 1440x800 it
+     binds and holds the whole group inside the plane. */
+  --hero-w: calc(var(--hero-d) * 1.5 * var(--pscale, 1));
+  --hero-h: min(calc(var(--hero-w) * 1.5), 54vh);
   transition: --gsr-tint 1.6s ease;
   --ink: #e4e8f0; --ink-dim: #8f98a9; --faint: #8a94a6;
   --col-w: clamp(420px, 34%, 560px);
@@ -1420,6 +1457,11 @@ body {
   background: #e7ebf2; filter: blur(.4px); pointer-events: none;
   animation: gsr-shimmer var(--dur) ease-in-out var(--delay) infinite;
 }
+/* a few motes drift in FRONT of the centre figure rather than behind it —
+   the cheapest depth cue on the plane, and the only one that says there is
+   air between the reader and her. Bigger as well as nearer, because that is
+   what nearer looks like. `.gsr-hero` is z-index 3. */
+.gsr-dust.near { z-index: 4; width: 3px; height: 3px; filter: blur(.6px); }
 
 /* ── the sky chart ── (`SkyChart` in GuidedSky.jsx)
    The atlas's planisphere behind the plane, at the map's own whisper values.
@@ -1456,39 +1498,277 @@ body {
 /* ── the hero: the figure the tale follows ──
    Static across chapters and anchored at the constellation's centre, so the
    tour has one face to hold on to while the narration travels around it. */
+/* ── depth ───────────────────────────────────────────────────────────────
+   The plate is flat and will stay flat. What can be made dimensional is its
+   RELATIONSHIP to everything around it, and the view already has the motion
+   to carry that: the plane leans toward the chapter in play on every advance.
+   `--lean-x/y` is that offset normalised to ±1, and three things read off it:
+
+   - the figure travels a little further than the constellation it stands in,
+     which is what a nearer thing does under a camera move;
+   - its light pool travels the other way, so she separates from her own glow
+     instead of being stamped onto it — net ~20px of relative shift;
+   - the highlight slides across her as the sky turns, so the shading belongs
+     to a body rather than to a picture of one.
+
+   Only `--lean-x/y` are transitioned, never the transforms and the mask
+   centre they feed. One registered property animating keeps all three cues
+   in lockstep for the same 2.2s the plane takes; transitioning each derived
+   value separately is three clocks that drift apart under an interrupted
+   advance.
+
+   Two things deliberately NOT done. A literal `rotateY` under `perspective`
+   is the obvious reading of "3D" and is the wrong one: a flat plate turned
+   in space reads as a leaning photograph, and it would drag every portrait
+   and label under it onto a rotated raster path — the thing `.celestial-drift`
+   exists to avoid. And a pointer tilt is out for the reason the DetailPanel's
+   was cut: noise across a face this size, and it answers the mouse rather
+   than the tale. */
+@property --lean-x { syntax: '<number>'; inherits: true; initial-value: 0; }
+@property --lean-y { syntax: '<number>'; inherits: true; initial-value: 0; }
+
 .gsr-hero {
-  position: absolute; transform: translate(-50%, -50%); z-index: 3; pointer-events: none;
+  position: absolute; z-index: 3; pointer-events: none;
+  transform: translate(-50%, -50%)
+             translate(calc(var(--lean-x) * 9px), calc(var(--lean-y) * 6px));
+  transition: --lean-x 2.2s cubic-bezier(.22,.61,.36,1),
+              --lean-y 2.2s cubic-bezier(.22,.61,.36,1);
   animation: gsr-in 1.1s ease both;
 }
+/* The pool the figure stands in. It is wider than the old 1.8x halo and sits
+   low, because it lights a standing figure rather than ringing a head — and
+   it takes the figure's OWN family colour (`--gsr-tint`, which cross-fades
+   with the chapter, as the chart's limb and bloom already do) warmed toward
+   the gold the rest of the chrome speaks. The one place the centre's identity
+   could be carried by light was the one place still painting flat gold. */
 .gsr-hero-glow {
-  position: absolute; left: 50%; top: 50%;
-  /* 1.8x the orb — the ratio the flat 300/164 had, kept so the light the face
-     floats in grows with the face instead of closing in on it */
-  width: calc(var(--hero-d) * 1.8 * var(--pscale, 1));
-  height: calc(var(--hero-d) * 1.8 * var(--pscale, 1));
-  margin: calc(var(--hero-d) * -0.9 * var(--pscale, 1)) 0 0 calc(var(--hero-d) * -0.9 * var(--pscale, 1));
+  position: absolute; left: 50%; top: 56%;
+  /* sized off the FIGURE, not off `--hero-d`. It was a circle on the room the
+     centre is allowed, so growing the figure left the light where it was and
+     the pool went from surrounding her to being filled by her. Keyed to
+     `--hero-w`/`--hero-h` it grows with her and comes out a standing oval,
+     which is the shape it is lighting. (Both already carry `--pscale`.) */
+  width: calc(var(--hero-w) * var(--hero-fill, 1) * 1.75);
+  height: calc(var(--hero-h) * 1.4);
+  margin: calc(var(--hero-h) * -0.7) 0 0 calc(var(--hero-w) * var(--hero-fill, 1) * -0.875);
   border-radius: 50%; pointer-events: none;
-  background: radial-gradient(closest-side, rgba(205,184,138,.5) 0%, rgba(205,184,138,.16) 42%, transparent 72%);
-  filter: blur(16px); animation: gsr-glow 5.5s ease-in-out infinite;
+  /* against the lean, while the figure goes with it. The pool is the layer
+     behind her, so it behaves like the sky chart does against the plane. */
+  transform: translate(calc(var(--lean-x) * -20px), calc(var(--lean-y) * -13px));
+  background: radial-gradient(closest-side,
+    color-mix(in oklch, var(--gsr-tint) 40%, transparent) 0%,
+    color-mix(in oklch, var(--gsr-tint) 14%, transparent) 38%,
+    rgba(205,184,138,.05) 58%, transparent 76%);
+  filter: blur(18px); animation: gsr-glow 5.5s ease-in-out infinite;
 }
-.gsr-hero-orb {
+
+/* The figure, fitted inside the room `--hero-d` reserves rather than filling
+   it as a disc. BOTH dimensions are capped against `--hero-ar` (the plate's
+   own width/height, set inline from the manifest), so a 2:3 standing plate
+   lands as a figure at the full height and one of the 19 square plates lands
+   as a bust at the full width — instead of being cropped down its middle by
+   a box that assumed one shape. Neither can outgrow the width the hand-set
+   `PATHS` leave the centre, which is what keeps the tightest chapter star
+   clear of it. */
+.gsr-hero-fig {
+  /* `--hero-ar` is INHERITED from `.gsr-hero`, never declared here. It used to
+     be, as a default, back when HeroOrb set the per-plate vars inline on this
+     element — an inline style outranks the rule, so the default was only ever
+     a fallback. Once those vars moved up to `.gsr-hero` (so the light pool
+     could see them too) this declaration started winning over the inherited
+     value instead, every plate computed as 2:3, and the 19 square plates lost
+     their circle. The default belongs in the `var()`, which loses to
+     inheritance, not in a declaration, which beats it. */
   position: relative;
-  width: calc(var(--hero-d) * var(--pscale, 1)); height: calc(var(--hero-d) * var(--pscale, 1));
-  border-radius: 50%; overflow: hidden;
-  background: radial-gradient(circle at 36% 32%, #fdf8ea, #ecd9a8 45%, #b28f5a 78%, #6b5638);
-  /* frameless, as `.node image` on the map: the edge dissolves into the sky
-     instead of being cut by a ring */
-  -webkit-mask-image: radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%);
-  mask-image: radial-gradient(closest-side, #000 55%, rgba(0,0,0,.55) 80%, transparent 100%);
+  /* `--hero-fill` is applied HERE, not folded into `--hero-w` on `.gsr-root`:
+     an unregistered custom property substitutes its `var()`s on the element
+     that declares it, so a `--hero-fill` set down on `.gsr-hero` would never
+     reach a `--hero-w` computed up at the root. It multiplies the width term
+     only — for a square plate the min() then takes width, and height follows
+     from it; for a standing plate `--hero-h` still binds and nothing moves. */
+  width:  min(calc(var(--hero-w) * var(--hero-fill, 1)), calc(var(--hero-h) * var(--hero-ar, .667)));
+  height: min(var(--hero-h), calc(var(--hero-w) * var(--hero-fill, 1) / var(--hero-ar, .667)));
+  /* the shape changes with the figure while the outgoing face is still
+     fading out beneath the incoming one, so the box travels at the
+     cross-fade's own pace instead of snapping under it */
+  transition: width .62s ease, height .62s ease;
+  /* THE SILHOUETTE, and the only thing here that reaches zero.
+     This was a pair of linear gradients — one fading head and feet, one
+     fading left and right — and a linear gradient fades along a straight
+     line, so their product is a RECTANGLE with soft sides and four corners
+     where both were mid-fade. That is the angularity: the figure ended on
+     the box rather than on itself.
+     `ellipse closest-side` is the inscribed ellipse — rx half the width, ry
+     half the height, whatever those are — so it reaches zero exactly at the
+     four edge midpoints and earlier everywhere between. No straight run and
+     no corner anywhere on the boundary, and it re-derives itself from the
+     box, which already takes the plate's own shape: a standing plate gets a
+     tall oval, one of the 19 square busts gets a circle, and neither had to
+     be told which it was.
+     The stops are a trade, and both ends of it are measurable. A short
+     plateau and a long even ramp keeps a smaller SHARE of the plate — 58%
+     against the 64% of a harder edge — and the edge runs .9 → .1 over
+     **27%** of the radius instead of 21%, which is most of the way to the
+     map's own `.node image` (36%, at a twentieth of the size). Share is the
+     wrong thing to optimise, though: against the bigger box it is 104,000
+     px² of visible artwork at 1440x900 where the harder, smaller version
+     was 59,000. More of the picture AND a softer edge — the box is what
+     buys both, not the stops. */
+  -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 50%,
+    #000 0%, #000 52%, rgba(0,0,0,.90) 70%, rgba(0,0,0,.66) 83%,
+    rgba(0,0,0,.34) 92%, rgba(0,0,0,.12) 97%, transparent 100%);
+  mask-image: radial-gradient(ellipse closest-side at 50% 50%,
+    #000 0%, #000 52%, rgba(0,0,0,.90) 70%, rgba(0,0,0,.66) 83%,
+    rgba(0,0,0,.34) 92%, rgba(0,0,0,.12) 97%, transparent 100%);
+}
+/* a ground only where no plate is drawn over it. Under one, it would show
+   through the art's faded fringe as a hooped edge — the bug the map's core
+   pip exists to avoid, at eight times the size */
+.gsr-hero-fig.bare {
+  border-radius: 50%;
+  /* the gradient already ends in nothing, and the head-and-feet mask above
+     would cut a soft disc flat across the top and bottom */
+  -webkit-mask-image: none; mask-image: none;
+  background: radial-gradient(closest-side,
+    color-mix(in oklch, var(--gsr-tint) 34%, transparent) 0%,
+    color-mix(in oklch, var(--gsr-tint) 12%, transparent) 52%, transparent 84%);
+}
+/* THE BIAS — where the light is, not where the figure ends. An ellipse hung
+   on the face (`--hero-focus`, set from the plate's proportions in
+   GuidedSky.jsx: high on a standing plate, near the middle on a bust), it
+   leans the light toward the face without ever reaching zero, so it can be
+   as loose as it likes. The silhouette above does all the cutting, which is
+   what lets this one stay curved and generous instead of having to hunt the
+   box's edges.
+   It used to be the bigger thief of the two: at .42 on its outer stop it
+   was taking more than half the light off the whole periphery, which cost
+   the torso and the legs far more than it bought in emphasis. At .82 the
+   lean still reads and the figure is legible to its edges — the glow behind
+   is what lights the face, not this. */
+.gsr-hero-veil {
+  position: absolute; inset: 0;
+  /* the centre rides `--lean-x`, so the light on her moves as the sky turns.
+     It is the bias, never the silhouette, that may move: shifting the mask
+     that governs the boundary would let the plate's ground back out past the
+     sink on whichever side it slid toward, and the bright rim would return. */
+  -webkit-mask-image: radial-gradient(ellipse 98% 86% at calc(50% + var(--lean-x) * 7%) var(--hero-focus, 36%),
+    #000 0%, #000 58%, rgba(0,0,0,.95) 84%, rgba(0,0,0,.86) 100%);
+  mask-image: radial-gradient(ellipse 98% 86% at calc(50% + var(--lean-x) * 7%) var(--hero-focus, 36%),
+    #000 0%, #000 58%, rgba(0,0,0,.95) 84%, rgba(0,0,0,.86) 100%);
 }
 /* two stacked faces: the chapter in play fades up over the one the chapter
-   before left standing, so the orb is never empty mid-advance */
-.gsr-hero-orb img {
+   before left standing, so the centre is never empty mid-advance */
+.gsr-hero-veil img {
   position: absolute; inset: 0;
   width: 100%; height: 100%; object-fit: cover; display: block;
+  /* a no-op while the box matches the plate, which is the whole point of
+     `--hero-ar` — it earns its keep when the chain has fallen back to the
+     square `head` crop inside a box shaped for the `full` one, and keeps
+     the face rather than the chest */
+  object-position: 50% 12%;
+  /* the plate is framed as a picture, with its own margin of backdrop around
+     the composition; drawn 1:1 in the box, the silhouette cuts exactly
+     through that framing. A small zoom about the focus puts the ellipse out
+     in the backdrop instead, where there is nothing to cut. The box has no
+     `overflow: hidden` and needs none — past its edges the silhouette's
+     gradient is already beyond its last stop, so anything out there is
+     masked away. */
+  transform: scale(var(--hero-zoom, 1.06));
+  transform-origin: 50% var(--hero-focus, 36%);
+  /* no mask of its own. It used to carry the vignette as a third layer, back
+     when the two above were straight-edged and something had to round the
+     result off; now the silhouette is an ellipse and the veil is the
+     vignette, a third multiplied falloff only eats the torso. */
 }
-.gsr-hero-orb img.lead { opacity: 0; transition: opacity .62s ease; }
-.gsr-hero-orb img.lead.on { opacity: 1; }
+.gsr-hero-veil img.lead { opacity: 0; transition: opacity .62s ease; }
+.gsr-hero-veil img.lead.on { opacity: 1; }
+
+/* THE SINK — and the reason the figure had a visible outline at all.
+   The masks were never the problem; the plate was. These are paintings with
+   their own grounds, and those grounds are LIGHT — the square scenes in
+   particular sit on a studio sweep around #3f3f3f against a sky nearer #16.
+   Fading alpha on that does not dissolve it, it just makes a translucent
+   grey disc, and a translucent grey disc over a dark sky is a glowing oval
+   with a soft edge. Measured along the horizontal radius, with the plate's
+   ground at 63/255 and the glow-lit sky behind it at 22:
+
+        t      .70    .76    .82    .86    .90    .94    .97
+        bare   +40    +37    +35    +31    +23    +16     +8
+        sunk   +25    +17    +10     +5     +1     +0     -0
+
+   The fix is not a longer fade — a longer fade spreads the same step over
+   more pixels and costs the image the reader asked to see more of. It is to
+   take the CONTRAST out of what is being faded: sink the plate's ground to
+   the value of the sky before the alpha runs out, so what dissolves is
+   already sky-coloured and there is nothing left to step.
+   It sinks toward the tint, not toward black. Pure #05070c leaves the
+   periphery at 12 against a sky at 22 — a dark ring instead of a bright one,
+   milder but still an outline. The light behind the figure is the glow pool,
+   so the ground it melts into has to be the glow's colour. */
+.gsr-hero-sink {
+  position: absolute; inset: 0; pointer-events: none;
+  --hero-sink: color-mix(in oklch, var(--gsr-tint) 20%, #090e1a);
+  background: radial-gradient(ellipse closest-side at 50% 50%,
+    transparent 38%,
+    color-mix(in oklch, var(--hero-sink) 22%, transparent) 58%,
+    color-mix(in oklch, var(--hero-sink) 60%, transparent) 74%,
+    color-mix(in oklch, var(--hero-sink) 88%, transparent) 86%,
+    var(--hero-sink) 100%);
+}
+
+/* THE RIM — the figure's edge catches the light, in the gold the rest of the
+   chrome speaks.
+   It is a rim LIGHT, not an outline, and the difference is the whole point:
+   no stroke, no constant width, no closed loop. It peaks just inside where
+   the silhouette lets go, falls to nothing in both directions, and is masked
+   to one side so it is brightest where the light is and dies away around the
+   back. Measured against the sky behind it, the lit side runs +20 at its
+   peak and returns to +0 by t .99; the shadow side is +4. That decay to
+   nothing is what separates it from the grey halo `.gsr-hero-sink` exists to
+   remove — that one had no falloff, no direction and the wrong colour.
+   A drawn ring here would be the bezel this file argues against at the node
+   core, at the horizon and at the portrait mask: `.node image` is frameless
+   and `.sel-halo` is a bloom rather than a stroke for exactly this reason.
+   The lit side is the upper left, which is where every other orb in the app
+   is lit from (`.gsr-orb`, and the old hero, are `circle at 36% 32%`). It
+   swings 18deg with `--lean-x` so the light lives as the sky turns — a small
+   swing on purpose: following the chapter round would be a 180deg sweep, and
+   a rim that crawls all the way around reads as a rotating object, not a
+   lit one. */
+.gsr-hero-rim {
+  position: absolute; inset: 0; pointer-events: none;
+  --rim: color-mix(in oklch, var(--gold) 78%, var(--gsr-tint) 22%);
+  background: radial-gradient(ellipse closest-side at 50% 50%,
+    transparent 60%,
+    color-mix(in oklch, var(--rim) 10%, transparent) 74%,
+    color-mix(in oklch, var(--rim) 20%, transparent) 83%,
+    color-mix(in oklch, var(--rim) 10%, transparent) 92%,
+    transparent 100%);
+  -webkit-mask-image: linear-gradient(calc(135deg + var(--lean-x) * 18deg),
+    #000 0%, rgba(0,0,0,.86) 30%, rgba(0,0,0,.4) 70%, rgba(0,0,0,.22) 100%);
+  mask-image: linear-gradient(calc(135deg + var(--lean-x) * 18deg),
+    #000 0%, rgba(0,0,0,.86) 30%, rgba(0,0,0,.4) 70%, rgba(0,0,0,.22) 100%);
+}
+
+/* Whoever holds the centre, named — and set ONLY where nothing else on
+   screen names them (`centreNamed` in GuidedSky.jsx). The face at the centre
+   is the chapter's first named figure, so on a figure's own tale it is
+   usually a stranger to the title in the column, and it was the largest
+   unlabelled thing in the view. */
+.gsr-hero-name {
+  position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+  margin-top: 14px; text-align: center; white-space: nowrap; pointer-events: none;
+  animation: gsr-head .5s ease both;
+}
+.gsr-hero-name .n {
+  display: block; font-family: Cinzel, serif;
+  font-size: 17px; letter-spacing: .14em; color: #ece6d6;
+}
+.gsr-hero-name .c {
+  display: block; margin-top: 5px; font-family: Cinzel, serif;
+  font-size: 12px; letter-spacing: .26em;
+  color: color-mix(in oklch, var(--gsr-tint) 58%, #cbd2df 42%);
+}
 
 /* ── the chapters ──
    One star each, ignited in story order when the tale opens. The label is the
@@ -1786,6 +2066,12 @@ body {
   .gsr-beat, .gsr-full p { font-size: 18.5px; }
   .gsr-beat-head .l { font-size: 22px; }
   .gsr-beat-head .n { font-size: 17px; }
+  /* the figure halves here with `--pscale` and the name has to come with it,
+     or a 17px label stands under a 90px figure. 15/12 is the Cinzel floor's
+     bottom step, not a free choice. */
+  .gsr-hero-name { margin-top: 10px; }
+  .gsr-hero-name .n { font-size: 15px; letter-spacing: .12em; }
+  .gsr-hero-name .c { font-size: 12px; letter-spacing: .22em; }
   /* no bottom-hang here: the row is short and the measure wide, so a beat is
      two or three lines and the spacer would open a void above it */
   .gsr-read-pad { display: none; }
@@ -1796,7 +2082,8 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .gsr-bgstar, .gsr-dust, .gsr-bloom, .gsr-float, .gsr-halo, .gsr-hero-glow { animation: none; }
   .gsr-star, .gsr-hero, .gsr-column, .gsr-exit, .gsr-web-trace,
-  .gsr-beat, .gsr-beat-head, .gsr-figs, .gsr-full { animation: none; }
-  .gsr-root, .gsr-plane, .gsr-dome, .gsr-light, .gsr-orb, .gsr-num, .gsr-rail-fill, .gsr-hero-orb img { transition: none; }
+  .gsr-beat, .gsr-beat-head, .gsr-figs, .gsr-full, .gsr-hero-name { animation: none; }
+  .gsr-root, .gsr-plane, .gsr-dome, .gsr-light, .gsr-orb, .gsr-num, .gsr-rail-fill,
+  .gsr-hero, .gsr-hero-fig, .gsr-hero-veil img { transition: none; }
   .gsr-rail-fill.ticking { animation: none; }
 }

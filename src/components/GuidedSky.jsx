@@ -3,7 +3,7 @@ import { TOURS } from '../data/tours.js'
 import { deityStories } from '../data/deityStories.js'
 import { nodes as allNodes } from '../data/mythology.js'
 import { categoryConfig } from '../data/categoryConfig.js'
-import { CAT, portraitSources } from './SkyGraph.jsx'
+import { CAT, portraitSources, portraitEntries, warmFullPortrait } from './SkyGraph.jsx'
 
 const NUMERALS = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ', 'Ⅴ', 'Ⅵ', 'Ⅶ', 'Ⅷ', 'Ⅸ', 'Ⅹ']
 const _nodeMap = Object.fromEntries(allNodes.map(n => [n.id, n]))
@@ -52,9 +52,9 @@ function figureTale(id) {
 }
 
 /* Walk only the exact generated variants that exist for this figure. `size` is
-   the tier the caller is about to draw at: chapter stars are 44-96px and ask
-   for the 192px `node` crop, the hero orb is 190-240px (`--hero-d`) and asks
-   for the 360px `head` one — which is also what caps it. */
+   the tier the caller is about to draw at: chapter stars are 50-82px and ask
+   for the 192px `node` crop, the centre figure is drawn as a standing plate
+   and asks for the 820px `full` one. */
 function usePortrait(id, size = 'node') {
   const chain = useMemo(() => portraitSources(id, size), [id, size])
   const [attempt, setAttempt] = useState({ id, idx: 0 })
@@ -65,27 +65,21 @@ function usePortrait(id, size = 'node') {
   }
 }
 
-/* Fetch a figure's 360px centre face ahead of its chapter. Low priority, once
-   per session, and never on a data-saver connection — the orb holds the
-   previous face until this one arrives anyway, so warming only buys speed. */
-const _warmedHeads = new Set()
-function warmHead(id) {
-  if (!id || _warmedHeads.has(id) || navigator.connection?.saveData) return
-  const src = portraitSources(id, 'head')[0]
-  if (!src) return
-  _warmedHeads.add(id)
-  const img = new Image()
-  img.decoding = 'async'
-  if ('fetchPriority' in img) img.fetchPriority = 'low'
-  img.src = src
-}
-
 /* ── the constellation ─────────────────────────────────────────────────────
-   Hand-set scatters, one per beat count, in % of the plane. Each sweeps from
-   the lower left up over the top and back down to the right — irregular on
-   purpose: no orbit, no symmetry, no equal spacing, so the tale reads as a
-   figure someone traced in the sky rather than as a diagram. Every path is
-   drawn to leave HERO its room. */
+   A tale is drawn as a figure in the sky, and the figure is ITS OWN. It used
+   to be keyed on beat count alone, so the eleven tours and the 119 chaptered
+   figure tales shared five shapes between them: every seven-chapter tale in
+   the app was the same seven stars in the same places, and the view read as
+   one constellation with different captions.
+
+   Now a tale picks from a family — the hand-set scatter for its length, plus
+   ten GESTURES below — by a hash of its own key, so its figure is fixed for
+   that tale and differs from its neighbours'. 55 shapes across the five live
+   lengths; the current dataset draws 35 of them.
+
+   The hand-set paths stay in the family rather than being replaced. They were
+   drawn and measured by hand, they are still the tightest-packed of the set,
+   and there is no reason to lose them. */
 const PATHS = {
   4: [[22, 70], [34, 40], [58, 20], [83, 47]],
   5: [[20, 73], [30, 44], [46, 18], [65, 33], [84, 58]],
@@ -95,49 +89,142 @@ const PATHS = {
 }
 const HERO = { x: 47, y: 63 }
 
-/* separate b from a until they are `want` apart, closing half the shortfall
-   per pass. `pinA` gives a the whole correction's benefit — the hero holds the
-   centre and the chapters move around it. */
-function push(a, b, want, pinA) {
+/* The room the centre needs, in plane units, as an ELLIPSE — it is a tall
+   standing figure, not a disc, and a circle wide enough to hold its height
+   would shove every tale out against the frame. This is what lets the figure
+   be sized for the design rather than for the constellation: every path, the
+   hand-set ones included, is relaxed against it, so growing the centre moves
+   the chapters instead of colliding with them.
+   Sized at 1280x800, the tightest viewport and the one every clearance audit
+   binds at. The widest box there is 288px (a square plate at `--hero-fill`)
+   and the tallest 432; 0.8 of each is the body, the largest star body is 33px
+   (0.8 of the lit 82), and 25px of gap goes on top. The remaining slack is
+   because a point pushed to normalised radius 1 on this ellipse is not a
+   uniform distance from the figure's — that curve is not an offset curve —
+   and the diagonal is where it runs closest. */
+const HERO_CLEAR = { x: 24.5, y: 31 }
+
+/* A gesture is a y across a left-to-right sweep — the gold thread inks in
+   story order, so chronology has to stay readable along x — plus an easing on
+   x and a wobble, so no two tales pace or shape their chapters alike.
+   The wobble is what the old fallback had, and on its own it is not a shape:
+   it moves stars ALONG a curve without changing the curve, which is why that
+   path read as "the arc again" whatever seed it was handed. The curve is the
+   thing that has to vary. */
+const PI = Math.PI
+const GESTURES = [
+  { y: t => 74 - Math.sin(t * PI * 0.86) * 58,            ex: 1.00, wob: [5.5, 2.3, 0.0] }, // crest
+  { y: t => 17 + t * 55 + Math.sin(t * PI) * 9,           ex: 0.86, wob: [5.0, 1.7, 1.1] }, // fall
+  { y: t => 80 - t * 58 - Math.sin(t * PI) * 7,           ex: 1.14, wob: [5.0, 2.1, 2.2] }, // climb
+  { y: t => 46 - Math.sin(t * PI * 2) * 27,               ex: 0.95, wob: [4.5, 1.4, 0.6] }, // wave
+  { y: t => 52 - Math.sin(t * PI * 2 - 0.5) * 19 - Math.sin(t * PI) * 13,
+                                                          ex: 1.05, wob: [4.0, 2.7, 1.7] }, // twin crests
+  { y: t => 72 - Math.sin(Math.min(t * 1.42, 1) * PI * 0.78) * 55,
+                                                          ex: 0.92, wob: [5.0, 1.9, 2.8] }, // hook
+  { y: t => 26 + Math.sin(t * PI) * 47,                   ex: 1.00, wob: [5.0, 2.5, 0.3] }, // valley
+  { y: t => 76 - t * 52,                                  ex: 1.00, wob: [8.5, 3.1, 1.4] }, // lean
+  { y: t => 60 - Math.sin(t * PI * 0.7 + 0.5) * 42,       ex: 1.08, wob: [5.5, 2.0, 2.0] }, // brow
+  { y: t => 34 + Math.sin(t * PI * 1.6 + 2.1) * 32,       ex: 0.90, wob: [5.0, 1.6, 0.9] }, // crook
+]
+
+/* FNV-1a over the tale's key, so a tale's figure is the same on every render
+   and every reload, and two tales of one length are not the same figure */
+const hashKey = s => {
+  let h = 2166136261
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) }
+  return h >>> 0
+}
+const rngFrom = seed => {
+  let s = (seed || 1) >>> 0
+  return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296 }
+}
+
+/* separate a and b until they are `want` apart, closing half the shortfall
+   per pass and splitting it between them */
+function push(a, b, want) {
   let dx = b.x - a.x, dy = b.y - a.y
   let d = Math.hypot(dx, dy)
   if (d >= want) return
   if (d < 1e-6) { dx = 1; dy = 0; d = 1 }   // coincident — pick an axis to leave on
-  const step = (want - d) * 0.5 / d
-  b.x += dx * step * (pinA ? 1 : 0.5); b.y += dy * step * (pinA ? 1 : 0.5)
-  if (!pinA) { a.x -= dx * step * 0.5; a.y -= dy * step * 0.5 }
+  const step = (want - d) * 0.25 / d
+  b.x += dx * step; b.y += dy * step
+  a.x -= dx * step; a.y -= dy * step
+}
+/* the centre holds still and the chapter leaves, straight out to the
+   clearance ellipse — not half-way, since nothing is coming to meet it */
+function pushOutOfHero(p) {
+  let dx = (p.x - HERO.x) / HERO_CLEAR.x, dy = (p.y - HERO.y) / HERO_CLEAR.y
+  const d = Math.hypot(dx, dy)
+  if (d >= 1) return
+  if (d < 1e-6) { dx = 0; dy = 1 }          // dead centre — leave straight down
+  const k = d < 1e-6 ? 1 : 1 / d
+  p.x = HERO.x + dx * k * HERO_CLEAR.x
+  p.y = HERO.y + dy * k * HERO_CLEAR.y
 }
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi)
 const pt = p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`
 
-/* Nothing hand-set for this length — lay the same corridor out evenly, jitter
-   it from a fixed hash so it still scatters rather than arcs (and scatters the
-   same way on every render), then relax it: no two chapters closer than `sep`,
-   none inside the hero's clearance, none off the frame. The hand-set paths run
-   ~20 units apart at their tightest and a pair of orbs starts touching around
-   10 on a small screen, so a longer tour trades spacing down toward that floor
-   instead of overlapping — the jitter alone leaves pairs 30px inside each
-   other by nine chapters. */
-function pathFor(n) {
-  if (PATHS[n]) return PATHS[n].map(([x, y]) => ({ x, y }))
-  const jitter = k => { const v = Math.sin(k) * 43758.5453; return v - Math.floor(v) - 0.5 }
+/* Lay n chapters along one gesture, then relax: no two closer than `sep`,
+   none inside the centre's clearance, none off the frame. The relaxation is
+   what makes a family of curves safe to add to — a gesture only has to be a
+   good line, not a good layout at every length, and this pass is what turns
+   the one into the other. A shorter step than the old pass (a quarter of the
+   shortfall, split, against a half) with more passes: the ellipse push is
+   absolute rather than gradual, so a coarse star-star step fights it and the
+   pair oscillates instead of settling. */
+function layOut(n, g, seed) {
+  const rnd = rngFrom(seed)
+  const [amp, freq, ph] = g.wob
+  const j0 = rnd() * 6.28, j1 = rnd() * 6.28
   const pts = Array.from({ length: n }, (_, i) => {
     const t = n === 1 ? 0.5 : i / (n - 1)
     return {
-      x: 18 + t * 70 + jitter((i + 1) * 12.9898) * 9,
-      y: 74 - Math.sin(t * Math.PI * 0.86) * 58 + jitter((i + 1) * 78.233) * 9,
+      x: 12 + Math.pow(t, g.ex) * 77 + Math.sin(t * freq * 4.1 + j0) * amp * 0.7,
+      y: g.y(t) + Math.sin(t * PI * freq + ph + j1) * amp,
     }
   })
+  return relax(pts, n)
+}
+
+/* every figure this length can be drawn as: the hand-set one, then the
+   gestures */
+function shapesFor(n) {
+  const list = PATHS[n] ? [PATHS[n]] : []
+  return list.concat(GESTURES)
+}
+
+/* The hand-set paths were drawn around a 164px disc and are the one thing
+   still sized for it — left alone they, not the figure, decide how large the
+   centre may be. Rather than lose them or redraw them by hand, push only the
+   stars the centre now actually reaches and leave the rest of the figure
+   exactly as drawn: the same move `separatePortraits` makes on the map's
+   force layout, and for the same reason. */
+function relax(pts, n) {
   const sep = clamp(160 / n, 13, 20)
-  const heroSep = Math.max(sep, 16)
-  for (let pass = 0; pass < 60; pass++) {
+  for (let pass = 0; pass < 70; pass++) {
     for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) push(pts[i], pts[j], sep, false)
-      push(HERO, pts[i], heroSep, true)
+      for (let j = i + 1; j < n; j++) push(pts[i], pts[j], sep)
+      pushOutOfHero(pts[i])
     }
-    for (const p of pts) { p.x = clamp(p.x, 8, 92); p.y = clamp(p.y, 8, 92) }
+    for (const p of pts) { p.x = clamp(p.x, 9, 91); p.y = clamp(p.y, 9, 91) }
   }
   return pts
+}
+
+/* A tale's own figure. Audited over every shape at every live length (4-8),
+   several seeds each, across 1280x800 to 2560x1440, with the centre at its
+   current size: worst star↔centre **34px**, nothing off-frame, and ~16% of
+   stars resting against the frame clamp against ~14% before the centre grew.
+   That last number is the real cost of a large centre and the thing to watch
+   if it grows again — the constellation starts hugging the border before it
+   starts colliding. */
+function pathFor(n, key = '') {
+  const list = shapesFor(n)
+  const h = hashKey(key)
+  const pick = list[h % list.length]
+  return Array.isArray(pick)
+    ? relax(pick.map(([x, y]) => ({ x, y })), n)
+    : layOut(n, pick, h)
 }
 
 /* one chapter = a star in that constellation. Its face is the figure's
@@ -148,7 +235,14 @@ function ChapterStar({ beat, i, cur, at, onSelect }) {
   const { src, onError } = usePortrait(beat.fig)
   const node = _nodeMap[beat.fig]
   const on = i === cur
-  const size = on ? 96 : 50 + ((i * 5) % 3) * 7
+  /* 82, not 96, and it is what buys the centre its size: the lit star is the
+     only thing on the plane that ever crowds the middle — every other star
+     clears it by half the plane — so the two numbers are one setting, and
+     the frontier they sit on is written out beside `--hero-w` in index.css.
+     It is also the cheapest thing here to trim, since at 82 it is still 1.3x
+     the largest resting star (64) and it draws `beat.fig`, the same face the
+     centre is drawing at four times the size. */
+  const size = on ? 82 : 50 + ((i * 5) % 3) * 7
   return (
     <button
       className={`gsr-star ${on ? 'on' : i < cur ? 'told' : 'ahead'}`}
@@ -175,13 +269,35 @@ function ChapterStar({ beat, i, cur, at, onSelect }) {
 }
 
 /* the figure of the chapter in play, anchored at the constellation's centre.
+
+   It draws the 820px `full` plate, not the 360px `head` crop. At ~216px a
+   head covered into a circle is a face pressed into a coin — and it is the
+   *same* treatment a chapter star wears at a third the size (same circle,
+   same `object-fit: cover`, same `closest-side` mask), so the centre
+   outranked the chapters by size alone. A standing figure outranks them by
+   kind, which is the hierarchy the size was trying to carry.
+
+   The box takes the ART's shape rather than a fixed one, out of the manifest
+   and so on the first frame with nothing decoded: 19 of the 139 plates are
+   square — whole 1:1 compositions, not busts, and they are not a rare case
+   either, since they include Hades, Persephone, Demeter, Athena, Hera,
+   Poseidon and Aphrodite — and a fixed 2:3 box crops those down their middle.
+   `--hero-ar` is fed to a pair of capped dimensions in the CSS, so a standing
+   plate lands as a figure and a square one square, and neither can outgrow
+   the room `PATHS` is hand-set to leave the centre.
+
+   `--hero-zoom` then pushes the plate's own rectangular margin out past the
+   silhouette, so the ellipse cuts through backdrop rather than through the
+   composition's edge. The square scenes carry more margin than the standing
+   plates and take more of it.
+
    It cross-fades rather than cuts: the outgoing face is held underneath until
-   the incoming one has loaded, so the orb never blinks through to its own
-   gradient while a plate is on the wire. Both faces are keyed by src, which
-   is what lets React carry the lit element over into the held slot instead
-   of remounting it. */
-function HeroOrb({ fig }) {
-  const { src, onError } = usePortrait(fig, 'head')
+   the incoming one has loaded, so the centre never blinks through to nothing
+   while a plate is on the wire. Both faces are keyed by src, which is what
+   lets React carry the lit element over into the held slot instead of
+   remounting it. */
+function HeroOrb({ fig, name, cat, leanX = 0, leanY = 0 }) {
+  const { src, onError } = usePortrait(fig, 'full')
   const [lit, setLit]   = useState(null)   // src of the face fully up
   const [held, setHeld] = useState(null)   // the face left standing under an incoming one
   const [at, setAt]     = useState(fig)
@@ -196,7 +312,7 @@ function HeroOrb({ fig }) {
      standing, and the manifest answers that without a fetch. */
   if (at !== fig) {
     setAt(fig)
-    const next = portraitSources(fig, 'head')[0]
+    const next = portraitSources(fig, 'full')[0]
     if (next && next === held) {
       /* back onto the face still standing under the incoming one: that <img>
          is reused already loaded, and never fires `load` a second time */
@@ -208,16 +324,63 @@ function HeroOrb({ fig }) {
     }
   }
 
+  /* the plate's own proportions, straight out of the manifest — no decode, so
+     the box is the right shape on the first frame rather than reflowing when
+     one finishes. `--hero-focus` follows from them: where the face sits is a
+     function of what kind of plate this is, and the only two the generator
+     produces are a 2:3 standing figure (face high, ~34%) and a square bust
+     (face near the middle, ~44%). Written as a ramp rather than a branch so a
+     plate at some other ratio lands between them instead of on the wrong one. */
+  const plate = portraitEntries(fig, 'full')[0]
+  const ar = plate ? plate.width / plate.height : 2 / 3
+  const focus = Math.min(Math.max(34 + (ar - 2 / 3) * 30, 32), 46)
+  /* barely any crop. The zoom exists to keep the silhouette off the
+     composition's own framing, not to fill the oval — the inscribed ellipse
+     already leaves 21% of any box outside it, and every point of zoom is
+     more of the picture thrown away on top of that. The sink is what makes a
+     small zoom safe: the plate's margin can sit inside the ellipse now,
+     because it is taken down to the sky's value before it gets there. */
+  const zoom = Math.min(Math.max(1.02 + (ar - 2 / 3) * 0.12, 1.01), 1.08)
+  /* the square plates' share of the height the min() pair never spends on
+     them — they have the clearance for it, and at equal width they read
+     smaller than a standing figure does */
+  const fill = Math.min(Math.max(1 + (ar - 2 / 3) * 0.45, 1), 1.15)
+
   return (
-    <div className="gsr-hero" style={{ left: `${HERO.x}%`, top: `${HERO.y}%` }}>
+    <div className="gsr-hero" style={{
+      left: `${HERO.x}%`, top: `${HERO.y}%`,
+      '--lean-x': leanX.toFixed(3), '--lean-y': leanY.toFixed(3),
+      /* on `.gsr-hero`, not on the box below it, so the light pool — its
+         sibling — sees them too */
+      '--hero-ar': ar.toFixed(4),
+      '--hero-focus': `${focus.toFixed(1)}%`,
+      '--hero-zoom': zoom.toFixed(3),
+      '--hero-fill': fill.toFixed(3),
+    }}>
       <div className="gsr-hero-glow"/>
-      <div className="gsr-hero-orb">
-        {held && <img key={held} className="held" src={held} alt="" draggable="false"/>}
-        {src && (
-          <img key={src} className={`lead ${lit === src ? 'on' : ''}`} src={src} alt="" draggable="false"
-            onLoad={() => setLit(src)} onError={onError}/>
-        )}
+      {/* `bare` only when nothing is drawn over it: a ground under a portrait
+          whose mask fades to nothing shows through the fringe as a hooped
+          edge — the same trap the map's core pip exists to avoid */}
+      <div className={`gsr-hero-fig ${src ? '' : 'bare'}`}>
+        <div className="gsr-hero-veil">
+          {held && <img key={held} className="held" src={held} alt="" draggable="false"/>}
+          {src && (
+            <img key={src} className={`lead ${lit === src ? 'on' : ''}`} src={src} alt="" draggable="false"
+              onLoad={() => setLit(src)} onError={onError}/>
+          )}
+        </div>
+        {/* over the plate: the sink takes its ground down to the sky's value,
+            then the rim catches the edge in gold. Order matters — the rim
+            paints after the sink, or the sink would swallow it. */}
+        {src && <span className="gsr-hero-sink"/>}
+        {src && <span className="gsr-hero-rim"/>}
       </div>
+      {name && (
+        <div className="gsr-hero-name">
+          <span className="n">{name}</span>
+          {cat && <span className="c">{cat}</span>}
+        </div>
+      )}
     </div>
   )
 }
@@ -414,6 +577,14 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
   /* the "With …" line is held on every chapter of a tale that names anyone,
      so chapters with and without names hang from the same baseline */
   const withLine = !!onNavigate && beats.some(b => b.figures?.length)
+  /* Name the centre only where nothing else on screen already does. A tour's
+     reading head sets `node.name` and its category, and a figure's own tale
+     sets that figure's name as the title — so the one unlabelled case is a
+     chapter of a figure's tale that hands the centre to somebody else, which
+     is most of them (`beat.fig` is the chapter's first named figure, falling
+     back to the teller). That is the largest thing on the screen going
+     unnamed; it is also the whole of the duplication this avoids. */
+  const centreNamed = !!tale.figure && !tale.prose && beat.fig !== tale.figure
   /* A chapterless tale *is* the full tale: the reading row opens on it and has
      no chapters to go back to. `showFull` is what the rest of the view reads;
      `fullOpen` stays the reader's own toggle on a chaptered tale. */
@@ -437,8 +608,16 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
 
   /* the centre face changes with the chapter, so the next one is fetched
      during this beat's dwell and the advance cross-fades out of cache. Only
-     forward: a step back returns to a face that was just at the centre. */
-  useEffect(() => { warmHead(beats[cur + 1]?.fig) }, [beats, cur])
+     forward: a step back returns to a face that was just at the centre.
+
+     This is SkyGraph's own ledger, not a local one, and that is the point
+     now the centre draws the same 820px plate the DetailPanel's Colossus
+     does: a figure whose panel was open, or whose Bonds the panel warmed,
+     walks onto the centre already cached, and neither surface fetches a
+     plate the other has. It costs more than the old head crop — ~231KB
+     against ~28KB on average — and carries that function's own guards:
+     once per session, low priority, never under `saveData`. */
+  useEffect(() => { warmFullPortrait(beats[cur + 1]?.fig) }, [beats, cur])
 
   /* ambient backdrop stars — seeded once per mount */
   const bgStars = useMemo(() =>
@@ -449,19 +628,34 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
       dur: 2.5 + Math.random() * 4, delay: Math.random() * 4,
     })), [])
 
-  /* the brighter motes drifting over the constellation itself */
+  /* the brighter motes drifting over the constellation itself. A quarter of
+     them are `near` — drawn in front of the centre figure rather than behind
+     it, so something passes between the reader and her. */
   const dust = useMemo(() =>
-    Array.from({ length: 14 }, () => ({
+    Array.from({ length: 14 }, (_, i) => ({
       left: Math.random() * 100, top: Math.random() * 100,
       dur: 7 + Math.random() * 6, delay: -Math.random() * 6,
+      near: i % 4 === 0,
     })), [])
 
-  const stars = useMemo(() => pathFor(beats.length), [beats.length])
+  /* on the tale's key, not just its length — which is the whole of the change
+     that gives each tale its own figure */
+  const stars = useMemo(() => pathFor(beats.length, tale.key), [beats.length, tale.key])
   const allPts   = useMemo(() => stars.map(pt).join(' '), [stars])
   const tracePts = stars.slice(0, cur + 1).map(pt).join(' ')
   /* what the plane leans toward and the light pool stands behind: the chapter
      in play — or the hero itself, when there are no chapters to travel */
   const focus = tale.prose ? HERO : stars[cur]
+  /* the same offset the plane leans by, normalised to ±1 and handed to the
+     centre, which reads it as depth — see the `── depth ──` block in
+     index.css. The divisors are the largest offsets a chapter actually
+     reaches, measured over every shape at every length: 44 across x and 54
+     down y. Using the real maxima is what keeps the cue PROPORTIONAL — a
+     divisor picked by eye (32 down y, say, against a real 54) clamps on a
+     large share of chapters, and a cue that spends its time pinned at full
+     travel is a switch rather than a parallax. The clamp is insurance. */
+  const leanX = clamp((HERO.x - focus.x) / 44, -1, 1)
+  const leanY = clamp((HERO.y - focus.y) / 54, -1, 1)
 
   /* moving to a chapter always brings the row back from the full tale */
   const next = useCallback(() => { setFullOpen(false); setCur(c => Math.min(c + 1, beats.length - 1)) }, [beats.length])
@@ -554,7 +748,7 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
         <div className="gsr-bloom"/>
 
         {dust.map((d, i) => (
-          <span key={i} className="gsr-dust" style={{
+          <span key={i} className={`gsr-dust ${d.near ? 'near' : ''}`} style={{
             left: `${d.left}%`, top: `${d.top}%`,
             '--dur': `${d.dur}s`, '--delay': `${d.delay}s`,
           }}/>
@@ -574,7 +768,10 @@ export default function GuidedSky({ initialTourId, initialBeat = 0, figureId, on
 
         {/* keyed on the tale, not the figure: within a tale the orb has to
             persist so it can cross-fade; a new tale replays its entrance */}
-        <HeroOrb key={tale.key} fig={beat.fig}/>
+        <HeroOrb key={tale.key} fig={beat.fig}
+          name={centreNamed ? (node?.name || null) : null}
+          cat={centreNamed ? catLabel : null}
+          leanX={leanX} leanY={leanY}/>
 
         {!tale.prose && beats.map((b, i) => (
           <ChapterStar key={`${tale.key}-${i}`} beat={b} i={i} cur={cur} at={stars[i]} onSelect={goTo}/>
