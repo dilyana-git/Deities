@@ -1,8 +1,9 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import seoMetadataPlugin from './scripts/seo-metadata.mjs'
 
-export default defineConfig({
-  plugins: [react()],
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), seoMetadataPlugin({ ...loadEnv(mode, process.cwd(), ''), ...process.env })],
   // Vercel Sandbox runs the dev server on a fresh sb-*.vercel.run host each
   // time; the leading dot admits every one of them. Only the dev/preview
   // servers check hosts — the production build is static files.
@@ -29,4 +30,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

@@ -7,8 +7,10 @@
     "dev": "vite",
     "images:webp": "node scripts/convert-png-to-webp.mjs",
     "check:data": "node scripts/check-data.mjs",
+    "check:seo": "node scripts/check-seo.mjs",
     "prebuild": "npm run check:data",
     "build": "vite build",
+    "postbuild": "npm run check:seo",
     "preview": "vite preview"
   },
   "dependencies": {

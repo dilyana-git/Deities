@@ -259,7 +259,7 @@ const ERAS = [
 ]
 function EraAxis() {
   return (
-    <div style={{ position:'absolute', left:20, bottom:18, zIndex:12, pointerEvents:'none',
+    <div className="era-axis" style={{ position:'absolute', left:20, bottom:18, zIndex:12, pointerEvents:'none',
       opacity:0.72 }}>
       <p style={{ fontFamily:'Cinzel, serif', fontSize:12, letterSpacing:'.22em', color:'#8a94a6',
         textTransform:'uppercase', margin:'0 0 9px 2px' }}>Depth of Ages</p>
@@ -694,7 +694,7 @@ export default function App() {
         </div>
 
         {/* ── wordmark + invitation, floating on the void ──────────── */}
-        <div style={{ position:'absolute', top:20, left:22, zIndex:30, pointerEvents:'none' }}>
+        <div className="atlas-brand" style={{ position:'absolute', top:20, left:22, zIndex:30, pointerEvents:'none' }}>
           <div style={{ fontFamily:'Cinzel, serif', fontWeight:500, fontSize:19, letterSpacing:'.34em',
             color:'#cdb88a', paddingLeft:'.34em' }}>THEOGONY</div>
           <div style={{ fontFamily:'Cinzel, serif', fontSize:12, letterSpacing:'.22em', color:'#8a94a6',
@@ -769,7 +769,7 @@ export default function App() {
         />
 
         {/* hint */}
-        <p style={{
+        <p className="atlas-hint" style={{
           position:'absolute', left:'50%', bottom:16, transform:'translateX(-50%)',
           zIndex:10, fontStyle:'italic', fontSize:15, color:'#7a8396',
           pointerEvents:'none', transition:'opacity .3s', opacity: hintFaded ? 0 : 1,
@@ -780,6 +780,7 @@ export default function App() {
 
         {/* reset view — dissolved to bare small caps like the rest of the chrome */}
         <button
+          className="atlas-reset"
           onClick={closeDetail}
           style={{
             position:'absolute', right:24, bottom:18, zIndex:22,
